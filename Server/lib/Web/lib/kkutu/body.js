@@ -370,7 +370,6 @@ function onMessage(data){
 				console.error('Lobby UI refresh failed', uiError);
 				$('body').attr('data-game-view', 'for-lobby');
 				$('.kkutu-menu .for-lobby, #QuickRoomBtn.for-lobby').show();
-				/* Keep the player's character visible even if a list widget fails. */
 				try{ updateMe(); }catch(characterError){ console.error('Lobby character refresh failed', characterError); }
 			}
 			if(data.caj) checkAge();
