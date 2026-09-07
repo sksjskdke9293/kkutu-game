@@ -6,6 +6,14 @@ Server/lib/Web/public/js/**
 !Server/lib/Web/public/js/jquery.js
 Server/lib/sub/auth.json
 Server/lib/sub/global.json
+.env
+.env.*
+!.env.example
+Server/lib/Web/local-admin-seed.json
+*.pem
+*.key
+*.p12
+*.pfx
 .vscode
 
 # Local deployment bundles and runtime diagnostics are not source files.

@@ -542,6 +542,12 @@ function onMessage(data){
 			}
 			roundEnd(data.result, data.data);
 			break;
+		case 'rankedRoomClosed':
+			// Ranked rooms are removed from the public list as soon as a match
+			// finishes. Players who are still viewing the result keep their room
+			// state until they leave, so the result screen is not interrupted.
+			if($data.rooms) $data.setRoom(data.id, null);
+			break;
 		case 'kickVote':
 			$data._kickTarget = $data.users[data.target];
 			if($data.id != data.target && $data.id != $data.room.master){
@@ -2538,18 +2544,36 @@ function vibrate(level){
 		addTimeout(vibrate, 50, level * 0.7);
 	}, 50);
 }
+function getWordMeaningText(mean){
+	if(typeof mean == "string") return mean.trim();
+	if(Array.isArray(mean)) return mean.filter(function(item){ return typeof item == 'string'; }).join(' ').trim();
+	if(mean && typeof mean == 'object') return String(mean.definition || mean.mean || mean.text || mean.explain || "").trim();
+	if(typeof mean == 'number') return String(mean);
+	return "";
+}
 function updateWordMeaning(text, mean, theme){
 	var $panel = $("#WordMeaning");
-	var definition = "";
-
-	if(typeof mean == "string") definition = mean.trim();
-	else if(Array.isArray(mean)) definition = mean.filter(function(item){ return typeof item == 'string'; }).join(' ').trim();
-	else if(mean && typeof mean == 'object') definition = String(mean.definition || mean.mean || mean.text || mean.explain || "").trim();
+	var definition = getWordMeaningText(mean);
+	var requestId;
 
 	if(!$panel.length) return;
+	requestId = ($data._wordMeaningRequest || 0) + 1;
+	$data._wordMeaningRequest = requestId;
 	$panel.find(".word-meaning-word").text(text || "-");
-	$panel.find(".word-meaning-definition").text(definition || "등록된 낱말 뜻이 없습니다.");
+	$panel.find(".word-meaning-definition").text(definition || (text ? "낱말 뜻을 불러오는 중입니다." : "낱말을 입력하면 뜻이 표시됩니다."));
 	$panel.toggleClass("is-empty", !definition);
+
+	// A room worker can be restarted between validation and the turn event.
+	// In that case the event can arrive without `mean`; look it up once from
+	// the dictionary route instead of leaving the meaning area blank.
+	if(definition || !text) return;
+	tryDict(String(text), function(res){
+		var fetched;
+		if($data._wordMeaningRequest !== requestId) return;
+		fetched = res && !res.error ? getWordMeaningText(res.mean) : "";
+		$panel.find(".word-meaning-definition").text(fetched || "등록된 낱말 뜻이 없습니다.");
+		$panel.toggleClass("is-empty", !fetched);
+	});
 }
 function pushDisplay(text, mean, theme, wc){
 	var len;

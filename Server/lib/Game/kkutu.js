@@ -91,7 +91,7 @@ exports.getRoomList = function(){
 	var i, res = {};
 	
 	for(i in ROOM){
-		res[i] = ROOM[i].getData();
+		if(!ROOM[i]._rankedClosed) res[i] = ROOM[i].getData();
 	}
 	
 	return res;
@@ -524,6 +524,7 @@ exports.Client = function(socket, profile, sid){
 				}
 				return my.sendError(430, room.id);
 			}
+			if($room._rankedClosed) return my.sendError(430, room.id);
 			if(!spec){
 				if($room.gaming){
 					return my.send('error', { code: 416, target: $room.id });
@@ -1179,6 +1180,20 @@ exports.Room = function(room, channel){
 		clearTimeout(my.game.hintTimer2);
 		clearTimeout(my.game.qTimer);
 	};
+	my.closeRankedAfterResults = function(){
+		if(!my.ranked || my.practice || my._rankedCloseTimer) return;
+		my._rankedCloseTimer = setTimeout(function(){
+			var i, player, client;
+			var players = my.players.slice();
+			if(ROOM[my.id] !== my || my.gaming) return;
+			for(i in players){
+				player = players[i];
+				if(!player || player.robot) continue;
+				client = DIC[player];
+				if(client && client.place === my.id) client.leave();
+			}
+		}, 15000);
+	};
 	my.roundEnd = function(data){
 		var i, o, rw;
 		var res = [];
@@ -1277,6 +1292,11 @@ exports.Room = function(room, channel){
 		});
 		my.gaming = false;
 		my.export();
+		if(my.ranked && !my.practice && !my._rankedClosed){
+			my._rankedClosed = true;
+			if(Cluster.isWorker && process.send) process.send({ type: "ranked-room-finished", id: my.id });
+			my.closeRankedAfterResults();
+		}
 		delete my.game.seq;
 		delete my.game.wordLength;
 		delete my.game.dic;

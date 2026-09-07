@@ -341,6 +341,15 @@ Cluster.on('message', function(worker, msg){
 			}
 			KKuTu.publish('room', msg.data);
 			break;
+		case "ranked-room-finished":
+			if((temp = ROOM[msg.id]) && temp.ranked){
+				// Keep the room object until its result viewers leave so normal
+				// room-go bookkeeping can reset their lobby state. It is hidden
+				// immediately from both new joins and the public room list.
+				temp._rankedClosed = true;
+				KKuTu.publish('rankedRoomClosed', { id: msg.id });
+			}
+			break;
 		case "room-expired":
 			if(msg.create && ROOM[msg.id]){
 				for(var i in ROOM[msg.id].players){

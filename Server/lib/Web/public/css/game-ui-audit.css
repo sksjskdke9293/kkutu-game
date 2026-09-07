@@ -763,9 +763,55 @@ body:not(.modern-classic) #TurnHint {
 
  body.modern-classic[data-game-view='for-gaming'] .chain,
  body.modern-classic[data-game-view='for-gaming'] .items,
- body.modern-classic[data-game-view='for-gaming'] .word-meaning-panel,
  body.modern-classic[data-game-view='for-gaming'] #ShieldStatus {
   display:none !important;
+ }
+
+ /* Keep the word meaning available on phones.  It fits between the word
+  * board and the history strip, leaving the input and player cards clear. */
+ body.modern-classic[data-game-view='for-gaming'] .word-meaning-panel {
+  position:absolute !important;
+  top:116px !important;
+  left:12px !important;
+  display:grid !important;
+  grid-template-columns:auto auto minmax(0, 1fr) !important;
+  align-items:center !important;
+  gap:5px !important;
+  width:calc(100vw - 24px) !important;
+  min-height:34px !important;
+  max-height:34px !important;
+  margin:0 !important;
+  padding:4px 8px !important;
+  box-sizing:border-box !important;
+  overflow:hidden !important;
+  border:1px solid #cce8d3 !important;
+  border-radius:10px !important;
+  background:rgba(255,255,255,.96) !important;
+  color:#234b37 !important;
+  z-index:31 !important;
+ }
+ body.modern-classic[data-game-view='for-gaming'] .word-meaning-label {
+  font-size:10px !important;
+  font-weight:800 !important;
+  white-space:nowrap !important;
+ }
+ body.modern-classic[data-game-view='for-gaming'] .word-meaning-word {
+  max-width:66px !important;
+  font-size:13px !important;
+  line-height:18px !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
+ }
+ body.modern-classic[data-game-view='for-gaming'] .word-meaning-definition {
+  display:block !important;
+  min-width:0 !important;
+  overflow:hidden !important;
+  color:#506b5a !important;
+  font-size:11px !important;
+  line-height:18px !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
  }
 
  body.modern-classic[data-game-view='for-gaming'] .b-left {
@@ -1470,7 +1516,13 @@ body.modern-classic[data-game-view='for-gaming'] .word-meaning-definition { font
 	inset:0;
 	width:100% !important;
 	height:100% !important;
-	object-fit:contain;
+	object-fit:cover;
+	object-position:center bottom;
+}
+
+.moremi-body[data-moremi-base] {
+	object-fit:cover !important;
+	object-position:center bottom !important;
 }
  body.modern-classic[data-game-view='for-gaming'] #ShieldStatus { top:158px !important; right:24px !important; left:auto !important; width:272px !important; }
 }

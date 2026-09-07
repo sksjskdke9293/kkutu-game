@@ -803,6 +803,14 @@ $(document).ready(function(){
 			drawRanking($data._resultRank[$data.id]);
 			return;
 		}
+		if($data.room && $data.room.ranked && !$data._replay){
+			// Ranked matches are single-use rooms. Returning from the result
+			// screen always leaves the closed match instead of reopening it.
+			$data.resulting = false;
+			$stage.dialog.result.hide();
+			send('leave');
+			return;
+		}
 		if($data.practicing){
 			$data.room.gaming = true;
 			send('leave');

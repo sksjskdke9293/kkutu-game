@@ -1,4 +1,11 @@
 .git
+.env
+*.pem
+*.key
+*.p12
+*.pfx
 Server/node_modules
 Server/lib/node_modules
+Server/lib/sub/auth.json
+Server/lib/sub/global.json
 KKUTU_ERROR.log

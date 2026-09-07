@@ -11,3 +11,5 @@ COPY Server/lib/ ./Server/lib/
 RUN cd Server/lib && npx grunt default pack
 
 WORKDIR /kkutu
+COPY docker-entrypoint.js /usr/local/bin/kkutu-entrypoint.js
+ENTRYPOINT ["node", "/usr/local/bin/kkutu-entrypoint.js"]
