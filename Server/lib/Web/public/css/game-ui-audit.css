@@ -1521,7 +1521,7 @@ body.modern-classic[data-game-view='for-gaming'] .word-meaning-definition { font
 }
 
 .moremi-body[data-moremi-base] {
-	object-fit:fill !important;
+	object-fit:contain !important;
 	object-position:center bottom !important;
 }
  body.modern-classic[data-game-view='for-gaming'] #ShieldStatus { top:158px !important; right:24px !important; left:auto !important; width:272px !important; }

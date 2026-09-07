@@ -3240,8 +3240,8 @@ function drawObtain(data){
 }
 var moremiFaceTimer;
 var moremiFaceAlternate = false;
-var MOREMI_BASE_IMAGE = "/img/custom/moremi-yellow.png?v=20260907-face-3";
-var MOREMI_BLINK_IMAGE = "/img/custom/moremi-yellow-blink.png?v=20260907-face-3";
+var MOREMI_BASE_IMAGE = "/img/custom/moremi-yellow.png?v=20260907-face-4";
+var MOREMI_BLINK_IMAGE = "/img/custom/moremi-yellow-blink.png?v=20260907-face-4";
 function switchMoremiFace(){
 	moremiFaceAlternate = !moremiFaceAlternate;
 	$('.moremi-body[data-moremi-base]').each(function(){
