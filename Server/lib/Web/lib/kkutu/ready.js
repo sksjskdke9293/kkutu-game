@@ -26,7 +26,7 @@ $(document).ready(function(){
 		$('.rooms-item').each(function(){ $(this).toggle($(this).text().toLowerCase().indexOf(query) >= 0); });
 	});
 	$('<button id="RoomAddBot" type="button">봇 추가</button>').appendTo('.team-selector').on('click', function(){ send('invite', {target:'AI'}); });
-	$('#QuickRoomBtn').appendTo('body').text('빠른 시작');
+	$('#QuickRoomBtn').appendTo('body').empty().append($('<span>').addClass('mobile-menu-label').text('빠른 시작'));
 	$('#HelpBtn, #SettingBtn, #CommunityBtn').appendTo('body').addClass('detached-menu');
 	$('.RoomListBox, .ShopBox').each(function(){
 		var panel = $(this);
@@ -289,7 +289,6 @@ $(document).ready(function(){
 		{ key: "lvup", value: "/media/kkutu/lvup.mp3" },
 		{ key: "Al", value: "/media/kkutu/Al.mp3" },
 		{ key: "success", value: "/media/kkutu/success.mp3" },
-		{ key: "missing", value: "/media/kkutu/missing.mp3" },
 		{ key: "mission", value: "/media/kkutu/mission.mp3" },
 		{ key: "kung", value: "/media/kkutu/kung.mp3" },
 		{ key: "horr", value: "/media/kkutu/horr.mp3" },

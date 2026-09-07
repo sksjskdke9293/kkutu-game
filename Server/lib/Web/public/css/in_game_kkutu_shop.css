@@ -560,6 +560,11 @@ body{
 	background-size: contain;
 }
 
+.mobile-menu-label{
+	display: inline-block;
+	vertical-align: middle;
+}
+
 #NewRoomBtn:before{ background-image: url('/img/kkutu/lobby-icons/wordbook.png'); }
 #QuickRoomBtn:before{ background-image: url('/img/kkutu/lobby-icons/friendly.png'); }
 #ShopBtn:before{ background-image: url('/img/kkutu/lobby-icons/storage.png'); }
@@ -1108,6 +1113,7 @@ body[data-game-view='for-lobby'] #LobbyHero { left:calc((100vw - 260px + 230px) 
 @media(max-width:900px) {
  .kkutu-menu { left:8px !important; width:164px !important; gap:10px; }
  .kkutu-menu button { width:150px !important; font-size:16px !important; }
+	.kkutu-menu button .mobile-menu-label { margin-left:2px; font-weight:800; }
  body[data-game-view='for-lobby'] .ChatBox { display:none !important; }
  body[data-game-view='for-lobby'] #LobbyHero { left:calc(50% + 70px) !important; }
 }

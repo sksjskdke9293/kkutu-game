@@ -41,11 +41,11 @@ block Subject
 	title 끄투게임
 	
 block JS
-	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260907-ranked-10')
+	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260907-mobile-11')
 	script(src='https://www.google.com/recaptcha/api.js')
 	
 block CSS
-	link(rel='stylesheet', href='/css/in_game_kkutu_shop.css')
+	link(rel='stylesheet', href='/css/in_game_kkutu_shop.css?v=20260907-mobile-11')
 	link(rel='stylesheet', href='/css/play-shell.css?v=20260906-ui-audit-4')
 	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260907-ranked-3')
 	link(rel='stylesheet', href='/css/settings-ui.css?v=20260906-settings-1')
@@ -80,19 +80,41 @@ block Middle
 		button#HelpBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #BBBBBB;')!= L('help')
 		button#SettingBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #CCCCCC;')!= L('settings')
 		button#CommunityBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #DAA9FF;')!= L('community')
-		button#SpectateBtn.for-master.for-normal(style='display: none; background-color: #D19DFF;'): +FA('eye')
-		button#SetRoomBtn.for-master(style='display: none; background-color: #B0D2F3;'): +FA('magic')
-		button#NewRoomBtn.for-lobby(style='display: none; background-color: #8EC0F3;'): +FA('magic')
-		button#QuickRoomBtn.for-lobby(style='display: none; background-color: #B0D2F3;'): +FA('bolt')
+		button#SpectateBtn.for-master.for-normal(style='display: none; background-color: #D19DFF;', aria-label='관전')
+			+FA('eye')
+			span.mobile-menu-label 관전
+		button#SetRoomBtn.for-master(style='display: none; background-color: #B0D2F3;', aria-label='방 설정')
+			+FA('magic')
+			span.mobile-menu-label 방 설정
+		button#NewRoomBtn.for-lobby(style='display: none; background-color: #8EC0F3;', aria-label='방 만들기')
+			+FA('magic')
+			span.mobile-menu-label 방 만들기
+		button#QuickRoomBtn.for-lobby(style='display: none; background-color: #B0D2F3;', aria-label='빠른 시작')
+			+FA('bolt')
+			span.mobile-menu-label 빠른 시작
 		//- button#ShopBtn.for-lobby(style='display: none; background-color: #B3E7B7;'): +FA('shopping-bag')
-		button#DictionaryBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #73D07A;'): +FA('book')
+		button#DictionaryBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #73D07A;', aria-label='사전')
+			+FA('book')
+			span.mobile-menu-label 사전
 		//- button#WordPlusBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #73D07A;')= L('wordPlus')
-		button#InviteBtn.for-master(style='display: none; background-color: #9FE669;'): +FA('envelope')
-		button#ReadyBtn.for-normal(style='display: none; background-color: #FFC67F;'): +FA('play')
-		button#StartBtn.for-master(style='display: none; background-color: #FFB576;'): +FA('play-circle')
-		button#ExitBtn.for-master.for-normal.for-gaming(style='display: none; background-color: #FFADAD;'): +FA('times')
-		button#ReplayBtn.for-lobby(style='display: none; background-color: #D9FF82;'): +FA('video-camera')
-		button#LeaderboardBtn.for-lobby(style='display: none; background-color: #FFADD3;', aria-label='순위전'): +FA('trophy')
+		button#InviteBtn.for-master(style='display: none; background-color: #9FE669;', aria-label='초대')
+			+FA('envelope')
+			span.mobile-menu-label 초대
+		button#ReadyBtn.for-normal(style='display: none; background-color: #FFC67F;', aria-label='준비')
+			+FA('play')
+			span.mobile-menu-label 준비
+		button#StartBtn.for-master(style='display: none; background-color: #FFB576;', aria-label='시작')
+			+FA('play-circle')
+			span.mobile-menu-label 시작
+		button#ExitBtn.for-master.for-normal.for-gaming(style='display: none; background-color: #FFADAD;', aria-label='나가기')
+			+FA('times')
+			span.mobile-menu-label 나가기
+		button#ReplayBtn.for-lobby(style='display: none; background-color: #D9FF82;', aria-label='다시 보기')
+			+FA('video-camera')
+			span.mobile-menu-label 다시 보기
+		button#LeaderboardBtn.for-lobby(style='display: none; background-color: #FFADD3;', aria-label='순위전')
+			+FA('trophy')
+			span.mobile-menu-label 순위전
 	button#GameExitControl(type='button', style='display: none;') 게임 나가기
 	div#LobbyHero.for-lobby(style='display: none;')
 		div#LobbyHeroImage.moremi

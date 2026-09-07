@@ -2853,10 +2853,6 @@ function setRoomHead($obj, room){
 }
 function loadSounds(list, callback){
 	$data._lsRemain = list.length;
-	/* Sound preloading must never gate the network connection.  A mobile
-	 * browser may keep one media decode pending indefinitely, so start the
-	 * lobby after a short grace period and allow the remaining sounds to finish
-	 * quietly in the background. */
 	setTimeout(function(){
 		if($data._lsRemain > 0){
 			$data._lsRemain = 0;
@@ -2875,10 +2871,6 @@ function getAudio(k, url, cb){
 	
 	req.open("GET", /*($data.PUBLIC ? "http://jjo.kr" : "") +*/ url);
 	req.responseType = "arraybuffer";
-	/* Never let one optional sound keep the whole lobby on the intro screen.
-	 * In particular, mobile browsers can leave a concurrent audio request pending
-	 * even though the file itself is valid.  The HTML audio fallback is enough
-	 * for that sound and lets the normal game connection continue. */
 	req.timeout = 12000;
 	req.onload = function(e){
 		if(e.target.status < 200 || e.target.status >= 300 || !e.target.response){
@@ -2886,15 +2878,12 @@ function getAudio(k, url, cb){
 			return;
 		}
 		if(audioContext){
-			/* decodeAudioData can also remain pending on a single MP3 in some
-			 * browsers.  It is optional preload work, never a reason to block
-			 * the lobby, so fall back after a short grace period. */
 			decodeTimer = setTimeout(onErr, 6000);
 			audioContext.decodeAudioData(e.target.response, function(buf){
 			if(settled) return;
 			clearTimeout(decodeTimer);
 			settled = true;
-			$sound[k] = buf;
+			setSound(buf);
 			done();
 			}, onErr);
 		}else onErr();
@@ -2905,11 +2894,18 @@ function getAudio(k, url, cb){
 		if(settled) return;
 		clearTimeout(decodeTimer);
 		settled = true;
-		$sound[k] = new AudioSound(url);
+		setSound(new AudioSound(url));
 		done();
 	}
+	function setSound(sound){
+		$sound[k] = sound;
+		if($data._pendingBGM == k && !$data.muteBGM){
+			_setTimeout(function(){
+				if($data._pendingBGM == k && !$data.muteBGM) playBGM(k, true);
+			}, 0);
+		}
+	}
 	function done(){
-		/* The five-second startup guard may already have connected the lobby. */
 		if($data._lsRemain <= 0) return;
 		if(--$data._lsRemain == 0){
 			if(cb) cb();
@@ -2935,7 +2931,9 @@ function playBGM(key, force){
 	if($data.bgm && $data.bgm.key == key && $data.bgm.audio && !$data.bgm.audio.paused) return $data.bgm;
 	if($data.bgm) $data.bgm.stop();
 	
-	return $data.bgm = playSound(key, true);
+	$data.bgm = playSound(key, true);
+	if(!$data.bgm) $data._pendingBGM = key;
+	return $data.bgm;
 }
 function stopBGM(){
 	if($data.bgm){
@@ -2946,10 +2944,11 @@ function stopBGM(){
 function playSound(key, loop){
 	var src, sound, gain, volume = getSoundVolume(loop);
 	
-	sound = $sound[key] || $sound.missing;
-	/* Audio preload is allowed to finish after the lobby becomes usable.
-	 * Missing optional audio must not prevent welcome() from closing Intro. */
-	if(!sound) return null;
+	sound = $sound[key];
+	if(!sound){
+		if(loop) $data._pendingBGM = key;
+		return null;
+	}
 	if(audioContext && window.hasOwnProperty("AudioBuffer") && sound instanceof AudioBuffer){
 		src = audioContext.createBufferSource();
 		src.startedAt = audioContext.currentTime;
@@ -2977,6 +2976,7 @@ function playSound(key, loop){
 	try{
 		if(audioContext && audioContext.state == "suspended") audioContext.resume && audioContext.resume();
 		var playResult = src.start();
+		if(loop) delete $data._pendingBGM;
 		if(playResult && playResult.catch) playResult.catch(function(){
 			if(loop) $data._pendingBGM = key;
 		});
