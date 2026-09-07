@@ -41,7 +41,7 @@ block Subject
 	title 끄투게임
 	
 block JS
-	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260907-ranked-8')
+	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260907-ranked-9')
 	script(src='https://www.google.com/recaptcha/api.js')
 	
 block CSS
@@ -96,7 +96,7 @@ block Middle
 	button#GameExitControl(type='button', style='display: none;') 게임 나가기
 	div#LobbyHero.for-lobby(style='display: none;')
 		div#LobbyHeroImage.moremi
-			img.moremies.moremi-body(src='/img/custom/moremi-yellow.png?v=20260907-moremi-fallback-1', alt='모레미')
+			img.moremies.moremi-body(src='/img/custom/moremi-yellow.png?v=20260907-blink-2', data-moremi-base='/img/custom/moremi-yellow.png?v=20260907-blink-2', alt='모레미')
 		h3#LobbyHeroName= L('guest')
 		div#LobbyHeroSub 끄투게임
 	+Dialog('SettingDiag', 560, 610, '환경설정')

@@ -687,7 +687,7 @@ function welcome(){
 	var $intro = $("#Intro").stop(true, true).css({ 'opacity': 1, 'pointer-events': 'auto' });
 	window.setTimeout(function(){
 		$intro.css({ 'opacity': 0, 'transition': 'opacity 500ms ease' });
-		window.setTimeout(function(){
+		_setTimeout(function(){
 			$intro.hide().css({ 'pointer-events': 'none', 'transition': '' });
 		}, 500);
 	}, 4500);
@@ -3186,19 +3186,25 @@ function drawObtain(data){
 	$("#obtain-name").html(iName(data.key));
 }
 var moremiBlinkTimer;
-function ensureMoremiBlink(){
-	if(moremiBlinkTimer || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
-	moremiBlinkTimer = window.setInterval(function(){
-		var $bodies = $('.moremi-body[data-moremi-base]');
-		if(!$bodies.length) return;
-		$bodies.attr('src', '/img/custom/moremi-yellow-blink.png?v=20260907-blink-1');
-		window.setTimeout(function(){
-			$bodies.each(function(){
-				var $body = $(this);
-				$body.attr('src', $body.attr('data-moremi-base'));
-			});
+var MOREMI_BASE_IMAGE = "/img/custom/moremi-yellow.png?v=20260907-blink-2";
+var MOREMI_BLINK_IMAGE = "/img/custom/moremi-yellow-blink.png?v=20260907-blink-2";
+function blinkMoremi(){
+	$('.moremi-body[data-moremi-base]').each(function(){
+		var $body = $(this);
+		var baseImage = $body.attr('data-moremi-base');
+
+		if(!baseImage || $body.attr('data-moremi-blinking') == 'true') return;
+		$body.attr('data-moremi-blinking', 'true').attr('src', MOREMI_BLINK_IMAGE);
+		_setTimeout(function(){
+			if($body.attr('data-moremi-blinking') == 'true'){
+				$body.removeAttr('data-moremi-blinking').attr('src', baseImage);
+			}
 		}, 200);
-	}, 2000);
+	});
+}
+function ensureMoremiBlink(){
+	if(moremiBlinkTimer) return;
+	moremiBlinkTimer = _setInterval(blinkMoremi, 2000);
 }
 function renderMoremi(target, equip){
 	var $obj = $(target).empty();
@@ -3222,7 +3228,7 @@ function renderMoremi(target, equip){
 			.css({ 'width': "100%", 'height': "100%" })
 		);
 	}
-	var bodyImage = equip.robot ? "/img/kkutu/moremi/robot.png?v=20260906-mascot-2" : "/img/custom/moremi-yellow.png?v=20260906-autumn-1";
+	var bodyImage = equip.robot ? "/img/kkutu/moremi/robot.png?v=20260906-mascot-2" : MOREMI_BASE_IMAGE;
 	var $body = $("<img>").addClass("moremies moremi-body")
 		.attr({src: bodyImage, alt: equip.robot ? '끄투 봇' : '모레미'})
 		.attr('data-moremi-base', equip.robot ? null : bodyImage)
@@ -3234,6 +3240,7 @@ function renderMoremi(target, equip){
 	$obj.children(".moremi-rhand").css('transform', "scaleX(-1)");
 	ensureMoremiBlink();
 }
+$(ensureMoremiBlink);
 function commify(val){
 	var tester = /(^[+-]?\d+)(\d{3})/;
 	

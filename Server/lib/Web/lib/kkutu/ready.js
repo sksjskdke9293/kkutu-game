@@ -30,8 +30,12 @@ $(document).ready(function(){
 	$('#HelpBtn, #SettingBtn, #CommunityBtn').appendTo('body').addClass('detached-menu');
 	$('.RoomListBox, .ShopBox').each(function(){
 		var panel = $(this);
-		$('<button class="panel-close" aria-label="닫기">×</button>').appendTo(panel).on('click', function(){
-			$data._roomListOpen = false; $data._shop = false; panel.hide(); updateUI();
+		$('<button class="panel-close" aria-label="닫기">×</button>').appendTo(panel).on('click', function(e){
+			e.preventDefault();
+			e.stopPropagation();
+			$data._roomListOpen = false;
+			$data._shop = false;
+			panel.hide();
 		});
 	});
 	
