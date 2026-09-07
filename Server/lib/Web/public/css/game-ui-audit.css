@@ -1535,3 +1535,37 @@ body.modern-classic[data-game-view='for-gaming'] .word-meaning-definition { font
  .rank-tier-gallery img { width:42px; height:42px; }
  .ranked-rules { font-size:11px; }
 }
+
+@media (min-width:801px) {
+ body.modern-classic[data-game-view='for-gaming'] .GameBox .product-body {
+  left:50% !important;
+  transform:translateX(-50%) scale(var(--kkutu-stage-scale, 1)) !important;
+  transform-origin:top center !important;
+ }
+}
+
+#ResultDiag .rank-result-summary {
+ float:none !important;
+ clear:both;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:12px;
+ width:calc(100% - 10px);
+ margin:6px 1px 2px;
+ padding:9px 12px;
+ box-sizing:border-box;
+ border:1px solid #b8a8ef;
+ border-radius:12px;
+ background:linear-gradient(135deg,#eeeaff,#f8f5ff);
+ color:#37275f;
+ font-size:14px;
+}
+#ResultDiag .rank-result-summary.is-hidden { display:none !important; }
+#RankResultDelta { color:#6040b9; font-size:16px; }
+#RankResultRating { color:#4d4a66; font-weight:800; white-space:nowrap; }
+
+@media (max-width:800px) {
+ #ResultDiag .rank-result-summary { gap:7px; padding:8px 9px; font-size:12px; }
+ #RankResultDelta { font-size:13px; }
+}

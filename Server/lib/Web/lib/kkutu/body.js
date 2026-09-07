@@ -487,6 +487,7 @@ function onMessage(data){
 			break;
 		case 'starting':
 			$('#MatchOverlay, #RankMatchOverlay').remove();
+			if($data.room && $data.room.ranked && window.kkutuRankStart) window.kkutuRankStart();
 			loading(L['gameLoading']);
 			break;
 		case 'roundReady':
@@ -1003,6 +1004,7 @@ function updateUI(myRoom, refresh){
 	$('body').attr('data-game-view', only);
 	$('body').toggleClass('modern-classic', only === 'for-gaming' && $data.room && String(RULE[MODE[$data.room.mode]].rule).toLowerCase() === 'classic');
 	$('body').toggleClass('ranked-match', only === 'for-gaming' && $data.room && $data.room.ranked === true);
+	syncGameStageScale();
 	if(only !== 'for-gaming') $data._wordInputMode = null;
 	$('#RoomAddBot').toggle(only === 'for-master');
 	setLocation($data.place);
@@ -1010,6 +1012,21 @@ function updateUI(myRoom, refresh){
 	$('#QuickRoomBtn.'+only+', .detached-menu.'+only).show();
 	$('#GameExitControl').toggle(only === 'for-gaming');
 }
+function syncGameStageScale(){
+	var width, height, scale;
+	if(!$('body').hasClass('modern-classic') || $('body').attr('data-game-view') != 'for-gaming' || window.innerWidth <= 800){
+		document.documentElement.style.removeProperty('--kkutu-stage-scale');
+		return;
+	}
+	width = Math.max(1, window.innerWidth - 64);
+	height = Math.max(1, window.innerHeight - 92);
+	scale = Math.min(1.85, Math.max(.64, Math.min(width / 1180, height / 650)));
+	document.documentElement.style.setProperty('--kkutu-stage-scale', scale.toFixed(3));
+}
+$(window).on('resize.gameStageScale orientationchange.gameStageScale', function(){
+	clearTimeout($data._gameStageScaleTimer);
+	$data._gameStageScaleTimer = setTimeout(syncGameStageScale, 50);
+});
 function animModified(cls){
 	$(cls).addClass("room-head-modified");
 	addTimeout(function(){ $(cls).removeClass("room-head-modified"); }, 3000);
@@ -2303,6 +2320,18 @@ function roundEnd(result, data){
 		$(".result-me").css('opacity', 1);
 		$(".result-me-score").html(L['scoreGain']+" +"+commify($data._result.reward.score)+addit);
 		$(".result-me-money").html(L['moneyGain']+" +"+commify($data._result.reward.money)+addp);
+	}
+	renderRankResultSummary();
+	function renderRankResultSummary(){
+		var summary = $data._rankResultSummary;
+		var $summary = $('#RankResultSummary');
+		if(!summary){
+			$summary.addClass('is-hidden');
+			return;
+		}
+		$('#RankResultDelta').text('승급 점수 ' + (summary.delta >= 0 ? '+' : '') + commify(summary.delta) + ' RP');
+		$('#RankResultRating').text('현재 점수 ' + commify(summary.rating) + ' RP');
+		$summary.removeClass('is-hidden');
 	}
 	function roundEndAnimation(first){
 		var v, nl;

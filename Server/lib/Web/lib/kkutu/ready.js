@@ -217,19 +217,31 @@ $(document).ready(function(){
 		$('#RankRating').text(profile.rating + ' RP · ' + profile.wins + '승 ' + profile.losses + '패');
 		$('#RankGuestWarning').toggle(!!$data.guest);
 	}
+	window.kkutuRankStart = function(){
+		$data._rankStartProfile = getRankProfile();
+		$data._rankResultRecorded = false;
+		delete $data._rankResultSummary;
+	};
 	window.kkutuRankRecordResult = function(result){
-		var mine, profile, won;
+		var mine, before, profile, won;
 		if(!Array.isArray(result) || !$data.room || !$data.room.ranked) return;
 		mine = result.filter(function(entry){ return entry && entry.id == $data.id; })[0];
 		if(!mine) return;
-		profile = getRankProfile();
-		// Account records were already updated by the game server.  Only a
-		// guest needs the browser-local fallback described in the rank dialog.
-		if(!$data.guest) return profile;
 		won = Number(mine.rank) === 0;
-		profile.rating = Math.max(0, profile.rating + (won ? 25 : -15));
-		if(won) profile.wins++; else profile.losses++;
-		saveRankProfile(profile);
+		profile = getRankProfile();
+		before = $data._rankStartProfile || getRankProfile();
+		if(!$data._rankStartProfile && !$data.guest){
+			before = $.extend({}, profile, { rating: Math.max(0, profile.rating - (won ? 25 : -15)) });
+		}
+		if($data.guest){
+			profile.rating = Math.max(0, profile.rating + (won ? 25 : -15));
+			if(won) profile.wins++; else profile.losses++;
+			saveRankProfile(profile);
+		}
+		$data._rankResultSummary = {
+			delta: profile.rating - before.rating,
+			rating: profile.rating
+		};
 		return profile;
 	};
 	function openRankMatchOverlay(){
