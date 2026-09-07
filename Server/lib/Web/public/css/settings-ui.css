@@ -1,0 +1,461 @@
+/* KKuTu Game settings: isolated from the game stage so it can safely overlay any mode. */
+#SettingDiag {
+	--settings-ink: #173d32;
+	--settings-muted: #618176;
+	--settings-line: #c9ead7;
+	--settings-mint: #e9fff1;
+	--settings-green: #207b5a;
+	--settings-green-dark: #145943;
+	--settings-lime: #dff58d;
+	width: min(560px, calc(100vw - 24px)) !important;
+	height: auto !important;
+	max-height: calc(100dvh - 24px) !important;
+	padding: 0 !important;
+	border: 1px solid #b9e4ca !important;
+	border-radius: 24px !important;
+	background: #ffffff !important;
+	box-shadow: 0 26px 78px rgba(19, 82, 57, .30) !important;
+	overflow: hidden !important;
+	color: var(--settings-ink) !important;
+	z-index: 1150 !important;
+	isolation: isolate;
+}
+
+#SettingDiag.dialog-front { z-index: 1151 !important; }
+
+#SettingDiag .dialog-head {
+	position: relative !important;
+	height: 54px !important;
+	min-height: 54px;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: linear-gradient(110deg, #167557, #389d70 62%, #bfe97a) !important;
+}
+
+#SettingDiag .dialog-title {
+	width: calc(100% - 64px) !important;
+	padding: 15px 21px !important;
+	box-sizing: border-box !important;
+	color: #ffffff !important;
+	font-size: 18px !important;
+	font-weight: 900 !important;
+	letter-spacing: -.04em;
+	text-align: left !important;
+}
+
+#SettingDiag .closeBtn {
+	top: 8px !important;
+	right: 10px !important;
+	width: 36px !important;
+	height: 36px !important;
+	min-height: 36px !important;
+	padding: 0 !important;
+	border: 1px solid rgba(255, 255, 255, .45) !important;
+	border-radius: 50% !important;
+	background: rgba(255, 255, 255, .18) !important;
+	color: #ffffff !important;
+	font-size: 25px !important;
+	line-height: 32px !important;
+	box-shadow: none !important;
+}
+
+#SettingDiag .dialog-body {
+	display: block !important;
+	width: 100% !important;
+	height: auto !important;
+	max-height: calc(100dvh - 78px) !important;
+	padding: 0 !important;
+	box-sizing: border-box !important;
+	overflow-x: hidden !important;
+	overflow-y: auto !important;
+	background: #f8fffa !important;
+}
+
+#SettingDiag .settings-panel {
+	display: grid;
+	gap: 16px;
+	padding: 20px;
+	box-sizing: border-box;
+	font-family: inherit;
+}
+
+#SettingDiag .settings-intro {
+	display: flex;
+	align-items: center;
+	gap: 13px;
+	padding: 15px;
+	border: 1px solid #d9f1df;
+	border-radius: 18px;
+	background: linear-gradient(135deg, #effff3, #fbffe8);
+}
+
+#SettingDiag .settings-intro-icon,
+#SettingDiag .settings-section-icon {
+	display: grid;
+	flex: 0 0 auto;
+	place-items: center;
+	box-sizing: border-box;
+	border-radius: 14px;
+	background: #d5f5dd;
+	color: var(--settings-green);
+}
+
+#SettingDiag .settings-intro-icon {
+	width: 44px;
+	height: 44px;
+	font-size: 21px;
+	background: linear-gradient(135deg, #22956b, #b6e96d);
+	color: #ffffff;
+}
+
+#SettingDiag .settings-intro h3,
+#SettingDiag .settings-intro p,
+#SettingDiag .settings-section h4,
+#SettingDiag .settings-section p {
+	margin: 0;
+}
+
+#SettingDiag .settings-intro h3 {
+	font-size: 17px;
+	font-weight: 900;
+	letter-spacing: -.05em;
+}
+
+#SettingDiag .settings-intro p,
+#SettingDiag .settings-section-title p {
+	margin-top: 3px;
+	color: var(--settings-muted);
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+#SettingDiag .settings-section {
+	padding: 16px;
+	border: 1px solid var(--settings-line);
+	border-radius: 18px;
+	background: #ffffff;
+}
+
+#SettingDiag .settings-section-title {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 13px;
+}
+
+#SettingDiag .settings-section-icon {
+	width: 34px;
+	height: 34px;
+	border-radius: 11px;
+	font-size: 16px;
+}
+
+#SettingDiag .settings-section h4 {
+	font-size: 15px;
+	font-weight: 900;
+	letter-spacing: -.04em;
+}
+
+#SettingDiag .settings-audio-row {
+	display: grid;
+	grid-template-columns: 132px minmax(0, 1fr);
+	align-items: center;
+	gap: 14px;
+	padding: 11px 0;
+	border-top: 1px solid #edf7ef;
+}
+
+#SettingDiag .settings-section-title + .settings-audio-row { border-top: 0; }
+
+#SettingDiag .settings-audio-label {
+	display: grid;
+	gap: 2px;
+}
+
+#SettingDiag .settings-audio-label strong {
+	font-size: 14px;
+	font-weight: 800;
+}
+
+#SettingDiag .settings-audio-label span {
+	color: var(--settings-muted);
+	font-size: 11px;
+}
+
+#SettingDiag .settings-audio-controls {
+	display: grid;
+	grid-template-columns: minmax(80px, 1fr) 43px auto;
+	align-items: center;
+	gap: 9px;
+	min-width: 0;
+}
+
+#SettingDiag input.settings-range {
+	width: 100% !important;
+	min-width: 0 !important;
+	height: 8px !important;
+	min-height: 8px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 999px !important;
+	accent-color: var(--settings-green);
+	background: #dcefe1 !important;
+	box-shadow: none !important;
+	cursor: pointer;
+}
+
+#SettingDiag input.settings-range::-webkit-slider-runnable-track {
+	height: 8px;
+	border-radius: 999px;
+	background: #dcefe1;
+}
+
+#SettingDiag input.settings-range::-webkit-slider-thumb {
+	width: 20px;
+	height: 20px;
+	margin-top: -6px;
+	border: 3px solid #ffffff;
+	border-radius: 50%;
+	background: var(--settings-green);
+	box-shadow: 0 2px 7px rgba(19, 82, 57, .28);
+	-webkit-appearance: none;
+}
+
+#SettingDiag input.settings-range::-moz-range-track {
+	height: 8px;
+	border: 0;
+	border-radius: 999px;
+	background: #dcefe1;
+}
+
+#SettingDiag input.settings-range::-moz-range-progress {
+	height: 8px;
+	border-radius: 999px;
+	background: var(--settings-green);
+}
+
+#SettingDiag input.settings-range::-moz-range-thumb {
+	width: 15px;
+	height: 15px;
+	border: 3px solid #ffffff;
+	border-radius: 50%;
+	background: var(--settings-green);
+	box-shadow: 0 2px 7px rgba(19, 82, 57, .28);
+}
+
+#SettingDiag output {
+	display: inline-block;
+	min-width: 43px;
+	color: var(--settings-green-dark);
+	font-size: 12px;
+	font-weight: 900;
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+}
+
+#SettingDiag .settings-mute {
+	position: relative;
+	flex: 0 0 auto;
+}
+
+#SettingDiag input.settings-switch {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	min-height: 1px !important;
+	margin: -1px !important;
+	padding: 0 !important;
+	border: 0 !important;
+	opacity: 0 !important;
+	pointer-events: none;
+}
+
+#SettingDiag .settings-mute label {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	min-height: 30px;
+	padding: 0 9px;
+	border: 1px solid #cfe8d6;
+	border-radius: 999px;
+	background: #f6fff8;
+	color: #4f7262;
+	font-size: 11px;
+	font-weight: 800;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+#SettingDiag .settings-mute label::before {
+	display: inline-block;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: #81b394;
+	content: '';
+}
+
+#SettingDiag input.settings-switch:checked + label {
+	border-color: #e5bd6f;
+	background: #fff8e9;
+	color: #8e6420;
+}
+
+#SettingDiag input.settings-switch:checked + label::before { background: #e4a637; }
+
+#SettingDiag input.settings-switch:focus-visible + label,
+#SettingDiag input.settings-range:focus-visible,
+#SettingDiag .settings-check input:focus-visible + .settings-check-box,
+#SettingDiag button:focus-visible {
+	outline: 3px solid rgba(43, 150, 105, .35) !important;
+	outline-offset: 2px;
+}
+
+#SettingDiag .settings-option-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 9px;
+}
+
+#SettingDiag .settings-check {
+	display: grid;
+	grid-template-columns: 19px minmax(0, 1fr);
+	align-items: start;
+	gap: 9px;
+	min-height: 62px;
+	padding: 11px;
+	border: 1px solid #dbeee0;
+	border-radius: 13px;
+	box-sizing: border-box;
+	background: #fbfffc;
+	cursor: pointer;
+}
+
+#SettingDiag .settings-check input {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	min-height: 1px !important;
+	margin: -1px !important;
+	opacity: 0 !important;
+	pointer-events: none;
+}
+
+#SettingDiag .settings-check-box {
+	display: grid;
+	place-items: center;
+	width: 19px;
+	height: 19px;
+	box-sizing: border-box;
+	border: 2px solid #a6cfb3;
+	border-radius: 6px;
+	background: #ffffff;
+}
+
+#SettingDiag .settings-check-box::after {
+	display: block;
+	width: 8px;
+	height: 4px;
+	border-bottom: 2px solid #ffffff;
+	border-left: 2px solid #ffffff;
+	content: '';
+	transform: rotate(-45deg) translate(1px, -1px);
+	opacity: 0;
+}
+
+#SettingDiag .settings-check input:checked + .settings-check-box {
+	border-color: var(--settings-green);
+	background: var(--settings-green);
+}
+
+#SettingDiag .settings-check input:checked + .settings-check-box::after { opacity: 1; }
+
+#SettingDiag .settings-check-copy {
+	display: grid;
+	gap: 2px;
+	min-width: 0;
+}
+
+#SettingDiag .settings-check-copy strong {
+	font-size: 12px;
+	font-weight: 800;
+	letter-spacing: -.03em;
+}
+
+#SettingDiag .settings-check-copy small {
+	color: var(--settings-muted);
+	font-size: 10px;
+	line-height: 1.35;
+}
+
+#SettingDiag .settings-actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 8px;
+	padding-top: 1px;
+}
+
+#SettingDiag .settings-actions button {
+	float: none !important;
+	min-height: 42px !important;
+	margin: 0 !important;
+	padding: 9px 13px !important;
+	border: 1px solid #c8e7d2 !important;
+	border-radius: 12px !important;
+	box-sizing: border-box !important;
+	box-shadow: none !important;
+	font-size: 13px !important;
+	font-weight: 900 !important;
+	letter-spacing: -.03em;
+	cursor: pointer;
+}
+
+#SettingDiag .settings-action-reset {
+	margin-right: auto !important;
+	background: #f4fff6 !important;
+	color: #42705a !important;
+}
+
+#SettingDiag .settings-action-secondary {
+	background: #ffffff !important;
+	color: #40745d !important;
+}
+
+#SettingDiag .settings-action-primary {
+	border-color: #237b5b !important;
+	background: linear-gradient(135deg, #197657, #5fb876) !important;
+	color: #ffffff !important;
+}
+
+@media (max-width: 520px) {
+	#SettingDiag {
+		width: calc(100vw - 16px) !important;
+		max-height: calc(100dvh - 16px) !important;
+		border-radius: 19px !important;
+	}
+
+	#SettingDiag .dialog-head { height: 50px !important; min-height: 50px; }
+	#SettingDiag .dialog-title { padding: 13px 16px !important; font-size: 17px !important; }
+	#SettingDiag .dialog-body { max-height: calc(100dvh - 66px) !important; }
+	#SettingDiag .settings-panel { gap: 12px; padding: 13px; }
+	#SettingDiag .settings-intro { padding: 12px; }
+	#SettingDiag .settings-intro-icon { width: 39px; height: 39px; }
+	#SettingDiag .settings-section { padding: 13px; border-radius: 15px; }
+	#SettingDiag .settings-audio-row { grid-template-columns: 1fr; gap: 8px; padding: 10px 0; }
+	#SettingDiag .settings-audio-controls { grid-template-columns: minmax(60px, 1fr) 41px auto; }
+	#SettingDiag .settings-option-grid { grid-template-columns: 1fr; gap: 7px; }
+	#SettingDiag .settings-check { min-height: 52px; padding: 9px 10px; }
+	#SettingDiag .settings-actions { justify-content: stretch; }
+	#SettingDiag .settings-actions button { flex: 1 1 auto; }
+	#SettingDiag .settings-action-reset { flex-basis: 100% !important; margin-right: 0 !important; }
+}
+
+@media (max-width: 340px) {
+	#SettingDiag .settings-intro p,
+	#SettingDiag .settings-section-title p { font-size: 11px; }
+	#SettingDiag .settings-mute label { padding: 0 7px; }
+	#SettingDiag .settings-actions button { padding: 8px !important; font-size: 12px !important; }
+}

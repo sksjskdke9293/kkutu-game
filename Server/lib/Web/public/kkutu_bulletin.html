@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>끄투게임 공지사항</title>
+	<style>
+		body {
+			margin: 0;
+			font-family: "Pretendard", "Noto Sans KR", "맑은 고딕", sans-serif;
+			background: linear-gradient(135deg, #f1fff2, #ffffff);
+			color: #214536;
+		}
+		main {
+			box-sizing: border-box;
+			min-height: 100vh;
+			padding: 28px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+		.notice-card {
+			width: min(520px, 100%);
+			padding: 28px;
+			border-radius: 26px;
+			background: rgba(255,255,255,.86);
+			border: 1px solid rgba(105,196,143,.28);
+			box-shadow: 0 18px 45px rgba(93, 154, 108, .14);
+			text-align: center;
+		}
+		.notice-card small {
+			display: block;
+			margin-bottom: 8px;
+			color: #5f8d72;
+			font-weight: 700;
+		}
+		.notice-card h1 {
+			margin: 0 0 10px;
+			font-size: clamp(24px, 5vw, 38px);
+		}
+		.notice-card p {
+			margin: 0;
+			font-size: 17px;
+			line-height: 1.6;
+		}
+	</style>
+</head>
+<body>
+	<main>
+		<section class="notice-card">
+			<small>버전 1.0.0</small>
+			<h1>끄투게임이 출시되었습니다.</h1>
+			<p>글자로 놀자! 끄투게임에 오신 걸 환영합니다.</p>
+		</section>
+	</main>
+</body>
+</html>

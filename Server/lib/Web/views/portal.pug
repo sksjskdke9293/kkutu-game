@@ -1,0 +1,60 @@
+//-
+	Rule the words! KKuTu Online
+	Copyright (C) 2017 JJoriping(op@jjo.kr)
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program. If not, see <http://www.gnu.org/licenses/>.
+extends layout
+
+block Subject
+	title 끄투게임
+
+block CSS
+	link(rel='stylesheet', href='/css/in_portal.css?v=20260906-autumn-3')
+
+block Middle
+	main.portal-home
+		section.portal-nav
+			div.portal-brand
+				img(src='/img/kkutu/site-logo.png', alt='끄투게임')
+				span 끄투게임
+			nav
+				a(href='#play') 게임 시작
+				a(href='#notice') 공지사항
+		section.portal-hero#play
+			div.portal-copy
+				p.portal-kicker 가을에도 함께하는 낱말 놀이
+				h1 끄투게임
+				p.portal-version 버전 1.0.0
+				p 친구들과 실시간으로 즐기는 끝말잇기 게임. 지금 바로 방에 입장해 보세요.
+				div.portal-actions
+					button#game-start= L('gameStart')
+					a#official-discord(href='https://discord.gg/exfaWJDjU', target='_blank', rel='noopener noreferrer') 공식 디스코드 가기
+			div.server-list-box
+				h3.server-list-title
+					a#server-refresh
+						+FA('refresh')
+						+Expl(L('serverRefresh'))
+					span 서버 현황
+					span#server-total
+				div#server-list
+		section.portal-notice#notice
+			div.notice-heading
+				p 최신 소식
+				h2 공지사항
+				strong 끄투게임이 출시되었습니다.
+			iframe#kkutu-bulletin(width='100%', height='360px', src='/kkutu_bulletin.html', title='끄투 공지사항')
+
+block Bottom
+	div.bottom-legal!= L('dictionarySupport')
+	div.bottom-legal!= L('etcSupport')

@@ -1,0 +1,210 @@
+/**
+ * Rule the words! KKuTu Online
+ * Copyright (C) 2017 JJoriping(op@jjo.kr)
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#holder{
+	width: 200px;
+	text-align: center;
+	text-shadow: 0px 0px 4px #333;
+	font-weight: bold;
+}
+#logo{
+	margin-top: -20px;
+}
+#kkutu-bulletin{
+	border: 0px;
+	margin-bottom: 5px;
+}
+
+#menu-bar a{
+	display: block;
+	float: left;
+	padding: 10px 5px;
+	border-radius: 5px;
+	margin: 0px 3px;
+	width: 120px;
+	font-size: 15px;
+	text-align: center;
+	box-shadow: 0px 1px 1px #333;
+}
+
+#game-start{
+	float: left;
+	width: 315px;
+	height: 70px;
+	font-size: 20px;
+	font-weight: bold;
+	border: none;
+	border-bottom-left-radius: inherit;
+	border-bottom-right-radius: inherit;
+}
+	#game-start:hover{ font-size: 24px; background-color: rgba(0, 0, 0, 0.5); }
+.server-list-box{
+	float: right;
+	width: 320px;
+	background-color: rgba(0, 0, 0, 0.4);
+}
+.server-list-title{
+	padding: 2px 0px;
+	width: 100%;
+	background-color: rgba(0, 0, 0, 0.4);
+}
+#server-refresh{
+	margin: 0px 5px;
+	cursor: pointer;
+}
+.server{
+	float: left;
+	margin: 2px 0px;
+	width: 320px;
+	height: 16px;
+	font-size: 13px;
+	cursor: pointer;
+}
+	.server>div{ float: left; }
+	.server-status{ border-radius: 6px; margin: 2px; width: 12px; height: 12px; }
+		.ss-o{ background-color: #3E3; }
+		.ss-p{ background-color: #EE3; }
+		.ss-q{ background-color: #F55; }
+		.ss-x{ background-color: #777; }
+	.server-name{ width: 60px; }
+	.server-people{ width: 190px; height: 100%; }
+		.server-people>.graph-bar{ background-image: url(/img/blue_gauge.png); }
+		.server-people>label{ position: relative; display: block; top: -14px; width: 100%; text-align: center; font-size: 11px; }
+	.server-enter{ width: 50px; text-align: center; }
+	.server:hover{ background-color: rgba(255, 255, 255, 0.1); }
+
+#Background{
+	animation: none;
+}
+@keyframes BGScroll{
+	from{ background-position: 0px 0px; }
+	to{ background-position: -200px -200px; }
+}
+
+.portal-home{ box-sizing: border-box; width: min(1180px, calc(100vw - 40px)); margin: 0 auto; padding: 24px 0 48px; color: #1F2937; }
+.portal-nav{ display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border: 1px solid rgba(255,255,255,.7); border-radius: 18px; background: rgba(255,255,255,.82); box-shadow: 0 10px 30px rgba(88,64,26,.12); }
+.portal-brand{ display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; }
+.portal-brand img{ width: 38px; height: 38px; object-fit: contain; }
+.portal-nav nav{ display: flex; gap: 22px; }
+.portal-nav a{ color: #4B5563; font-weight: bold; }
+.portal-hero{ display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 28px; align-items: center; min-height: 470px; padding: 46px; border-radius: 24px; margin-top: 22px; background: rgba(255,255,255,.78); box-shadow: 0 16px 45px rgba(88,64,26,.16); }
+.portal-copy{ max-width: 600px; }
+.portal-kicker{ margin: 0 0 12px; color: #B45309; font-weight: 800; }
+.portal-copy h1{ margin: 0; font-size: clamp(42px, 6vw, 76px); line-height: 1.1; letter-spacing: -4px; }
+.portal-copy>p:not(.portal-kicker){ color: #4B5563; margin: 22px 0 28px; font-size: 18px; line-height: 1.6; }
+#game-start{ border: 0; border-radius: 14px; padding: 17px 34px; color: #fff; background: linear-gradient(135deg, #F59E0B, #EA580C); box-shadow: 0 9px 20px rgba(234,88,12,.3); font-size: 18px; font-weight: 800; cursor: pointer; }
+#game-start:hover{ transform: translateY(-2px); }
+.server-list-box{ float: none; width: auto; overflow: hidden; border-radius: 18px; background: #1F2937; box-shadow: 0 12px 25px rgba(31,41,55,.25); }
+.server-list-title{ box-sizing: border-box; display: flex; align-items: center; gap: 9px; margin: 0; padding: 16px; background: #111827; color: #fff; font-size: 16px; }
+#server-refresh{ margin: 0; color: #FBBF24; cursor: pointer; }
+#server-total{ margin-left: auto; color: #D1D5DB; font-size: 12px; }
+#server-list{ padding: 10px 14px; }
+.server{ box-sizing: border-box; float: none; display: flex; align-items: center; margin: 0; padding: 8px 0; width: 100%; height: auto; color: #F9FAFB; }
+.server-name{ width: 64px; }.server-people{ flex: 1; width: auto; }.server-enter{ width: 54px; }
+.portal-notice{ margin-top: 26px; overflow: hidden; border-radius: 22px; background: rgba(255,255,255,.88); box-shadow: 0 14px 36px rgba(88,64,26,.14); }
+.notice-heading{ padding: 24px 28px 16px; }.notice-heading p{ margin: 0; color: #B45309; font-weight: bold; }.notice-heading h2{ margin: 5px 0 0; font-size: 27px; }
+#kkutu-bulletin{ display: block; margin: 0; border: 0; background: #fff; }
+@media (max-width: 760px){ .portal-home{ width: calc(100vw - 24px); padding-top: 12px; }.portal-nav nav{ display:none; }.portal-hero{ grid-template-columns: 1fr; padding: 30px 24px; }.portal-copy h1{ letter-spacing: -2px; }.server-list-box{ width: 100%; } }
+
+/* Clean white landing page, matching the reference layout without copying it. */
+.portal-home{ width: min(1010px, calc(100vw - 40px)); padding-top: 0; }
+.portal-nav{ padding: 4px 10px 20px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.portal-brand img{ width: 168px; height: 52px; object-fit: contain; }
+.portal-brand span{ display: none; }
+.portal-nav nav{ gap: 24px; }
+.portal-nav a{ color: #6B7280; font-size: 13px; }
+.portal-hero{ grid-template-columns: minmax(0, 1fr) 310px; min-height: 390px; margin-top: 8px; padding: 58px 54px; border: 1px solid #F3F4F6; border-radius: 0 0 32px 32px; background: linear-gradient(135deg, #FFFFFF 0%, #FFF8F3 70%, #FFF1DE 100%); box-shadow: 0 18px 45px rgba(249,115,22,.12); }
+.portal-copy{ position: relative; padding-left: 24px; border-left: 6px solid #FF5A5F; }
+.portal-kicker{ color: #FF5A5F; }
+.portal-copy h1{ color: #EF4444; font-size: clamp(38px, 5vw, 62px); }
+#game-start{ background: #FF5A5F; box-shadow: 0 10px 20px rgba(255,90,95,.25); }
+.server-list-box{ border-radius: 16px; background: #FFFFFF; box-shadow: 0 12px 26px rgba(31,41,55,.15); }
+.server-list-title{ background: #FFF4F4; color: #EF4444; }
+.server{ color: #374151; }.server-name{ color: #111827; }
+.portal-version,
+.mobile-version {
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	margin:12px 0 4px !important;
+	padding:6px 12px;
+	border-radius:999px;
+	background:#fff4f4;
+	color:#ef4444 !important;
+	font-weight:800;
+	font-size:14px !important;
+	line-height:1.2 !important;
+}
+.notice-heading strong {
+	display:inline-flex;
+	margin-top:10px;
+	padding:8px 12px;
+	border-radius:999px;
+	background:#ecfdf5;
+	color:#168257;
+	font-size:14px;
+}
+
+/* User-supplied seasonal key art is the shared portal and intro backdrop. */
+html,
+body{
+	min-height:100%;
+	background:#f4f8ee url('/img/custom/autumn-main-intro.png?v=20260906-autumn-2') center / cover fixed no-repeat !important;
+}
+#Jungle #Background{ display:none; }
+.portal-home,
+.mobile-portal{ position:relative; z-index:0; }
+.portal-home::before,
+.mobile-portal::before{
+	content:"";
+	position:fixed;
+	inset:0;
+	z-index:-1;
+	background:rgba(255,255,255,.20);
+	pointer-events:none;
+}
+.portal-hero{
+	position:relative;
+	overflow:hidden;
+	background:#f4f8ee url('/img/custom/autumn-main-intro.png?v=20260906-autumn-1') center / cover no-repeat;
+}
+.portal-hero::before{
+	content:"";
+	position:absolute;
+	inset:0;
+	background:linear-gradient(90deg, rgba(255,255,255,.78) 0%, rgba(255,255,255,.46) 54%, rgba(255,255,255,.1) 100%);
+	pointer-events:none;
+}
+.portal-hero > *{ position:relative; z-index:1; }
+.portal-actions{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+#official-discord{
+	display:inline-flex;
+	align-items:center;
+	justify-content:center;
+	min-height:52px;
+	padding:0 20px;
+	border-radius:14px;
+	background:#5865F2;
+	box-shadow:0 9px 20px rgba(88,101,242,.26);
+	color:#fff;
+	font-size:16px;
+	font-weight:800;
+	text-decoration:none;
+}
+#official-discord:hover{ transform:translateY(-2px); color:#fff; }
+@media (max-width:760px){ .portal-actions{ display:grid; grid-template-columns:1fr; }.portal-actions #game-start, .portal-actions #official-discord{ width:100%; box-sizing:border-box; } }

@@ -1,0 +1,1134 @@
+/**
+ * Rule the words! KKuTu Online
+ * Copyright (C) 2017 JJoriping(op@jjo.kr)
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+.goods{
+	margin: 2px;
+	border-radius: 5px;
+	padding: 3px;
+	width: 240px;
+	height: 50px;
+	box-shadow: 0px 1px 1px #777777;
+	cursor: pointer;
+}
+	.goods:hover{ background-color: #F4F4F4; }
+	.goods-image{ margin: 2px; width: 50px; height: 50px; }
+	.goods-title{ margin: 2px 0px; width: 186px; font-size: 15px; font-weight: bold; }
+	.goods-cost{ margin: 2px 0px; width: 186px; color: #3333FF; }
+.shop-categories{ margin: -3px 0px 5px 0px; }
+	.shop-type{
+		padding: 5px 0px;
+		border: 1px solid #AAAAAA;
+		border-radius: 5px;
+		margin-right: 3px;
+		width: 50px;
+		font-size: 11px;
+		text-align: center;
+		cursor: pointer;
+		background-color: #DDDDDD;
+		transition: all 300ms ease;
+	}
+
+/* NIK */
+.x-gm .users-name::before{ content: "[GM]"; color: #2F77D9; text-shadow: 0px 0px 2px #2AF; }
+.chat-item>.x-gm::before{ content: "[GM]"; color: #2F77D9; text-shadow: 0px 0px 2px #2AF; }
+.room-user-title>.x-gm::before{ content: "[GM]"; color: #2F77D9; text-shadow: 0px 0px 2px #2AF; }
+
+.x-red_name{ color: #FF3333; }
+.x-orange_name{ color: #FFA533; }
+.x-green_name{ color: #43C227; }
+.x-blue_name{ color: #2F77D9; }
+.x-indigo_name{ color: #1C18B9; }
+.x-purple_name{ color: #A939CC; }
+.x-pink_name{ color: #F15F9A; }
+
+/* Modern lobby skin */
+html,
+body{
+	width: 100%;
+	height: 100%;
+	min-width: 0 !important;
+	overflow: hidden;
+	background-color: #EAF7E5;
+}
+
+#Background{
+	position: fixed;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	background:
+		linear-gradient(100deg, rgba(255,255,255,.42) 0 33%, transparent 33% 100%),
+		linear-gradient(190deg, rgba(177,223,151,.20) 0 29%, transparent 29% 100%),
+		linear-gradient(135deg, rgba(132,197,111,.13) 25%, transparent 25% 50%, rgba(132,197,111,.13) 50% 75%, transparent 75%);
+	background-size: 430px 430px, 560px 560px, 380px 380px;
+	background-position: 0 0, 80px 60px, 0 0;
+	opacity: 1;
+}
+
+#Top,
+#Bottom,
+.ADBox,
+#facebook-menu{
+	display: none !important;
+}
+
+#Middle{
+	position: fixed !important;
+	inset: 0 !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	width: 100vw !important;
+	height: 100vh !important;
+	overflow: hidden;
+	color: #252D28;
+}
+
+#Middle:after{
+	content: "";
+	position: fixed;
+	left: 50%;
+	top: 50%;
+	width: 210px;
+	height: 210px;
+	transform: translate(-50%, -56%);
+	background: url('/img/kkutu/moremi/body.png?v=20260906-mascot-2') center / contain no-repeat;
+	filter: drop-shadow(0 18px 10px rgba(38,72,44,.16));
+	pointer-events: none;
+	z-index: 0;
+}
+
+#Middle:before{
+	content: "뉴비인데요";
+	position: fixed;
+	left: 50%;
+	top: calc(50% + 102px);
+	transform: translateX(-50%);
+	font-size: 18px;
+	font-weight: 900;
+	color: #171D19;
+	pointer-events: none;
+	z-index: 0;
+}
+
+.Product{
+	box-sizing: border-box;
+	border-radius: 16px;
+	box-shadow: 0 10px 28px rgba(38,72,44,.10);
+	background: rgba(255,255,255,.72);
+	backdrop-filter: blur(12px);
+	color: #252D28;
+}
+
+.Product .product-title{
+	height: 24px;
+	padding: 6px 10px 0;
+	border: 0;
+	margin: 0;
+	color: #2D6B59;
+	font-size: 13px;
+	font-weight: 900;
+	background: linear-gradient(90deg, rgba(204,245,225,.95), rgba(255,255,255,.45));
+	border-radius: 14px 14px 0 0;
+}
+
+.Product .product-body{
+	box-sizing: border-box;
+	padding: 10px;
+	color: #252D28;
+}
+
+.kkutu-menu{
+	position: fixed;
+	left: 24px;
+	top: 330px;
+	width: 210px;
+	height: auto;
+	z-index: 6;
+}
+
+.kkutu-menu button{
+	float: none;
+	display: block;
+	width: 182px !important;
+	height: 48px;
+	margin: 0 0 12px;
+	border: 0;
+	border-radius: 24px;
+	color: #326451;
+	font-size: 22px;
+	font-weight: 900;
+	text-align: left;
+	padding-left: 42px;
+	box-shadow: 0 8px 20px rgba(87,132,78,.11);
+	background: linear-gradient(90deg, rgba(199,245,221,.96), rgba(245,255,221,.78)) !important;
+}
+
+.kkutu-menu button:hover{
+	margin-top: 0;
+	transform: translateX(8px);
+	filter: brightness(1.03);
+}
+
+.kkutu-menu .toggled{
+	margin-top: 0 !important;
+	color: #215848;
+	background: linear-gradient(90deg, #B7F3D1, #E8F9B8) !important;
+}
+
+#HelpBtn,
+#SettingBtn,
+#CommunityBtn{
+	position: fixed;
+	top: 22px;
+	width: 44px !important;
+	height: 44px;
+	padding: 0;
+	border-radius: 50%;
+	text-align: center;
+	font-size: 0;
+	background: rgba(255,255,255,.82) !important;
+}
+
+#HelpBtn{ right: 102px; }
+#SettingBtn{ right: 42px; }
+#CommunityBtn{ right: 162px; }
+#HelpBtn i,
+#SettingBtn i,
+#CommunityBtn i{
+	font-size: 18px;
+	line-height: 34px;
+}
+
+#NewRoomBtn:before{ content: "🏆 "; }
+#QuickRoomBtn:before{ content: "▷ "; }
+#ShopBtn:before{ content: "♧ "; }
+#DictionaryBtn:before{ content: "▣ "; }
+#ReplayBtn:before{ content: "◎ "; }
+#LeaderboardBtn:before{ content: "☰ "; }
+
+#QuickRoomBtn{
+	position: fixed !important;
+	left: 50%;
+	bottom: 76px;
+	width: 260px !important;
+	height: 86px;
+	margin: 0;
+	padding: 0;
+	transform: translateX(-50%);
+	border: 7px solid rgba(255,255,255,.9);
+	border-radius: 18px;
+	text-align: center;
+	color: #276650;
+	font-size: 28px;
+	box-shadow: 0 8px 24px rgba(86,120,70,.20);
+	background: linear-gradient(135deg, #CBF7D8, #F0FAB9) !important;
+	z-index: 8;
+}
+
+#QuickRoomBtn:after{
+	content: "친선전 / 한국어 끝말잇기";
+	display: block;
+	margin-top: 6px;
+	font-size: 12px;
+	font-weight: 700;
+	color: #77917D;
+}
+
+.MeBox{
+	position: fixed;
+	left: 14px;
+	top: 16px;
+	width: 390px;
+	height: 56px;
+	padding: 0;
+	border-radius: 28px;
+	background: transparent;
+	box-shadow: none;
+	z-index: 5;
+}
+
+.MeBox .product-title{
+	display: none;
+}
+
+.MeBox .product-body{
+	padding: 0;
+}
+
+.MeBox .my-image{
+	width: 54px;
+	height: 54px;
+	border-radius: 50%;
+	background-color: rgba(255,192,202,.78);
+	box-shadow: inset 0 0 0 3px rgba(255,255,255,.85), 0 4px 8px rgba(20,45,25,.12);
+}
+
+.MeBox .my-stat{
+	width: 300px;
+	padding-left: 12px;
+}
+
+.MeBox .my-stat-level,
+.MeBox .my-stat-record,
+.MeBox .my-stat-ping,
+.MeBox .my-okg,
+.MeBox .my-okg-text{
+	display: none;
+}
+
+.MeBox .my-stat-name{
+	width: 300px;
+	height: 24px;
+	padding: 0;
+	font-size: 20px;
+	font-weight: 900;
+	line-height: 24px;
+	color: #101714;
+}
+
+.MeBox .my-level{
+	position: absolute;
+	left: 72px;
+	top: 32px;
+	margin: 0;
+	width: 48px;
+	font-size: 11px;
+	color: #607266;
+	text-align: left;
+}
+
+.MeBox .my-gauge{
+	position: absolute;
+	left: 120px;
+	top: 34px;
+	width: 260px;
+	height: 14px;
+	margin: 0;
+	border-radius: 999px;
+	background: rgba(255,255,255,.72);
+	box-shadow: inset 0 0 0 2px rgba(105,219,157,.35);
+}
+
+.MeBox .my-gauge .graph-bar{
+	background: linear-gradient(90deg, #70E3A2, #80EDC4);
+}
+
+.MeBox .my-gauge-text{
+	position: absolute;
+	left: 120px;
+	top: 35px;
+	width: 260px;
+	margin: 0;
+	color: #69AF8A;
+	font-size: 10px;
+	line-height: 14px;
+}
+
+.UserListBox{
+	position: fixed;
+	right: 0;
+	top: 78px;
+	width: 270px !important;
+	height: calc(100vh - 78px) !important;
+	margin: 0;
+	border-radius: 0;
+	box-shadow: -8px 0 22px rgba(44,82,48,.08);
+	background: rgba(249,253,249,.82);
+	z-index: 4;
+}
+
+.UserListBox .product-body{
+	height: calc(100% - 32px);
+	overflow-y: auto;
+}
+
+.users-item{
+	box-sizing: border-box;
+	width: 100%;
+	height: 54px;
+	padding: 7px;
+	margin: 0 0 6px;
+	border-radius: 12px;
+	background: rgba(255,255,255,.70);
+	box-shadow: 0 2px 8px rgba(31,54,34,.06);
+}
+
+.users-image,
+.users-level{
+	width: 34px !important;
+	height: 34px !important;
+	border-radius: 50%;
+}
+
+.users-name{
+	width: 178px !important;
+	padding-top: 8px !important;
+	font-size: 13px !important;
+	font-weight: 900;
+	color: #59645D;
+}
+
+.RoomListBox{
+	position: fixed;
+	left: 260px;
+	right: 300px;
+	top: 92px;
+	height: 130px !important;
+	background: transparent;
+	box-shadow: none;
+	z-index: 1;
+}
+
+.RoomListBox .product-title{
+	display: none;
+}
+
+.RoomListBox .product-body{
+	height: 100%;
+	overflow-y: auto;
+	background: rgba(255,255,255,.18);
+	border-radius: 20px;
+}
+
+.ChatBox{
+	position: fixed;
+	right: 282px;
+	bottom: 22px;
+	width: 360px !important;
+	height: 52px !important;
+	margin: 0;
+	border-radius: 26px;
+	background: rgba(255,255,255,.76);
+	z-index: 7;
+}
+
+.ChatBox .product-title,
+.ChatBox #Chat{
+	display: none !important;
+}
+
+.ChatBox .product-body{
+	padding: 6px;
+}
+
+#Talk{
+	float: left;
+	box-sizing: border-box;
+	width: 285px;
+	height: 40px;
+	border: 0;
+	border-radius: 20px;
+	background: rgba(255,255,255,.92);
+}
+
+#ChatBtn{
+	float: left;
+	width: 58px;
+	height: 40px;
+	border: 0;
+	border-radius: 20px;
+	margin-left: 5px;
+	color: #276650;
+	font-weight: 900;
+	background: #D9F4C9;
+}
+
+.ShopBox,
+.RoomBox,
+.GameBox{
+	position: fixed;
+	left: 260px;
+	right: 300px;
+	top: 92px;
+	width: auto !important;
+	height: calc(100vh - 180px) !important;
+	z-index: 3;
+}
+
+.ShopBox .product-body,
+.RoomBox .product-body,
+.GameBox .product-body{
+	height: calc(100% - 34px);
+	overflow: auto;
+}
+
+/* Modern lobby final override */
+#Middle:before,
+#Middle:after{
+	display: none !important;
+	content: none !important;
+}
+
+#LobbyHero{
+	position: fixed;
+	left: 50%;
+	top: 50%;
+	width: 280px;
+	height: 300px;
+	transform: translate(-50%, -46%);
+	text-align: center;
+	pointer-events: none;
+	z-index: 2;
+}
+
+#LobbyHeroImage{
+	width: 214px;
+	height: 214px;
+	margin: 0 auto;
+	background-position: center !important;
+	background-size: contain !important;
+	background-repeat: no-repeat !important;
+	filter: drop-shadow(0 20px 12px rgba(39, 78, 42, .18));
+}
+
+#LobbyHeroName{
+	margin: 14px 0 0;
+	color: #161E19;
+	font-size: 20px;
+	font-weight: 900;
+	line-height: 1.2;
+	text-shadow: 0 2px 0 rgba(255, 255, 255, .75);
+}
+
+#LobbyHeroSub{
+	margin-top: 5px;
+	color: #6B7E6D;
+	font-size: 12px;
+	font-weight: 800;
+	letter-spacing: .02em;
+}
+
+.kkutu-menu{
+	left: 28px;
+	top: 50%;
+	width: 210px;
+	transform: translateY(-42%);
+	z-index: 10;
+	pointer-events: none;
+}
+
+.kkutu-menu button{
+	position: relative;
+	box-sizing: border-box;
+	pointer-events: auto;
+	cursor: pointer;
+	width: 186px !important;
+	min-width: 0 !important;
+	height: 50px;
+	margin: 0 0 12px !important;
+	padding: 0 16px 0 54px !important;
+	overflow: hidden;
+	border-radius: 25px;
+	color: #2F604F;
+	font-size: 20px;
+	line-height: 50px;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+}
+
+.kkutu-menu button:hover{
+	transform: translateX(7px);
+	box-shadow: 0 12px 24px rgba(70, 124, 74, .18);
+}
+
+.kkutu-menu button:before{
+	content: "" !important;
+	position: absolute;
+	left: 14px;
+	top: 50%;
+	width: 30px;
+	height: 30px;
+	transform: translateY(-50%);
+	background-position: center;
+	background-repeat: no-repeat;
+	background-size: contain;
+}
+
+#NewRoomBtn:before{ background-image: url('/img/kkutu/lobby-icons/wordbook.png'); }
+#QuickRoomBtn:before{ background-image: url('/img/kkutu/lobby-icons/friendly.png'); }
+#ShopBtn:before{ background-image: url('/img/kkutu/lobby-icons/storage.png'); }
+#DictionaryBtn:before{ background-image: url('/img/kkutu/lobby-icons/dictionary.png'); }
+#ReplayBtn:before{ background-image: url('/img/kkutu/lobby-icons/tutorial.png'); }
+#LeaderboardBtn:before{ background-image: url('/img/kkutu/lobby-icons/ranked.png'); }
+
+#QuickRoomBtn{
+	left: 50% !important;
+	bottom: 70px !important;
+	width: 286px !important;
+	height: 90px !important;
+	padding: 16px 22px 14px 76px !important;
+	line-height: 31px;
+	text-align: left;
+	z-index: 11;
+}
+
+#QuickRoomBtn:before{
+	left: 24px;
+	width: 42px;
+	height: 42px;
+}
+
+#QuickRoomBtn:after{
+	content: "친선전 / 한국어 끝말잇기";
+	display: block;
+	margin-top: 2px;
+	padding: 0;
+	color: #78927C;
+	font-size: 12px;
+	font-weight: 800;
+	line-height: 1.2;
+	text-align: left;
+}
+
+.RoomListBox{
+	left: 252px !important;
+	right: 300px !important;
+	top: 94px !important;
+	height: 148px !important;
+	z-index: 3;
+	pointer-events: auto;
+}
+
+.RoomListBox .product-body{
+	border: 1px solid rgba(255, 255, 255, .42);
+	background: rgba(255, 255, 255, .24);
+	box-shadow: inset 0 1px 0 rgba(255,255,255,.55);
+}
+
+.rooms-item{
+	border: 0 !important;
+	border-radius: 16px !important;
+	background: rgba(255,255,255,.86) !important;
+	box-shadow: 0 8px 18px rgba(40, 80, 45, .10);
+}
+
+.rooms-create{
+	display: flex !important;
+	align-items: center;
+	justify-content: center;
+	height: 96px !important;
+	color: #2B6D58 !important;
+	font-size: 22px !important;
+	font-weight: 900 !important;
+	cursor: pointer;
+}
+
+.rooms-create div:before{
+	content: "+";
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 34px;
+	height: 34px;
+	margin-right: 10px;
+	border-radius: 50%;
+	color: #fff;
+	background: linear-gradient(135deg, #61D695, #BFEF66);
+}
+
+.ShopBox,
+.RoomBox,
+.GameBox{
+	left: 252px !important;
+	right: 300px !important;
+	top: 94px !important;
+	height: calc(100vh - 188px) !important;
+	z-index: 5;
+}
+
+.MeBox{
+	z-index: 8;
+}
+
+.UserListBox{
+	z-index: 7;
+}
+
+.ChatBox{
+	z-index: 12;
+}
+
+.dialog{
+	overflow: hidden;
+	border: 1px solid rgba(188, 230, 202, .9) !important;
+	border-radius: 20px !important;
+	background: rgba(255, 255, 255, .94) !important;
+	box-shadow: 0 22px 70px rgba(35, 74, 48, .23) !important;
+	backdrop-filter: blur(16px);
+	color: #26322B;
+}
+
+.dialog-head{
+	height: 42px !important;
+	border: 0 !important;
+	background: linear-gradient(90deg, #D7F7DF, #F1F9C9) !important;
+}
+
+.dialog-title{
+	padding-top: 11px !important;
+	color: #23624F !important;
+	font-size: 16px !important;
+	font-weight: 900 !important;
+}
+
+.dialog-body{
+	box-sizing: border-box;
+	padding: 16px !important;
+	background: rgba(255, 255, 255, .84);
+}
+
+.dialog input,
+.dialog select,
+.dialog textarea{
+	box-sizing: border-box;
+	border: 1px solid #C6E8D0 !important;
+	border-radius: 12px !important;
+	background: #FFFFFF !important;
+	color: #26322B !important;
+}
+
+.dialog button{
+	border: 0 !important;
+	border-radius: 14px !important;
+	background: linear-gradient(135deg, #75DFA3, #DDF48D) !important;
+	color: #1F5B49 !important;
+	font-weight: 900 !important;
+	box-shadow: 0 6px 16px rgba(77, 137, 78, .16);
+}
+
+/* Lobby stability pass */
+#Intro{
+	inset: 0 !important;
+	width: 100vw !important;
+	height: 100vh !important;
+	overflow: hidden !important;
+	background: #EAF7E5 !important;
+	z-index: 30 !important;
+}
+
+#Intro img{
+	width: 100vw !important;
+	height: 100vh !important;
+	object-fit: cover !important;
+	object-position: center center !important;
+}
+
+#version{
+	color: rgba(255, 255, 255, .85);
+	z-index: 31;
+}
+
+#intro-text{
+	top: auto !important;
+	bottom: 8vh !important;
+	left: 0 !important;
+	width: 100% !important;
+	color: #FFFFFF !important;
+	font-size: 18px !important;
+	font-weight: 900 !important;
+	text-shadow: 0 2px 10px rgba(0,0,0,.55) !important;
+	z-index: 31;
+}
+
+#LobbyHero{
+	top: 47% !important;
+	transform: translate(-50%, -50%) !important;
+}
+
+#LobbyHeroImage{
+	width: 178px !important;
+	height: 178px !important;
+}
+
+#LobbyHeroName{
+	margin-top: 10px !important;
+	font-size: 19px !important;
+}
+
+#LobbyHeroSub{
+	font-size: 12px !important;
+}
+
+.kkutu-menu{
+	top: 50% !important;
+	transform: translateY(-50%) !important;
+}
+
+.kkutu-menu button:hover{
+	margin: 0 0 12px !important;
+	transform: none !important;
+	filter: brightness(1.04);
+}
+
+.kkutu-menu button:active{
+	transform: translateY(1px) !important;
+}
+
+#QuickRoomBtn{
+	left: 50% !important;
+	bottom: 56px !important;
+	padding: 15px 22px 14px 76px !important;
+	font-size: 27px !important;
+	transform: translateX(-50%) !important;
+}
+
+#QuickRoomBtn:hover{
+	transform: translateX(-50%) !important;
+	filter: brightness(1.04);
+}
+
+#QuickRoomBtn:active{
+	transform: translateX(-50%) translateY(1px) !important;
+}
+
+#QuickRoomBtn:after{
+	content: "친선전 / 한국어 끝말잇기" !important;
+}
+
+.RoomListBox{
+	top: 84px !important;
+	height: 260px !important;
+	border: 1px solid rgba(176, 224, 189, .7);
+	border-radius: 22px !important;
+	background: rgba(255, 255, 255, .68) !important;
+	box-shadow: 0 18px 48px rgba(55, 102, 63, .16) !important;
+	backdrop-filter: blur(14px);
+}
+
+.RoomListBox .product-title{
+	display: block !important;
+	height: 34px !important;
+	padding: 11px 16px 0 !important;
+	border-radius: 22px 22px 0 0 !important;
+	color: #24624F !important;
+	font-size: 16px !important;
+	background: linear-gradient(90deg, #D6F8E2, #F2FAC8) !important;
+}
+
+.RoomListBox .product-body{
+	height: calc(100% - 45px) !important;
+	padding: 12px !important;
+	border: 0 !important;
+	border-radius: 0 0 22px 22px !important;
+	background: rgba(255,255,255,.5) !important;
+	overflow-y: auto !important;
+}
+
+.rooms-create{
+	height: 168px !important;
+	border: 2px dashed rgba(94, 188, 127, .45) !important;
+	border-radius: 18px !important;
+	background: rgba(255,255,255,.72) !important;
+}
+
+.rooms-create div{
+	color: #276A54;
+}
+
+.ShopBox,
+.RoomBox,
+.GameBox{
+	top: 84px !important;
+}
+
+#QuickDiag{
+	width: 420px !important;
+	height: 320px !important;
+}
+
+#QuickDiag .dialog-head{
+	background: linear-gradient(90deg, #D8F9E1, #F3FBC9) !important;
+}
+
+#QuickDiag .dialog-body{
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	align-items: center;
+	justify-content: center;
+	font-size: 15px;
+}
+
+#QuickDiag select{
+	width: 260px !important;
+	height: 34px !important;
+	padding: 0 10px !important;
+}
+
+#QuickDiag input[type='checkbox']{
+	width: 16px !important;
+	height: 16px !important;
+	margin-right: 6px !important;
+	vertical-align: middle;
+}
+
+#RoomDiag{
+	height: auto !important;
+	max-height: calc(100vh - 36px) !important;
+}
+
+#RoomDiag .dialog-body{
+	max-height: calc(100vh - 90px) !important;
+	overflow-x: hidden !important;
+	overflow-y: auto !important;
+}
+
+#RoomDiag .tail-button{
+	position: sticky;
+	bottom: -16px;
+	margin: 12px -16px -16px;
+	padding: 12px 16px;
+	background: rgba(255, 255, 255, .92);
+	backdrop-filter: blur(10px);
+}
+
+@media (max-width: 900px){
+	body{
+		overflow: hidden !important;
+	}
+
+	.MeBox{
+		left: 10px !important;
+		top: 10px !important;
+		width: calc(100vw - 20px) !important;
+	}
+
+	.MeBox .my-stat-name{
+		width: 180px !important;
+		font-size: 16px !important;
+	}
+
+	.MeBox .my-gauge{
+		width: calc(100vw - 150px) !important;
+	}
+
+	.kkutu-menu{
+		left: 12px !important;
+		top: auto !important;
+		bottom: 18px !important;
+		width: 136px !important;
+		transform: none !important;
+	}
+
+	.kkutu-menu button{
+		width: 132px !important;
+		height: 42px !important;
+		margin-bottom: 8px !important;
+		padding-left: 42px !important;
+		border-radius: 22px !important;
+		font-size: 15px !important;
+		line-height: 42px !important;
+		box-shadow: 0 7px 16px rgba(70, 124, 74, .14);
+	}
+
+	.kkutu-menu button:before{
+		left: 10px !important;
+		width: 24px !important;
+		height: 24px !important;
+	}
+
+	.kkutu-menu button:hover{
+		transform: none !important;
+	}
+
+	#LobbyHero{
+		left: 68% !important;
+		top: 39% !important;
+		width: 170px !important;
+		height: 210px !important;
+		transform: translate(-50%, -50%) !important;
+	}
+
+	#LobbyHeroImage{
+		width: 128px !important;
+		height: 128px !important;
+	}
+
+	#LobbyHeroName{
+		margin-top: 8px !important;
+		font-size: 15px !important;
+	}
+
+	#LobbyHeroSub{
+		font-size: 11px !important;
+	}
+
+	#QuickRoomBtn{
+		left: 68% !important;
+		bottom: 42px !important;
+		width: 186px !important;
+		height: 72px !important;
+		padding: 12px 14px 10px 56px !important;
+		border-width: 5px !important;
+		border-radius: 16px !important;
+		font-size: 20px !important;
+		line-height: 23px !important;
+		transform: translateX(-50%) !important;
+	}
+
+	#QuickRoomBtn:before{
+		left: 16px !important;
+		width: 32px !important;
+		height: 32px !important;
+	}
+
+	#QuickRoomBtn:after{
+		font-size: 10px !important;
+	}
+
+	.RoomListBox,
+	.ShopBox,
+	.RoomBox,
+	.GameBox{
+		left: 12px !important;
+		right: 12px !important;
+		top: 78px !important;
+		width: auto !important;
+		height: calc(100vh - 110px) !important;
+		z-index: 20 !important;
+	}
+
+	.RoomListBox{
+		height: 300px !important;
+	}
+
+	.UserListBox{
+		display: none !important;
+	}
+
+	.ChatBox{
+		display: none !important;
+	}
+
+	#QuickDiag{
+		width: calc(100vw - 28px) !important;
+		left: 14px !important;
+	}
+
+	#RoomDiag{
+		width: calc(100vw - 28px) !important;
+		left: 14px !important;
+		top: 14px !important;
+	}
+}
+
+/* Stable lobby controls; fixed actions live outside the transformed menu. */
+.kkutu-menu { display:flex !important; flex-direction:column; gap:14px; max-height:calc(100vh - 190px); overflow-y:auto; overflow-x:hidden; padding:8px; }
+.kkutu-menu button, .kkutu-menu button:hover, .kkutu-menu button:active {
+ flex:0 0 50px; margin:0 !important; transform:none !important; transition:none !important;
+ animation:none !important; filter:none !important; box-shadow:none !important;
+}
+#QuickRoomBtn, #QuickRoomBtn:hover, #QuickRoomBtn:active {
+ position:fixed !important; top:auto !important; right:auto !important; left:50% !important;
+ bottom:24px !important; transform:translateX(-50%) !important; margin:0 !important;
+ width:286px !important; max-width:calc(100vw - 32px); height:90px !important; box-sizing:border-box;
+ transition:none !important; animation:none !important; filter:none !important; cursor:pointer;
+ background:linear-gradient(135deg,#cbf7d8,#f0fab9) !important;
+}
+#QuickRoomBtn:before { content:'' !important; position:absolute; top:50%; transform:translateY(-50%); background-size:contain; background-repeat:no-repeat; }
+#QuickRoomBtn:after { content:'2인 매칭 / 낱말집 투표' !important; }
+.detached-menu, .detached-menu:hover { transition:none !important; animation:none !important; transform:none !important; }
+#MatchOverlay { position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; background:rgba(25,50,37,.45); padding:20px; box-sizing:border-box; }
+#MatchOverlay section { width:440px; max-width:100%; padding:28px; border-radius:24px; background:#f9fff7; color:#285e48; text-align:center; box-sizing:border-box; }
+#MatchOverlay h2 { margin:0 0 22px; font-size:26px; }
+#MatchOverlay p { margin:16px 0; line-height:1.6; }
+#MatchVotes { display:flex; gap:10px; justify-content:center; }
+#MatchOverlay button { float:none; height:auto; padding:12px 20px; border:1px solid #a5d8b4; border-radius:12px; background:#e0f5de; color:#24583d; cursor:pointer; transition:none; }
+#MatchVotes .selected { background:#33845b; color:white; }
+#MatchHint { font-size:13px; }
+#RoomDiag { width:480px !important; }
+.dialog .dialog-bar { float:none; display:flex; align-items:center; flex-wrap:wrap; gap:8px; width:100%; height:auto !important; margin:8px 0; box-sizing:border-box; }
+.dialog .dialog-bar > h4 { float:none; flex:0 0 100px; height:auto !important; margin:0; padding:0; text-align:left; line-height:1.5; }
+.dialog .dialog-bar > h4:empty { display:none; }
+.dialog .dialog-bar input:not([type='checkbox']):not([type='radio']), .dialog .dialog-bar select { float:none; flex:1 1 140px; min-width:0; width:auto; height:36px; padding:6px 10px; font-size:14px; line-height:22px; }
+.dialog #game-mode-expl { flex:1 1 100%; width:100% !important; color:#59715f; font-size:12px !important; }
+.dialog .tail-button { justify-content:flex-end; }
+.dialog .closeBtn { position:absolute; top:8px; right:8px; width:28px; height:28px; margin:0; background:#fff; border-radius:50%; color:#3f6652; cursor:pointer; }
+.dialog .closeBtn:before { content:'×'; display:block; line-height:28px; text-align:center; font-size:22px; }
+.ChatBox .product-body { display:flex; align-items:center; gap:6px; width:100%; height:100% !important; padding:6px !important; box-sizing:border-box; }
+.ChatBox #Talk { flex:1 1 auto; width:0 !important; min-width:0; margin:0 !important; height:36px; }
+.ChatBox #ChatBtn { flex:0 0 58px; margin:0 !important; height:36px; }
+.panel-close { position:absolute; right:14px; top:10px; z-index:3; width:32px; height:32px; border:0; border-radius:50%; background:#fff; color:#326451; font-size:24px; cursor:pointer; }
+.RoomListBox, .ShopBox { z-index:40 !important; background:#f6fff3 !important; }
+body.modern-classic .GameBox { left:220px !important; right:24px !important; top:84px !important; bottom:88px !important; height:auto !important; background:rgba(246,255,243,.94) !important; border:1px solid #cce6ca; }
+body.modern-classic .GameBox .product-body { position:relative; width:100% !important; height:calc(100% - 34px) !important; min-height:480px; overflow:auto; box-sizing:border-box; }
+body.modern-classic .game-head { float:none; position:relative; width:100%; height:42%; min-height:210px; }
+body.modern-classic .jjoriping { position:absolute; top:44px; left:50%; transform:translateX(-50%); width:min(640px,85%); }
+body.modern-classic .jjoObj { display:none; }
+body.modern-classic .jjoDisplayBar { margin:0; padding:18px; width:100%; height:auto; border:1px solid #cce6ca; border-radius:22px; background:#fff; box-sizing:border-box; }
+body.modern-classic .jjo-display { width:100% !important; height:auto; min-height:60px; box-sizing:border-box; background:transparent; color:#245e4a; font-size:clamp(26px,3vw,48px); line-height:1.35; text-align:center; }
+body.modern-classic .jjo-turn-time, body.modern-classic .jjo-round-time { width:100% !important; margin:5px 0; border-radius:8px; overflow:hidden; }
+body.modern-classic .chain { position:absolute; top:8px; left:20px; margin:0; color:#387755; }
+body.modern-classic .rounds { position:absolute; top:8px; right:20px; margin:0; width:auto; }
+body.modern-classic .history-holder { position:absolute; top:170px; left:5%; width:90%; margin:0; }
+body.modern-classic .history { width:100%; }
+body.modern-classic .items { position:absolute; left:14px; top:5px; width:auto; height:auto; margin:0; padding:0; background:none; }
+body.modern-classic .game-body { float:none; display:flex; justify-content:center; gap:14px; width:100% !important; height:auto !important; margin:0; padding:100px 16px 18px; box-sizing:border-box; flex-wrap:wrap; }
+body.modern-classic .game-user, body.modern-classic .game-user-current { float:none; flex:0 0 138px; margin:0 !important; height:190px !important; border:2px solid #d3e8d6; border-radius:20px; background:#fff; box-shadow:none; box-sizing:border-box; transition:none; animation:none; }
+body.modern-classic .game-user-current { border:3px solid #5abb89; background:#e1fae9; }
+body.modern-classic .game-user-image { position:relative; float:none; margin:6px auto; }
+body.modern-classic .game-user-title { width:100%; }
+body.modern-classic .game-user-name { width:100px; }
+body.modern-classic .game-user-score { display:flex; justify-content:center; box-sizing:border-box; width:100%; color:#338660; }
+body.modern-classic .game-input { position:absolute; top:42%; left:50%; transform:translateX(-50%); width:min(620px,85%); height:72px; padding:6px; box-sizing:border-box; border:2px solid #a5dec0; border-radius:18px; background:#d9f5df; z-index:3; }
+body.modern-classic #game-input { width:100% !important; height:100%; border:0; border-radius:12px; background:white; color:#255f49; text-align:center; font-size:26px; box-sizing:border-box; }
+body.modern-classic .ChatBox { left:220px !important; right:24px !important; bottom:18px !important; width:auto !important; height:52px !important; }
+@media(max-width:900px) {
+ body.modern-classic .GameBox { left:12px !important; right:12px !important; top:130px !important; }
+ body.modern-classic .kkutu-menu { top:80px !important; left:12px !important; right:12px; width:auto !important; transform:none !important; flex-direction:row; max-height:48px; padding:0; }
+ body.modern-classic .kkutu-menu button { flex:0 0 116px; height:42px; line-height:42px; font-size:14px !important; }
+ body.modern-classic .ChatBox { left:12px !important; right:12px !important; }
+}
+#LobbyHeroImage .moremies { left:0 !important; top:0 !important; }
+.dialog { position:fixed !important; z-index:1000 !important; max-width:calc(100vw - 24px) !important; max-height:calc(100vh - 24px) !important; overflow-y:auto !important; box-sizing:border-box; }
+.dialog.dialog-front { z-index:1100 !important; }
+.dialog-head { position:sticky; top:0; z-index:2; }
+.dialog .dialog-body { max-height:calc(100vh - 95px); overflow-y:auto; overflow-x:hidden; }
+.dialog .tail-button { position:sticky; bottom:0; background:#fff; padding:12px; z-index:2; }
+#Loading { z-index:1200 !important; }
+#Yell, #Balloons { z-index:1300 !important; }
+body[data-game-view='for-lobby'] .ChatBox { right:18px !important; width:242px !important; bottom:18px !important; }
+body[data-game-view='for-lobby'] #LobbyHero { left:calc((100vw - 260px + 230px) / 2) !important; }
+@media(max-width:900px) {
+ .kkutu-menu { left:8px !important; width:164px !important; gap:10px; }
+ .kkutu-menu button { width:150px !important; font-size:16px !important; }
+ body[data-game-view='for-lobby'] .ChatBox { display:none !important; }
+ body[data-game-view='for-lobby'] #LobbyHero { left:calc(50% + 70px) !important; }
+}
+
+/* Reuse the original word board, with independent word and chat inputs. */
+body.modern-classic .GameBox .jjoriping { width:500px; max-width:90%; }
+body.modern-classic .GameBox .jjoObj { display:inline; }
+body.modern-classic .GameBox .jjoDisplayBar { padding:20px 5px 5px; border:2px solid #000; border-radius:0 0 10px 10px; margin-top:-10px; width:100%; background:#DEAF56; }
+body.modern-classic .GameBox .jjo-display { min-height:39px; height:auto; padding:8px 5px; border-radius:10px 10px 0 0; font-size:20px; line-height:23px; color:#eee; background:rgba(0,0,0,.7); }
+body.modern-classic .GameBox .jjo-turn-time, body.modern-classic .GameBox .jjo-round-time { margin:0; border-radius:0; height:20px; }
+body.modern-classic .GameBox { bottom:206px !important; }
+body[data-game-view] .ChatBox { position:fixed; display:block !important; left:18px !important; right:auto !important; bottom:14px !important; width:340px !important; max-width:calc(100vw - 36px); height:178px !important; border-radius:14px; z-index:30; }
+body[data-game-view] .ChatBox .product-title { display:block !important; height:24px; padding:4px 10px; box-sizing:border-box; }
+body[data-game-view] .ChatBox .product-body { display:grid; grid-template-columns:minmax(0,1fr) 58px; grid-template-rows:minmax(0,1fr) 36px; gap:6px; height:calc(100% - 24px) !important; }
+body[data-game-view] .ChatBox #Chat { display:block !important; grid-column:1 / -1; width:100% !important; height:100% !important; overflow-y:auto; min-height:0; color:#293d31; }
+body[data-game-view] .ChatBox #Talk { width:100% !important; box-sizing:border-box; }
+.game-input #game-input { padding-right:74px; box-sizing:border-box; }
+.game-input #GameWordSubmit { position:absolute; right:10px; top:50%; transform:translateY(-50%); width:60px; height:38px; margin:0; border:0; border-radius:10px; background:#bcebc6; color:#255f49; font-weight:bold; cursor:pointer; }
+@media(max-width:900px) {
+ body[data-game-view] .ChatBox { left:8px !important; bottom:8px !important; width:300px !important; height:140px !important; }
+ body.modern-classic .GameBox { bottom:156px !important; }
+ body.modern-classic .GameBox .jjoEyeR { left:calc(100% - 135px); }
+ body.modern-classic .GameBox .jjoNose { left:calc(50% - 69px); }
+}

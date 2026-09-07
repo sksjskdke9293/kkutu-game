@@ -1,0 +1,4 @@
+.git
+Server/node_modules
+Server/lib/node_modules
+KKUTU_ERROR.log

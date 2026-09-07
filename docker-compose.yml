@@ -1,0 +1,119 @@
+name: kkutu
+
+x-app-build: &app-build
+  context: .
+  dockerfile: Dockerfile
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: psql.Dockerfile
+    image: kkutu-db:local
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the private .env file}
+      POSTGRES_DB: main
+    command:
+      - postgres
+      - -c
+      - shared_buffers=64MB
+      - -c
+      - work_mem=2MB
+      - -c
+      - maintenance_work_mem=32MB
+      - -c
+      - max_connections=30
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d main && psql -U postgres -d main -tAc \"SELECT 1 FROM pg_constraint WHERE conname='users_key'\" | grep -qx 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 180
+      start_period: 30s
+    logging: *default-logging
+
+  game:
+    build: *app-build
+    image: kkutu-app:local
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["node", "/app/Server/lib/Game/cluster.js", "0", "1"]
+    environment:
+      NODE_OPTIONS: --max-old-space-size=256
+    expose:
+      - "8080"
+      - "8496"
+    healthcheck:
+      test: ["CMD", "node", "-e", "const net=require('net');const s=net.connect(8080,'127.0.0.1');const t=setTimeout(()=>process.exit(1),2000);s.once('connect',()=>{clearTimeout(t);s.destroy();process.exit(0)});s.once('error',()=>process.exit(1));"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 20s
+    logging: *default-logging
+
+  web:
+    build: *app-build
+    image: kkutu-app:local
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      game:
+        condition: service_healthy
+    command: ["node", "/app/Server/lib/Web/cluster.js", "1"]
+    environment:
+      NODE_OPTIONS: --max-old-space-size=256
+      PUBLIC_GAME_HOST: kkutugame.kro.kr
+      PUBLIC_GAME_PROTOCOL: wss
+    expose:
+      - "80"
+    volumes:
+      - kkutu_data:/kkutu
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1));"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 20s
+    logging: *default-logging
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+      game:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+      - "8496:8496"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    logging: *default-logging
+
+volumes:
+  kkutu_data:
+  db_data:
+  caddy_data:
+  caddy_config:
