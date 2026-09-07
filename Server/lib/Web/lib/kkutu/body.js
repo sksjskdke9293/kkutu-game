@@ -3238,26 +3238,21 @@ function drawObtain(data){
 	$("#obtain-image").css('background-image', "url(" + iImage(data.key) + ")");
 	$("#obtain-name").html(iName(data.key));
 }
-var moremiBlinkTimer;
-var MOREMI_BASE_IMAGE = "/img/custom/moremi-yellow.png?v=20260907-blink-2";
-var MOREMI_BLINK_IMAGE = "/img/custom/moremi-yellow-blink.png?v=20260907-blink-2";
-function blinkMoremi(){
+var moremiFaceTimer;
+var moremiFaceAlternate = false;
+var MOREMI_BASE_IMAGE = "/img/custom/moremi-yellow.png?v=20260907-face-3";
+var MOREMI_BLINK_IMAGE = "/img/custom/moremi-yellow-blink.png?v=20260907-face-3";
+function switchMoremiFace(){
+	moremiFaceAlternate = !moremiFaceAlternate;
 	$('.moremi-body[data-moremi-base]').each(function(){
 		var $body = $(this);
 		var baseImage = $body.attr('data-moremi-base');
-
-		if(!baseImage || $body.attr('data-moremi-blinking') == 'true') return;
-		$body.attr('data-moremi-blinking', 'true').attr('src', MOREMI_BLINK_IMAGE);
-		_setTimeout(function(){
-			if($body.attr('data-moremi-blinking') == 'true'){
-				$body.removeAttr('data-moremi-blinking').attr('src', baseImage);
-			}
-		}, 200);
+		if(baseImage) $body.attr('src', moremiFaceAlternate ? MOREMI_BLINK_IMAGE : baseImage);
 	});
 }
 function ensureMoremiBlink(){
-	if(moremiBlinkTimer) return;
-	moremiBlinkTimer = _setInterval(blinkMoremi, 2000);
+	if(moremiFaceTimer) return;
+	moremiFaceTimer = _setInterval(switchMoremiFace, 1500);
 }
 function renderMoremi(target, equip){
 	var $obj = $(target).empty();
