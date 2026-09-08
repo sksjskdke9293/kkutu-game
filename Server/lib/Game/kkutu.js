@@ -120,6 +120,7 @@ exports.Robot = function(target, place, level){
 	
 	my.id = target + place + Math.floor(Math.random() * 1000000000);
 	my.robot = true;
+	my.profile = { title: "끄투 봇" };
 	my.game = {};
 	my.data = {};
 	my.place = place;
@@ -161,7 +162,7 @@ exports.Robot = function(target, place, level){
 		}
 	};
 	my.chat = function(msg, code){
-		my.publish('chat', { value: msg });
+		my.publish('chat', { profile: my.profile, value: msg });
 	};
 	my.setLevel(level);
 	my.setTeam(0);
@@ -878,7 +879,9 @@ exports.Room = function(room, channel){
 		if(!my.rule.ai){
 			return caller.sendError(415);
 		}
-		my.players.push(new exports.Robot(null, my.id, 4));
+		var robot = new exports.Robot(null, my.id, 4);
+		my.players.push(robot);
+		robot.chat("안녕하세요!");
 		my.export();
 	};
 	my.setAI = function(target, level, team){
@@ -903,6 +906,7 @@ exports.Room = function(room, channel){
 			if(!my.players[i]) continue;
 			if(!my.players[i].robot) continue;
 			if(!target || my.players[i].id == target){
+				my.players[i].chat("ㅠㅠㅠㅠ");
 				if(my.gaming){
 					j = my.game.seq.indexOf(my.players[i]);
 					if(j != -1) my.game.seq.splice(j, 1);
@@ -1270,6 +1274,12 @@ exports.Room = function(room, channel){
 			users[o.id] = o.getData();
 			
 			suv.push(o.flush(true));
+		}
+		for(i in my.game.seq){
+			o = my.game.seq[i];
+			if(o && o.robot && res.length && Number(o.game.score || 0) < Number(res[0].score || 0)){
+				o.chat("ㅠㅠㅠㅠ 졌다");
+			}
 		}
 		Lizard.all(suv).then(function(uds){
 			var o = {};

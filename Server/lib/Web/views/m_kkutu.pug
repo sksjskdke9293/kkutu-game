@@ -41,13 +41,13 @@ block Subject
 	title 끄투게임
 	
 block JS
-	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260908-room-controls-18')
+	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260908-bot-chat-19')
 	script(src='https://www.google.com/recaptcha/api.js')
 	
 block CSS
 	link(rel='stylesheet', href='/css/in_game_kkutu_shop.css?v=20260907-mobile-11')
 	link(rel='stylesheet', href='/css/play-shell.css?v=20260906-ui-audit-4')
-	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260908-room-controls-11')
+	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260908-bot-chat-12')
 	link(rel='stylesheet', href='/css/settings-ui.css?v=20260906-settings-1')
 	
 block Jungle
@@ -74,8 +74,6 @@ block Middle
 		//- img#intro-start(src='/img/kkutu/intro_start.gif')
 		div#version= VERSION
 		div#intro-text= L('LOADING')
-	div#GameMaintenanceNotice(role='status', aria-live='polite')
-		| 현재 서버 점검 및 업데이트가 진행중 입니다. 자주 재접속될 가능성이 높습니다.
 	div.kkutu-menu
 		button#HelpBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #BBBBBB;')!= L('help')
 		button#SettingBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #CCCCCC;')!= L('settings')
@@ -364,7 +362,7 @@ block Middle
 			div.expl.result-me-expl
 		div.dialog-bar.tail-button
 			button#result-ok= L('OK')
-			button#result-save= L('saveReplay')
+			button#result-save 방금 게임 리플레이 저장
 	+Dialog('DictionaryDiag', 300, 300, L('dict'))
 		div.dialog-bar
 			h4= L('wpHere')
