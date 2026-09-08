@@ -1193,7 +1193,7 @@ function addonNickname($R, o){
 	addDeveloperBadge($name.length ? $name : $R, o.profile);
 }
 function addDeveloperBadge($name, profile){
-	if(!profile || profile.id !== 'local:admin' || profile.authType !== 'local' || profile.developer !== true) return;
+	if(!profile || profile.authType !== 'local' || profile.developer !== true) return;
 	$name.each(function(){
 		if(!$(this).children('.moremi-developer-badge').length) $(this).append($('<img>').attr({src:'/img/custom/moremi-yellow.png?v=20260906-autumn-1',alt:'모레미 개발자',title:'개발자'}).addClass('moremi-developer-badge'));
 	});
@@ -1919,7 +1919,7 @@ function requestProfile(id){
 	$stage.dialog.profileFriendAdd.hide();
 	$stage.dialog.profileHandover.hide();
 	
-	if($data.id == id) $stage.dialog.profileDress.show();
+	if($data.id == id) $stage.dialog.profileDress.text('보관함').show();
 	else if(!o.robot){
 		$stage.dialog.profileShut.show();
 		$stage.dialog.profileWhisper.show();

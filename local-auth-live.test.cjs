@@ -43,7 +43,7 @@ async function gameProfile(client){
  if(process.env.KKUTU_ADMIN_PASSWORD){
   const admin=new Client();await admin.session();assert.equal((await admin.request('/account/login',{username:'admin',password:process.env.KKUTU_ADMIN_PASSWORD})).status,200);
   const s=await admin.session();assert.equal(s.user.nickname,'모레미');assert.equal(s.user.developer,true);
-  const p=await gameProfile(admin);assert.equal(p.id,'local:admin');assert.equal(p.profile.developer,true);
+   const p=await gameProfile(admin);assert.ok(p.id);assert.equal(p.profile.developer,true);
   await admin.request('/account/logout',{});
  }
  console.log('PASS: CSRF, signup, duplicates, reserved nickname, login, game nickname, developer identity, session restore, logout and legacy bypass blocked');

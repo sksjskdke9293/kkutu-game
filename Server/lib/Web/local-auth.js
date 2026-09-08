@@ -72,7 +72,8 @@ async function bootstrap(){
  if(!fs.existsSync(file))return;
  const seed=JSON.parse(fs.readFileSync(file,'utf8'));
  if(!/^[a-f0-9]{32}:[a-f0-9]{128}$/.test(seed.passwordHash))throw Error('Invalid administrator seed');
- await pool.query('INSERT INTO local_accounts(username,user_id,nickname,password_hash,developer,created_at) VALUES($1,$2,$3,$4,true,$5) ON CONFLICT(username) DO NOTHING',['admin','local:admin','모레미',seed.passwordHash,Date.now()]);
+ const userId='local:'+crypto.createHash('sha256').update(seed.passwordHash).digest('hex').slice(0,32);
+ await pool.query('INSERT INTO local_accounts(username,user_id,nickname,password_hash,developer,created_at) VALUES($1,$2,$3,$4,true,$5) ON CONFLICT(username) DO NOTHING',['admin',userId,'모레미',seed.passwordHash,Date.now()]);
 }
 const boot=bootstrap();boot.catch(()=>console.error('Administrator initialization failed'));
 function routes(app){

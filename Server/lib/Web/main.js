@@ -238,7 +238,7 @@ Server.get("/", function(req, res){
 	function onFinish($doc){
 		var id = req.session.id;
 		var profile = $doc && $doc.profile;
-		var isAdmin = !!profile && (GLOBAL.ADMIN.indexOf(profile.id) !== -1 || (profile.id === 'local:admin' && profile.authType === 'local' && profile.developer === true));
+		var isAdmin = !!profile && (GLOBAL.ADMIN.indexOf(profile.id) !== -1 || (profile.authType === 'local' && profile.developer === true));
 
 		if($doc){
 			req.session.profile = $doc.profile;

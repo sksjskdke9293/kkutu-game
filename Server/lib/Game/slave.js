@@ -131,7 +131,7 @@ Server.on('connection', function(socket, info){
 	}
 	MainDB.session.findOne([ '_id', key ]).limit([ 'profile', true ]).on(function($body){
 		$c = new KKuTu.Client(socket, $body ? $body.profile : null, key);
-		$c.admin = GLOBAL.ADMIN.indexOf($c.id) != -1 || ($c.id === 'local:admin' && $c.profile.authType === 'local' && $c.profile.developer === true);
+		$c.admin = GLOBAL.ADMIN.indexOf($c.id) != -1 || !!($c.profile && $c.profile.authType === 'local' && $c.profile.developer === true);
 		
 		/* Enhanced User Block System [S] */
 		$c.remoteAddress = GLOBAL.USER_BLOCK_OPTIONS.USE_X_FORWARDED_FOR ? info.connection.remoteAddress : (info.headers['x-forwarded-for'] || info.connection.remoteAddress);

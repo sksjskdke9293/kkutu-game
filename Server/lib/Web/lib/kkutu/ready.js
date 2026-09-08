@@ -964,6 +964,7 @@ $(document).ready(function(){
 		// alert(L['error_555']);
 		if($data.guest) return fail(421);
 		if($data._gaming) return fail(438);
+		$stage.dialog.dress.find('.dialog-title').text('보관함');
 		if(showDialog($stage.dialog.dress)) $.get("/box", function(res){
 			if(res.error) return fail(res.error);
 			
