@@ -2065,6 +2065,8 @@ body[data-game-view='for-normal'] #RoomStartAction { display:none !important; }
 body[data-game-view='for-gaming'] .GameBox .chain { display:none !important; }
 @font-face { font-family:'DungGeunMo'; src:url('/media/DungGeunMo.ttf') format('truetype'); font-display:swap; }
 body.dunggeunmo-font, body.dunggeunmo-font input, body.dunggeunmo-font button { font-family:'DungGeunMo', sans-serif !important; }
+.jjo-display.dunggeunmo-font, #game-display.dunggeunmo-font, .game-display.dunggeunmo-font, .display.dunggeunmo-font { font-family:'DungGeunMo', sans-serif !important; }
+.font-dunggeunmo-preview { display:flex; align-items:center; justify-content:center; background:#29426b; color:#fff; font-family:'DungGeunMo', sans-serif !important; font-size:16px; }
 .ShopBox .product-body { padding:28px !important; box-sizing:border-box; }
 .shop-welcome { margin-bottom:22px; color:#245942; font-size:25px; font-weight:900; }
 .shop-font-card { display:flex; gap:22px; align-items:center; max-width:650px; padding:22px; border-radius:20px; background:#fff; box-shadow:0 10px 28px rgba(48,93,64,.15); }

@@ -328,6 +328,7 @@ exports.submit = function(client, text, hintUsed){
 					mean: $doc.mean,
 					theme: $doc.theme,
 					wc: $doc.type,
+					font: client.equip && client.equip.font_dunggeunmo ? 'dunggeunmo' : undefined,
 					score: score,
 					bonus: (my.game.mission === true) ? score - Math.floor(my.getScore(text, t, true) * (hintUsed === true ? 0.5 : 1)) : 0,
 					hintUsed: hintUsed === true,

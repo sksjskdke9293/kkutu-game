@@ -349,7 +349,7 @@ function onMessage(data){
 			$data._okg = data.okg;
 			$data._gaming = false;
 			$data.box = data.box;
-			$('body').toggleClass('dunggeunmo-font', !!($data.box && $data.box.font_dunggeunmo));
+			$('body').removeClass('dunggeunmo-font');
 			if(data.test) alert(L['welcomeTestServer']);
 			if($data._reconnectRoomId !== undefined){
 				addTimeout(function(){
@@ -1546,7 +1546,10 @@ function renderGoods($target, preId, filter, equip, onClick){
 	for(i in equip){
 		if(!$data.box.hasOwnProperty(equip[i])) $data.box[equip[i]] = { value: 0 };
 	}
-	for(i in $data.box) list.push({ key: i, obj: iGoods(i), value: $data.box[i] });
+	for(i in $data.box){
+		obj = iGoods(i);
+		if(obj) list.push({ key: i, obj: obj, value: $data.box[i] });
+	}
 	list.sort(function(a, b){
 		return (a.obj.name < b.obj.name) ? -1 : 1;
 	});
@@ -1618,6 +1621,27 @@ function drawMyGoods(avGroup){
 			});
 		}
 	});
+	if($data.box && $data.box.font_dunggeunmo){
+		var equippedFont = !!equip.font_dunggeunmo;
+		var $fontItem = $("<div>").addClass("dress-item font-dunggeunmo-item" + (equippedFont ? " dress-equipped" : ""));
+		var $fontExpl = $("<div>").addClass("dress-expl");
+		$fontItem.append($("<div>").addClass("dress-item-image font-dunggeunmo-preview").text("끄투게임"));
+		$fontExpl.append($("<div>").addClass("dress-item-title").text("둥근모 글꼴" + (equippedFont ? " (장착됨)" : "")));
+		$fontExpl.append($("<div>").addClass("dress-item-group").text("글꼴"));
+		$fontExpl.append($("<div>").addClass("dress-item-expl").text("게임에서 써지는 글씨의 폰트를 바꿔줍니다."));
+		$fontItem.append($fontExpl).on('click', function(){
+			$.post('/font/dunggeunmo/equip', function(res){
+					if(res.error) return fail(res.error);
+					$data.box = res.box;
+					if(res.equipped) equip.font_dunggeunmo = true;
+					else delete equip.font_dunggeunmo;
+					notice(res.equipped ? '둥근모 글꼴을 장착했습니다.' : '둥근모 글꼴을 해제했습니다.');
+					drawMyDress($data._avGroup);
+					send('refresh');
+			});
+		});
+		$("#dress-goods").prepend($fontItem);
+	}
 }
 function requestEquip(id, isLeft){
 	var my = $data.users[$data.id];
@@ -2636,7 +2660,7 @@ function updateWordMeaning(text, mean, theme){
 		$panel.toggleClass("is-empty", !fetched);
 	});
 }
-function pushDisplay(text, mean, theme, wc){
+function pushDisplay(text, mean, theme, wc, font){
 	var len;
 	var mode = MODE[$data.room.mode];
 	var isKKT = mode == "KKT";
@@ -2648,7 +2672,7 @@ function pushDisplay(text, mean, theme, wc){
 	var tick = $data.turnTime / 96;
 	var sg = $data.turnTime / 12;
 	
-	$stage.game.display.empty();
+	$stage.game.display.empty().toggleClass('dunggeunmo-font', font === 'dunggeunmo');
 	updateWordMeaning(text, mean, theme);
 	if(beat){
 		ta = 'As' + $data._speed;

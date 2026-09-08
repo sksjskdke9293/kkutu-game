@@ -30,7 +30,7 @@ $lib.Classic.roundReady = function(data){
 	$data._hintPending = false;
 	$('#TurnHint').empty();
 	$data._roundTime = $data.room.time * 1000;
-	$stage.game.display.html(getCharText(data.char, data.subChar));
+	$stage.game.display.removeClass('dunggeunmo-font').html(getCharText(data.char, data.subChar));
 	$stage.game.chain.show().html($data.chain = 0);
 	if($data.room.opts.mission){
 		$stage.game.items.show().css('opacity', 1).html($data.mission = data.mission);
@@ -54,7 +54,7 @@ $lib.Classic.turnStart = function(data){
 	if($data._tid.robot) $data._tid = $data._tid.id;
 	data.id = $data._tid;
 	
-	$stage.game.display.html($data._char = getCharText(data.char, data.subChar, data.wordLength));
+	$stage.game.display.removeClass('dunggeunmo-font').html($data._char = getCharText(data.char, data.subChar, data.wordLength));
 	$("#game-user-"+data.id).addClass("game-user-current");
 	if(!$data._replay){
 		$data._wordInputMode = data.id == $data.id ? 'answer' : 'hint';
@@ -121,7 +121,7 @@ $lib.Classic.turnEnd = function(id, data){
 			$('#GameWordSubmit').text('저장');
 		}
 		$stage.game.chain.html(++$data.chain);
-		pushDisplay(data.value, data.mean, data.theme, data.wc);
+		pushDisplay(data.value, data.mean, data.theme, data.wc, data.font);
 	}else{
 		$data._wordInputMode = 'waiting';
 		checkFailCombo(id);

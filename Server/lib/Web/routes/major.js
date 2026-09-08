@@ -163,15 +163,28 @@ Server.post("/buy/:id", function(req, res){
 Server.post("/buy-font/dunggeunmo", function(req, res){
 	if(!req.session.profile) return res.json({ error: 423 });
 	var uid = req.session.profile.id;
-	MainDB.users.findOne([ '_id', uid ]).limit([ 'money', true ], [ 'box', true ]).on(function($user){
+	MainDB.users.findOne([ '_id', uid ]).limit([ 'money', true ], [ 'box', true ], [ 'equip', true ]).on(function($user){
 		if(!$user) return res.json({ error: 400 });
 		if(!$user.box) $user.box = {};
-		if($user.box.font_dunggeunmo) return res.json({ result: 200, money: $user.money, box: $user.box, owned: true });
+		if($user.box.font_dunggeunmo) return res.json({ result: 200, money: $user.money, box: $user.box, equip: $user.equip || {}, owned: true });
 		if($user.money < 200) return res.json({ error: 400 });
 		$user.money -= 200;
 		$user.box.font_dunggeunmo = 1;
 		MainDB.users.update([ '_id', uid ]).set([ 'money', $user.money ], [ 'box', $user.box ]).on(function(){
-			res.json({ result: 200, money: $user.money, box: $user.box });
+			res.json({ result: 200, money: $user.money, box: $user.box, equip: $user.equip || {} });
+		});
+	});
+});
+Server.post("/font/dunggeunmo/equip", function(req, res){
+	if(!req.session.profile) return res.json({ error: 423 });
+	var uid = req.session.profile.id;
+	MainDB.users.findOne([ '_id', uid ]).limit([ 'box', true ], [ 'equip', true ]).on(function($user){
+		if(!$user || !$user.box || !$user.box.font_dunggeunmo) return res.json({ error: 430 });
+		$user.equip = $user.equip || {};
+		if($user.equip.font_dunggeunmo) delete $user.equip.font_dunggeunmo;
+		else $user.equip.font_dunggeunmo = true;
+		MainDB.users.update([ '_id', uid ]).set([ 'equip', $user.equip ]).on(function(){
+			res.json({ result: 200, box: $user.box, equip: $user.equip, equipped: !!$user.equip.font_dunggeunmo });
 		});
 	});
 });

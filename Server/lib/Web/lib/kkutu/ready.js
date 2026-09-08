@@ -1066,8 +1066,9 @@ $(document).ready(function(){
 				$data.users[$data.id].money = res.money;
 				$data.users[$data.id].box = res.box;
 				$data.box = res.box;
-				$('body').addClass('dunggeunmo-font');
+				$data.users[$data.id].equip = res.equip || $data.users[$data.id].equip || {};
 				updateMe();
+				notice('구매 완료! 보관함에서 둥근모 글꼴을 장착하세요.');
 			});
 			delete $data._fontPurchase;
 			$stage.dialog.purchase.hide();
