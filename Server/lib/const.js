@@ -102,6 +102,7 @@ exports.RULE = {
 		big: false,
 		ewq: true
 	},
+	'KAW': { lang: "ko", rule: "Classic", opts: [], time: 1, ai: false, big: false, freeform: true, ewq: true },
 	'CSQ': { lang: "ko",
 		rule: "Jaqwi",
 		opts: [ "ijp" ],

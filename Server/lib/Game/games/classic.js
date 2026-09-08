@@ -59,6 +59,7 @@ exports.getTitle = function(){
 	}
 	EXAMPLE = Const.EXAMPLE_TITLE[l.lang];
 	my.game.dic = {};
+	if(my.rule.freeform){ R.go("아무말잇기"); return R; }
 	
 	switch(Const.GAME_TYPE[my.mode]){
 		case 'EKT':
@@ -282,7 +283,8 @@ exports.submit = function(client, text, hintUsed){
 	if(!mgt.robot) if(mgt != client.id) return;
 	if(!my.game.char) return;
 	
-	if(!isChainable(text, my.mode, my.game.char, my.game.subChar)) return client.chat(text);
+	if(my.rule.freeform){ text = String(text || "").trim(); if(!text || text.length > 50 || /\s/.test(text)) return client.chat(text); }
+	else if(!isChainable(text, my.mode, my.game.char, my.game.subChar)) return client.chat(text);
 	if(my.game.chain.indexOf(text) != -1) return client.publish('turnError', { code: 409, value: text }, true);
 	
 	l = my.rule.lang;
@@ -290,6 +292,7 @@ exports.submit = function(client, text, hintUsed){
 	function onDB($doc){
 		if(!my.gaming || my.game.late || my.game.turnAt !== submittedAt) return;
 		if(!my.game.chain) return;
+		if(my.rule.freeform) $doc = { mean: "", theme: "", type: "", baby: false };
 		var preChar = getChar.call(my, text);
 		var preSubChar = getSubChar.call(my, preChar);
 		var firstMove = my.game.chain.length < 1;
@@ -375,6 +378,7 @@ exports.submit = function(client, text, hintUsed){
 			default: return false;
 		}
 	}
+	if(my.rule.freeform){ onDB({ mean: "", theme: "", type: "", baby: false }); return; }
 	var wordQuery = [
 		[ '_id', text ]
 	];
