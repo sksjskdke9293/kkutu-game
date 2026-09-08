@@ -1641,7 +1641,11 @@ body.waiting-room .room-users {
  grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
  align-content:start;
  gap:14px;
- width:auto !important;
+ width:100% !important;
+ max-width:100% !important;
+ min-width:0 !important;
+ box-sizing:border-box !important;
+ overflow:visible !important;
 }
 body.waiting-room .room-user {
  float:none !important;
@@ -1650,6 +1654,7 @@ body.waiting-room .room-user {
  grid-template-rows:88px auto;
  gap:8px 10px;
  width:auto !important;
+ min-width:0 !important;
  min-height:132px;
  height:auto !important;
  margin:0 !important;
@@ -1657,6 +1662,7 @@ body.waiting-room .room-user {
  border:1px solid #d3e8d7;
  border-radius:20px !important;
  box-sizing:border-box;
+ overflow:hidden;
  background:linear-gradient(145deg,#fff,#effcf1) !important;
  box-shadow:0 8px 20px rgba(45,102,67,.1);
  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;

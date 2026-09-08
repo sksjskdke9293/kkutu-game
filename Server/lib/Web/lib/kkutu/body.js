@@ -2469,7 +2469,6 @@ function kickVoteTick(){
 function loadShop(){
 	$('#ShopMaintenance').remove();
 	$('#shop-shelf').show();
-	return;
 	var $body = $("#shop-shelf");
 	
 	$body.html(L['LOADING']);

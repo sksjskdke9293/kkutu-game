@@ -1092,13 +1092,16 @@ exports.Room = function(room, channel){
 				continue;
 			}
 			if(!DIC[my.players[i]]) continue;
+			/* A spectator is not a participant and must not block the start. */
 			if(DIC[my.players[i]].form == "S") continue;
 			
 			len++;
 			teams[DIC[my.players[i]].team].push(my.players[i]);
 			
 			if(my.players[i] == my.master) continue;
-			if(!DIC[my.players[i]].ready){
+			/* `ready` is mirrored on the connection and on the game state.  Use
+			 * either value so a room update cannot briefly reset a ready player. */
+			if(!(DIC[my.players[i]].ready || DIC[my.players[i]].game.ready)){
 				all = false;
 				break;
 			}
