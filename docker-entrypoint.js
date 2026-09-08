@@ -48,6 +48,16 @@ if (!Fs.existsSync(authPath)) {
 	Fs.chmodSync(authPath, 0o600);
 }
 
+if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
+	const auth = JSON.parse(Fs.readFileSync(authPath, 'utf8'));
+	auth.discord = Object.assign({}, auth.discord, {
+		clientID: process.env.DISCORD_CLIENT_ID,
+		clientSecret: process.env.DISCORD_CLIENT_SECRET,
+		callbackURL: process.env.DISCORD_CALLBACK_URL || 'https://kkutugame.kro.kr/login/discord/callback'
+	});
+	Fs.writeFileSync(authPath, `${JSON.stringify(auth, null, 2)}\n`, { mode: 0o600 });
+}
+
 const command = process.argv[2];
 const args = process.argv.slice(3);
 
