@@ -420,10 +420,24 @@ exports.readyRobot = function(robot){
 	if(my.rule.freeform){
 		var freeformWords = [
 			"안녕하세요", "좋은 하루예요", "재밌네요", "다음 단어는 이걸로", "생각보다 어렵네요",
-			"멋진 단어예요", "계속 이어가요", "이번에는 자신 있어요", "어떤 말이 좋을까요", "즐겁게 놀아요"
+			"멋진 단어예요", "계속 이어가요", "이번에는 자신 있어요", "어떤 말이 좋을까요", "즐겁게 놀아요",
+			"끝말잇기 좋아해요", "날씨가 좋네요", "간식이 먹고 싶어요", "음악을 듣고 있어요",
+			"오늘도 화이팅", "같이 놀아서 좋아요", "새로운 말이 생각났어요", "이번 판도 재미있어요",
+			"다음 차례를 기다렸어요", "손이 빨라야겠어요", "멋진 플레이네요", "조금 긴장돼요",
+			"이번에는 성공", "계속 해봐요", "좋은 생각이에요", "단어가 다양하네요",
+			"반가운 만남이에요", "천천히 해도 괜찮아요", "제가 먼저 갈게요", "재미있는 게임이에요",
+			"오늘은 운이 좋아요", "마지막까지 해봐요", "다음 말도 기대돼요", "좋은 승부예요",
+			"생각나는 말이 많아요", "함께 해서 즐거워요", "여기까지 이어왔네요", "계속 이어집니다"
 		];
-		text = freeformWords[Math.floor(Math.random() * freeformWords.length)];
-		if(Math.random() < 0.45) robot.chat(["좋은 흐름이에요!", "이번 차례는 제가 해볼게요.", "이 단어로 이어볼게요.", "재미있다!", "다음도 기대돼요."][Math.floor(Math.random() * 5)]);
+		var usedWords = freeformWords.filter(function(word){ return my.game.chain.indexOf(word) !== -1; });
+		var availableWords = freeformWords.filter(function(word){ return my.game.chain.indexOf(word) === -1; });
+		if(usedWords.length && Math.random() < 0.25){
+			text = "ㄹㄴㅇㄹㄴㅇㄹㄴㅇㄹ" + my.game.chain.length;
+			robot.chat("어? 이미 나온 말이네요. 다른 말로 해볼게요!");
+		}else{
+			text = (availableWords.length ? availableWords : freeformWords)[Math.floor(Math.random() * (availableWords.length || freeformWords.length))];
+		}
+		if(Math.random() < 0.55) robot.chat(["좋은 흐름이에요!", "이번 차례는 제가 해볼게요.", "이 단어로 이어볼게요.", "재미있다!", "다음도 기대돼요.", "생각났어요!", "계속 이어가요!", "멋진 말이에요!", "이번에는 이걸로 할게요.", "다음 차례도 기대돼요."][Math.floor(Math.random() * 10)]);
 		return after();
 	}
 	getAuto.call(my, my.game.char, my.game.subChar, 2).then(function(list){
