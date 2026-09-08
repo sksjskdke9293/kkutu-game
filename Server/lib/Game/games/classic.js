@@ -283,7 +283,7 @@ exports.submit = function(client, text, hintUsed){
 	if(!mgt.robot) if(mgt != client.id) return;
 	if(!my.game.char) return;
 	
-	if(my.rule.freeform){ text = String(text || "").trim(); if(!text || text.length > 50 || /\s/.test(text)) return client.chat(text); }
+	if(my.rule.freeform){ text = String(text || "").trim(); if(!text || text.length > 50) return client.chat(text); }
 	else if(!isChainable(text, my.mode, my.game.char, my.game.subChar)) return client.chat(text);
 	if(my.game.chain.indexOf(text) != -1) return client.publish('turnError', { code: 409, value: text }, true);
 	
