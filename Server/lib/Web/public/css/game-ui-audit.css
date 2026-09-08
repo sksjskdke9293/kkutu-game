@@ -1440,6 +1440,27 @@ body.modern-classic[data-game-view='for-gaming'] .GameBox .game-body .game-user:
 	}
 }
 
+@media (min-width:801px) {
+	.GameBox .game-body .game-user-score {
+		display:flex !important;
+		align-items:center !important;
+		justify-content:center !important;
+		visibility:visible !important;
+		opacity:1 !important;
+		min-height:30px !important;
+		color:#287c59 !important;
+		font-size:24px !important;
+		font-weight:800 !important;
+		line-height:30px !important;
+	}
+	.GameBox .game-body .game-user-score-char {
+		display:block !important;
+		float:none !important;
+		visibility:visible !important;
+		opacity:1 !important;
+	}
+}
+
 /* This control is outside the legacy menu, whose game-state visibility is
  * frequently rewritten by the old UI code.  It therefore cannot disappear
  * during a round or under the maintenance strip. */
