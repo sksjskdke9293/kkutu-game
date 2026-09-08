@@ -1979,7 +1979,23 @@ body.waiting-room .kkutu-menu #ReadyBtn.for-normal {
  font-weight:900 !important;
  box-shadow:0 8px 20px rgba(62,66,43,.26) !important;
 }
-body.waiting-room #RoomPrimaryAction { display:none !important; }
+body[data-game-view='for-master'] #RoomPrimaryAction,
+body[data-game-view='for-normal'] #RoomPrimaryAction {
+ display:block !important;
+ position:fixed !important;
+ right:22px !important;
+ bottom:22px !important;
+ z-index:140 !important;
+ min-width:138px !important;
+ min-height:52px !important;
+ margin:0 !important;
+ border-radius:15px !important;
+ color:#fff !important;
+ background:linear-gradient(135deg,#ef786d,#d95d61) !important;
+ font-size:18px !important;
+ font-weight:900 !important;
+ box-shadow:0 8px 20px rgba(116,46,47,.28) !important;
+}
 #ResultDiag {
  border:0 !important;
  border-radius:22px !important;
@@ -2019,6 +2035,8 @@ body.waiting-room #RoomPrimaryAction { display:none !important; }
  body[data-game-view='for-gaming'] .GameBox .game-body .game-user { flex:0 0 102px !important; }
  body.waiting-room .kkutu-menu #StartBtn.for-master,
  body.waiting-room .kkutu-menu #ReadyBtn.for-normal { right:12px !important; bottom:12px !important; min-width:104px !important; min-height:44px !important; font-size:15px !important; }
+ body[data-game-view='for-master'] #RoomPrimaryAction,
+ body[data-game-view='for-normal'] #RoomPrimaryAction { right:12px !important; bottom:12px !important; min-width:112px !important; min-height:44px !important; font-size:15px !important; }
  #ResultDiag .result-board-item { grid-template-columns:29px 24px minmax(0,1fr) 52px !important; }
  #ResultDiag .result-board-score { display:none !important; }
 }
