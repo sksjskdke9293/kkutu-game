@@ -448,11 +448,6 @@ function onMessage(data){
 			$data.setUser(data.id, data);
 			if($data.room) updateUI($data.room.id == data.place);
 			break;
-		case 'adminPing':
-			if($data.users[$data.id]) $data.users[$data.id].money = Number(data.money) || 0;
-			updateMe();
-			notice('핑 100개가 추가되었습니다.');
-			break;
 		case 'friends':
 			$data._friends = {};
 			for(i in data.list){

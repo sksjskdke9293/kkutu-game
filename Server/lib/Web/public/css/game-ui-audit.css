@@ -1417,8 +1417,27 @@ body.modern-classic[data-game-view='for-gaming'] .GameBox .game-body .game-user 
  pointer-events:auto !important;
 }
 body.modern-classic[data-game-view='for-gaming'] .GameBox .game-body .game-user:focus-visible {
- outline:3px solid #50bc83 !important;
- outline-offset:3px !important;
+	outline:3px solid #50bc83 !important;
+	outline-offset:3px !important;
+}
+@media (min-width:801px) {
+	body.modern-classic[data-game-view='for-gaming'] .GameBox .game-body .game-user-score {
+		display:flex !important;
+		grid-row:3 !important;
+		grid-column:1 !important;
+		align-items:center !important;
+		justify-content:center !important;
+		visibility:visible !important;
+		opacity:1 !important;
+		min-height:36px !important;
+		color:#287c59 !important;
+	}
+	body.modern-classic[data-game-view='for-gaming'] .GameBox .game-body .game-user-score-char {
+		display:block !important;
+		float:none !important;
+		visibility:visible !important;
+		opacity:1 !important;
+	}
 }
 
 /* This control is outside the legacy menu, whose game-state visibility is
