@@ -1569,3 +1569,125 @@ body.modern-classic[data-game-view='for-gaming'] .word-meaning-definition { font
  #ResultDiag .rank-result-summary { gap:7px; padding:8px 9px; font-size:12px; }
  #RankResultDelta { font-size:13px; }
 }
+
+body.waiting-room .RoomBox {
+ background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(239,255,239,.82)) !important;
+ border:1px solid rgba(195,235,206,.9) !important;
+ border-radius:24px !important;
+ box-shadow:0 20px 55px rgba(45,101,67,.16) !important;
+ overflow:hidden;
+}
+body.waiting-room .RoomBox .product-title {
+ display:flex;
+ align-items:center;
+ min-height:48px !important;
+ padding:0 20px !important;
+ box-sizing:border-box;
+ background:linear-gradient(90deg,#d7f7df,#f3f9cc) !important;
+ color:#205f4d !important;
+ font-size:15px !important;
+ font-weight:900;
+}
+body.waiting-room .RoomBox .product-title > * { float:none !important; }
+body.waiting-room .RoomBox .room-head-title { flex:1; min-width:150px; width:auto !important; text-align:left !important; }
+body.waiting-room .RoomBox .room-head-number { width:auto !important; margin-right:10px; color:#4b9275; }
+body.waiting-room .RoomBox .room-head-mode,
+body.waiting-room .RoomBox .room-head-limit,
+body.waiting-room .RoomBox .room-head-round,
+body.waiting-room .RoomBox .room-head-time { width:auto !important; margin-left:12px; color:#487464; font-size:12px; }
+body.waiting-room .RoomBox .product-body {
+ display:grid;
+ grid-template-columns:74px minmax(0,1fr);
+ gap:18px;
+ height:calc(100% - 48px) !important;
+ padding:20px !important;
+ box-sizing:border-box;
+ overflow:auto;
+}
+body.waiting-room .team-selector {
+ float:none !important;
+ display:flex;
+ flex-direction:column;
+ gap:8px;
+ width:auto !important;
+ height:auto !important;
+ margin:0 !important;
+ padding:0 16px 0 0 !important;
+ border:0 !important;
+ border-right:1px solid #d7ead9 !important;
+}
+body.waiting-room .team-button {
+ float:none !important;
+ display:grid;
+ place-items:center;
+ width:48px !important;
+ min-height:48px;
+ height:48px !important;
+ margin:0 !important;
+ padding:0 !important;
+ border:3px solid rgba(255,255,255,.88);
+ border-radius:50% !important;
+ box-sizing:border-box;
+ color:#fff;
+ font-size:14px;
+ font-weight:900;
+ box-shadow:0 5px 13px rgba(48,84,54,.16);
+ transition:transform .16s ease,box-shadow .16s ease;
+}
+body.waiting-room .team-button:hover { margin:0 !important; border-bottom:3px solid rgba(255,255,255,.88) !important; transform:translateY(-2px) scale(1.06); }
+body.waiting-room .team-chosen { outline:3px solid #3fae78; outline-offset:3px; }
+body.waiting-room .room-users {
+ display:grid;
+ grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+ align-content:start;
+ gap:14px;
+ width:auto !important;
+}
+body.waiting-room .room-user {
+ float:none !important;
+ display:grid;
+ grid-template-columns:88px minmax(0,1fr);
+ grid-template-rows:88px auto;
+ gap:8px 10px;
+ width:auto !important;
+ min-height:132px;
+ height:auto !important;
+ margin:0 !important;
+ padding:13px !important;
+ border:1px solid #d3e8d7;
+ border-radius:20px !important;
+ box-sizing:border-box;
+ background:linear-gradient(145deg,#fff,#effcf1) !important;
+ box-shadow:0 8px 20px rgba(45,102,67,.1);
+ transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;
+}
+body.waiting-room .room-user:hover { background:linear-gradient(145deg,#fff,#e5fae8) !important; border-color:#78d59a; transform:translateY(-3px); box-shadow:0 14px 25px rgba(45,102,67,.16); }
+body.waiting-room .room-user div { float:none !important; }
+body.waiting-room .room-user-image { grid-row:1; width:88px !important; height:88px !important; margin:0 !important; }
+body.waiting-room .room-user-stat { display:flex; flex-direction:column; align-items:stretch; width:auto !important; height:auto !important; padding:2px 0 !important; font-size:13px; }
+body.waiting-room .room-user-stat div { margin:0 0 7px !important; }
+body.waiting-room .room-user-ready { width:auto !important; padding:5px 8px; border-radius:999px; text-align:center !important; background:#eff2ef; }
+body.waiting-room .room-user-readied { color:#176d4f; background:#d9f7df; }
+body.waiting-room .room-user-master { color:#956216; background:#fff3c8; }
+body.waiting-room .room-user-spectate { color:#7354a6; background:#eee5ff; }
+body.waiting-room .room-user-team { width:auto !important; margin-top:auto !important; margin-left:0 !important; padding:5px 8px; border-radius:999px; text-align:center !important; color:#fff; }
+body.waiting-room .room-user-title { grid-column:1 / -1; display:flex; align-items:center; width:auto !important; padding:0 !important; font-size:15px !important; }
+body.waiting-room .room-user-level { flex:0 0 auto; width:27px !important; height:27px !important; }
+body.waiting-room .room-user-name { min-width:0; padding:5px 0 0 7px !important; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+@media (max-width:800px) {
+ body.waiting-room .RoomBox .product-title { min-height:42px !important; padding:0 12px !important; }
+ body.waiting-room .RoomBox .room-head-mode,
+ body.waiting-room .RoomBox .room-head-round,
+ body.waiting-room .RoomBox .room-head-time { display:none; }
+ body.waiting-room .RoomBox .product-body { grid-template-columns:1fr; gap:12px; padding:12px !important; }
+ body.waiting-room .team-selector { flex-direction:row; padding:0 0 12px !important; border-right:0 !important; border-bottom:1px solid #d7ead9 !important; overflow:auto; }
+ body.waiting-room .team-button { flex:0 0 42px; width:42px !important; min-height:42px; height:42px !important; }
+ body.waiting-room .room-users { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+ body.waiting-room .room-user { grid-template-columns:64px minmax(0,1fr); grid-template-rows:64px auto; min-height:104px; padding:9px !important; border-radius:16px !important; }
+ body.waiting-room .room-user-image { width:64px !important; height:64px !important; }
+ body.waiting-room .room-user-stat { font-size:11px; }
+ body.waiting-room .room-user-ready,
+ body.waiting-room .room-user-team { padding:3px 4px; }
+ body.waiting-room .room-user-title { font-size:12px !important; }
+}

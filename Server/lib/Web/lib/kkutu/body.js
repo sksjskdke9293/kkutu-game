@@ -1004,6 +1004,7 @@ function updateUI(myRoom, refresh){
 	$('body').attr('data-game-view', only);
 	$('body').toggleClass('modern-classic', only === 'for-gaming' && $data.room && String(RULE[MODE[$data.room.mode]].rule).toLowerCase() === 'classic');
 	$('body').toggleClass('ranked-match', only === 'for-gaming' && $data.room && $data.room.ranked === true);
+	$('body').toggleClass('waiting-room', only === 'for-master' || only === 'for-normal');
 	syncGameStageScale();
 	if(only !== 'for-gaming') $data._wordInputMode = null;
 	$('#RoomAddBot').toggle(only === 'for-master');

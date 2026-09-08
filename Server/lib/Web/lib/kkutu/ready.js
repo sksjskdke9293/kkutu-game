@@ -307,8 +307,8 @@ $(document).ready(function(){
 	];
 	for(i=0; i<=10; i++) $data._soundList.push(
 		{ key: "T"+i, value: "/media/kkutu/T"+i+".mp3?v=uploaded-20260906" },
-		{ key: "K"+i, value: "/media/kkutu/K"+i+".mp3?v=gayageum-effects-20260906" },
-		{ key: "As"+i, value: "/media/kkutu/As"+i+".mp3?v=gayageum-as-20260906" }
+		{ key: "K"+i, value: "/media/kkutu/K"+i+".wav?v=gayageum-clean-20260908" },
+		{ key: "As"+i, value: "/media/kkutu/As"+i+".wav?v=gayageum-clean-20260908" }
 	);
 	loadSounds($data._soundList, function(){
 		processShop(connect);
