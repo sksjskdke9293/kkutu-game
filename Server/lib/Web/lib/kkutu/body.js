@@ -2583,7 +2583,16 @@ function vibrate(level){
 	}, 50);
 }
 function getWordMeaningText(mean){
-	if(typeof mean == "string") return mean.trim();
+	if(typeof mean == "string"){
+		return mean
+			.replace(/＂[0-9]+＂/g, "")
+			.replace(/［[0-9]+］/g, "")
+			.replace(/（[0-9]+）/g, "")
+			.replace(/\$\$([^$]+)\$\$/g, "$1")
+			.replace(/\*\*([^*]+)\*\*/g, "$1")
+			.replace(/\*([^*]+)\*/g, "$1")
+			.trim();
+	}
 	if(Array.isArray(mean)) return mean.filter(function(item){ return typeof item == 'string'; }).join(' ').trim();
 	if(mean && typeof mean == 'object') return String(mean.definition || mean.mean || mean.text || mean.explain || "").trim();
 	if(typeof mean == 'number') return String(mean);
