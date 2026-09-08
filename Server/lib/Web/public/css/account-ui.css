@@ -8,6 +8,7 @@
 #AccountCard input { display:block; width:100%; height:46px; padding:10px 12px; border:1px solid #a9c9b6; border-radius:10px; background:white; color:#203c2a; font:16px Arial,sans-serif; }
 #AccountCard button { display:block; position:static; width:100%; min-height:46px; margin:12px 0 0; border:0; padding:10px 12px; border-radius:12px; background:#d9f0df; color:#24553a; cursor:pointer; font:bold 16px Arial,sans-serif; }
 #AccountCard button.primary { background:#287950; color:white; }
+#AccountCard button.account-discord { background:#5865f2; color:white; }
 #AccountCard button.account-link { background:transparent; text-decoration:underline; font-size:14px; }
 #AccountCard #AccountClose { position:absolute; width:36px; min-height:36px; right:14px; top:14px; margin:0; padding:0; background:#eff6f1; }
 #AccountCard .account-warning { color:#8a4d19; font-size:12px; background:#fff3df; border-radius:8px; padding:10px; }
