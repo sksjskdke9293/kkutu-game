@@ -706,8 +706,13 @@ $(document).ready(function(){
 	});
 	$stage.menu.shop.on('click', function(e){
 		e.preventDefault();
-		$data._shop = false;
-		$stage.menu.shop.removeClass("toggled");
+		$data._shop = !$data._shop;
+		if($data._shop){
+			loadShop();
+			$stage.menu.shop.addClass("toggled");
+		}else{
+			$stage.menu.shop.removeClass("toggled");
+		}
 		updateUI();
 		return false;
 	});
