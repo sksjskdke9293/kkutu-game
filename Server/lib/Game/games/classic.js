@@ -139,8 +139,13 @@ exports.roundReady = function(){
 	my.game.round++;
 	my.game.roundTime = my.time * 1000;
 	if(my.game.round <= my.round){
-		my.game.char = my.game.title[my.game.round - 1];
-		my.game.subChar = getSubChar.call(my, my.game.char);
+		if(my.rule.freeform){
+			my.game.char = "";
+			my.game.subChar = "";
+		}else{
+			my.game.char = my.game.title[my.game.round - 1];
+			my.game.subChar = getSubChar.call(my, my.game.char);
+		}
 		my.game.chain = [];
 		if(my.opts.mission) my.game.mission = getMission(my.rule.lang);
 		if(my.opts.sami) my.game.wordLength = 2;
@@ -225,7 +230,8 @@ exports.turnEnd = function(){
 		}, true);
 		my.game._rrt = setTimeout(my.roundReady, 3000);
 	}
-	getAuto.call(my, my.game.char, my.game.subChar, 0).then(finishTurn);
+	if(my.rule.freeform) finishTurn();
+	else getAuto.call(my, my.game.char, my.game.subChar, 0).then(finishTurn);
 	clearTimeout(my.game.robotTimer);
 };
 exports.playerHint = function(client, data){
@@ -281,7 +287,7 @@ exports.submit = function(client, text, hintUsed){
 	
 	if(!mgt) return;
 	if(!mgt.robot) if(mgt != client.id) return;
-	if(!my.game.char) return;
+	if(!my.rule.freeform && !my.game.char) return;
 	
 	if(my.rule.freeform){ text = String(text || "").trim(); if(!text || text.length > 50) return client.chat(text); }
 	else if(!isChainable(text, my.mode, my.game.char, my.game.subChar)) return client.chat(text);
@@ -293,8 +299,8 @@ exports.submit = function(client, text, hintUsed){
 		if(!my.gaming || my.game.late || my.game.turnAt !== submittedAt) return;
 		if(!my.game.chain) return;
 		if(my.rule.freeform) $doc = { mean: "", theme: "", type: "", baby: false };
-		var preChar = getChar.call(my, text);
-		var preSubChar = getSubChar.call(my, preChar);
+		var preChar = my.rule.freeform ? "" : getChar.call(my, text);
+		var preSubChar = my.rule.freeform ? "" : getSubChar.call(my, preChar);
 		var firstMove = my.game.chain.length < 1;
 		
 		function preApproved(){
@@ -336,7 +342,8 @@ exports.submit = function(client, text, hintUsed){
 					DB.kkutu[l].update([ '_id', text ]).set([ 'hit', $doc.hit + 1 ]).on();
 				}
 			}
-			if(firstMove || my.opts.manner || my.game.chain.length < (my.opts.shield == null ? 15 : my.opts.shield)) getAuto.call(my, preChar, preSubChar, 1).then(function(w){
+			if(my.rule.freeform) approved();
+			else if(firstMove || my.opts.manner || my.game.chain.length < (my.opts.shield == null ? 15 : my.opts.shield)) getAuto.call(my, preChar, preSubChar, 1).then(function(w){
 				if(w) approved();
 				else{
 					my.game.loading = false;

@@ -939,7 +939,7 @@ function updateUI(myRoom, refresh){
 		}else return;
 	}
 	if($data._replay) return;
-	if(only == "for-gaming" && !myRoom) return;
+	if(only == "for-gaming" && !myRoom && !$data._spectate) return;
 	if($data.practicing) only = "for-gaming";
 	
 	$(".kkutu-menu button, #QuickRoomBtn, .detached-menu").hide();
