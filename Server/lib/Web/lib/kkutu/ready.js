@@ -730,6 +730,13 @@ $(document).ready(function(){
 		showDialog($stage.dialog.invite);
 		updateUserList(true);
 	});
+	$('#RoomSpectateAction').on('click', function(){ $stage.menu.spectate.trigger('click'); });
+	$('#RoomInviteAction').on('click', function(){ $stage.menu.invite.trigger('click'); });
+	$('#RoomBotAction').on('click', function(){ $stage.dialog.inviteRobot.trigger('click'); });
+	$('#RoomPrimaryAction').on('click', function(){
+		if($data.master) $stage.menu.start.trigger('click');
+		else $stage.menu.ready.trigger('click');
+	});
 	$stage.menu.ready.on('click', function(e){
 		send('ready');
 	});

@@ -41,13 +41,13 @@ block Subject
 	title 끄투게임
 
 block JS
-	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260908-waiting-sound-14')
+	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260908-reference-room-15')
 	script(src='https://www.google.com/recaptcha/api.js')
 
 block CSS
 	link(rel='stylesheet', href='/css/in_game_kkutu_shop.css?v=20260907-mobile-11')
 	link(rel='stylesheet', href='/css/play-shell.css?v=20260906-ui-audit-4')
-	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260908-waiting-room-6')
+	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260908-reference-room-7')
 	link(rel='stylesheet', href='/css/settings-ui.css?v=20260906-settings-1')
 	
 block Jungle
@@ -500,13 +500,20 @@ block Middle
 			img(src='/img/custom/shop-maintenance.png', alt='상점은 점검중 입니다.')
 		div#shop-shelf(style='display: none;')
 	+Product('Room')
-		div.team-selector
-			div.team-button#team-0.team-0= L('teamSolo')
-			div.team-button#team-1.team-1 A
-			div.team-button#team-2.team-2 B
-			div.team-button#team-3.team-3 C
-			div.team-button#team-4.team-4 D
-		div.room-users
+		div.room-stage-actions
+			button#RoomSpectateAction(type='button') 관전
+			button#RoomInviteAction(type='button') 초대
+			button#RoomBotAction(type='button') 봇 추가
+		div.room-stage-content
+			div.team-selector
+				div.team-button#team-0.team-0= L('teamSolo')
+				div.team-button#team-1.team-1 A
+				div.team-button#team-2.team-2 B
+				div.team-button#team-3.team-3 C
+				div.team-button#team-4.team-4 D
+			div.room-users
+		div.room-stage-footer
+			button#RoomPrimaryAction(type='button') 준비
 	+Product('Game')
 		div.game-head
 			div.items

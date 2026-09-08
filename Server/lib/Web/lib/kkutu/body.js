@@ -1008,6 +1008,9 @@ function updateUI(myRoom, refresh){
 	syncGameStageScale();
 	if(only !== 'for-gaming') $data._wordInputMode = null;
 	$('#RoomAddBot').toggle(only === 'for-master');
+	$('#RoomSpectateAction').toggle(only === 'for-master' || only === 'for-normal');
+	$('#RoomInviteAction, #RoomBotAction').toggle(only === 'for-master');
+	$('#RoomPrimaryAction').text(only === 'for-master' ? '시작!' : '준비').toggle(only === 'for-master' || only === 'for-normal');
 	setLocation($data.place);
 	$(".kkutu-menu ."+only).show();
 	$('#QuickRoomBtn.'+only+', .detached-menu.'+only).show();
@@ -1021,7 +1024,7 @@ function syncGameStageScale(){
 	}
 	width = Math.max(1, window.innerWidth - 64);
 	height = Math.max(1, window.innerHeight - 92);
-	scale = Math.min(1.85, Math.max(.64, Math.min(width / 1180, height / 650)));
+	scale = Math.min(1.45, Math.max(.64, Math.min(width / 1180, height / 650)));
 	document.documentElement.style.setProperty('--kkutu-stage-scale', scale.toFixed(3));
 }
 $(window).on('resize.gameStageScale orientationchange.gameStageScale', function(){
@@ -1410,6 +1413,9 @@ function updateRoom(gaming){
 				allReady = false;
 			}
 			addonNickname($bar, o);
+		}
+		for(i = $data.room.players.length; i < Number($data.room.limit || 0); i++){
+			$r.append($("<div>").addClass("room-user-empty").append($("<span>").text("+")));
 		}
 		if(arAcc && $data.room.master == $data.id && allReady){
 			if(!$data._jamsu) $data._jamsu = addTimeout(onMasterSubJamsu, 5000);
