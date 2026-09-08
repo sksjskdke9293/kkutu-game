@@ -1868,3 +1868,157 @@ body.waiting-room #RoomPrimaryAction {
  body.waiting-room .room-stage-footer { min-height:56px; padding:8px 12px; }
  body.waiting-room #RoomPrimaryAction { width:100%; min-width:0; min-height:42px; font-size:16px; }
 }
+
+body[data-game-view='for-gaming'] .GameBox .product-body {
+ position:relative !important;
+ left:auto !important;
+ top:auto !important;
+ display:flex !important;
+ flex-direction:column !important;
+ align-items:stretch !important;
+ width:min(1120px,calc(100vw - 32px)) !important;
+ height:auto !important;
+ min-height:0 !important;
+ margin:0 auto !important;
+ padding:0 0 24px !important;
+ overflow:visible !important;
+ transform:none !important;
+}
+body[data-game-view='for-gaming'] .GameBox .game-head {
+ position:relative !important;
+ left:auto !important;
+ top:auto !important;
+ width:100% !important;
+ height:250px !important;
+ min-height:250px !important;
+ margin:0 !important;
+ padding:0 !important;
+ overflow:visible !important;
+}
+body[data-game-view='for-gaming'] .GameBox .jjoriping {
+ position:absolute !important;
+ left:50% !important;
+ top:38px !important;
+ width:500px !important;
+ margin:0 !important;
+ transform:translateX(-50%) !important;
+}
+body[data-game-view='for-gaming'] .GameBox .chain {
+ position:absolute !important;
+ left:calc(50% + 270px) !important;
+ top:95px !important;
+ margin:0 !important;
+ transform:none !important;
+}
+body[data-game-view='for-gaming'] .GameBox .word-meaning-panel {
+ position:absolute !important;
+ right:0 !important;
+ left:auto !important;
+ top:24px !important;
+ width:205px !important;
+ min-height:104px !important;
+ z-index:25 !important;
+}
+body[data-game-view='for-gaming'] .GameBox .history-holder {
+ position:absolute !important;
+ left:50% !important;
+ top:153px !important;
+ width:500px !important;
+ margin:0 !important;
+ transform:translateX(-50%) !important;
+}
+body[data-game-view='for-gaming'] .GameBox .hints {
+ position:absolute !important;
+ left:50% !important;
+ top:201px !important;
+ width:500px !important;
+ margin:0 !important;
+ transform:translateX(-50%) !important;
+}
+body[data-game-view='for-gaming'] .GameBox .game-input {
+ position:relative !important;
+ left:auto !important;
+ top:auto !important;
+ order:2 !important;
+ width:min(620px,100%) !important;
+ height:62px !important;
+ margin:8px auto 22px !important;
+ transform:none !important;
+ z-index:30 !important;
+}
+body[data-game-view='for-gaming'] .GameBox #game-input { width:calc(100% - 70px) !important; }
+body[data-game-view='for-gaming'] .GameBox .game-body {
+ position:relative !important;
+ left:auto !important;
+ top:auto !important;
+ order:3 !important;
+ display:flex !important;
+ justify-content:center !important;
+ align-items:flex-start !important;
+ width:100% !important;
+ height:auto !important;
+ min-height:188px !important;
+ margin:0 !important;
+ padding:0 12px 28px !important;
+ box-sizing:border-box !important;
+ transform:none !important;
+}
+body[data-game-view='for-gaming'] .GameBox .game-body .game-user { flex:0 0 116px !important; }
+body.waiting-room .kkutu-menu #StartBtn.for-master,
+body.waiting-room .kkutu-menu #ReadyBtn.for-normal {
+ display:block !important;
+ position:fixed !important;
+ right:22px !important;
+ bottom:22px !important;
+ z-index:120 !important;
+ min-width:132px !important;
+ min-height:50px !important;
+ border-radius:15px !important;
+ color:#fff !important;
+ font-size:18px !important;
+ font-weight:900 !important;
+ box-shadow:0 8px 20px rgba(62,66,43,.26) !important;
+}
+body.waiting-room #RoomPrimaryAction { display:none !important; }
+#ResultDiag {
+ border:0 !important;
+ border-radius:22px !important;
+ overflow:hidden !important;
+ background:linear-gradient(160deg,#f8fffb,#e5f6eb) !important;
+ box-shadow:0 24px 55px rgba(30,75,47,.26) !important;
+}
+#ResultDiag .dialog-head { background:linear-gradient(135deg,#3d8e68,#6cc68f) !important; color:#fff !important; }
+#ResultDiag .dialog-body { padding:14px !important; box-sizing:border-box; }
+#ResultDiag .result-board { width:100% !important; max-height:270px; overflow:auto; }
+#ResultDiag .result-board-item {
+ display:grid !important;
+ grid-template-columns:38px 30px minmax(0,1fr) 72px 58px !important;
+ align-items:center !important;
+ gap:7px !important;
+ min-height:48px !important;
+ margin:7px 0 !important;
+ padding:5px 9px !important;
+ box-sizing:border-box !important;
+ border-radius:12px !important;
+ background:rgba(255,255,255,.86) !important;
+ box-shadow:0 3px 8px rgba(33,91,56,.09) !important;
+}
+#ResultDiag .result-board-item > * { float:none !important; width:auto !important; margin:0 !important; }
+#ResultDiag .result-board-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:800; }
+#ResultDiag .result-board-me { outline:2px solid #67bd87; background:#fff !important; }
+@media (max-width:800px) {
+ body[data-game-view='for-gaming'] .GameBox .product-body { width:calc(100vw - 16px) !important; }
+ body[data-game-view='for-gaming'] .GameBox .game-head { height:216px !important; min-height:216px !important; }
+ body[data-game-view='for-gaming'] .GameBox .jjoriping { top:30px !important; width:calc(100% - 70px) !important; max-width:430px !important; }
+ body[data-game-view='for-gaming'] .GameBox .chain { left:auto !important; right:8px !important; top:78px !important; transform:scale(.78) !important; transform-origin:right center !important; }
+ body[data-game-view='for-gaming'] .GameBox .word-meaning-panel { display:none !important; }
+ body[data-game-view='for-gaming'] .GameBox .history-holder { top:133px !important; width:calc(100% - 22px) !important; }
+ body[data-game-view='for-gaming'] .GameBox .hints { top:176px !important; width:calc(100% - 22px) !important; }
+ body[data-game-view='for-gaming'] .GameBox .game-input { width:calc(100% - 10px) !important; height:56px !important; margin:4px auto 16px !important; }
+ body[data-game-view='for-gaming'] .GameBox .game-body { gap:8px !important; min-height:155px !important; padding-bottom:12px !important; overflow-x:auto !important; justify-content:flex-start !important; }
+ body[data-game-view='for-gaming'] .GameBox .game-body .game-user { flex:0 0 102px !important; }
+ body.waiting-room .kkutu-menu #StartBtn.for-master,
+ body.waiting-room .kkutu-menu #ReadyBtn.for-normal { right:12px !important; bottom:12px !important; min-width:104px !important; min-height:44px !important; font-size:15px !important; }
+ #ResultDiag .result-board-item { grid-template-columns:29px 24px minmax(0,1fr) 52px !important; }
+ #ResultDiag .result-board-score { display:none !important; }
+}

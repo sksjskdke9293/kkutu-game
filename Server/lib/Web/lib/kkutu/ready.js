@@ -816,6 +816,10 @@ $(document).ready(function(){
 		});
 		$stage.dialog.room.hide();
 	});
+	$('#admin-practice-bot').on('click', function(){
+		requestInvite('AI');
+		$stage.dialog.room.hide();
+	});
 	$stage.dialog.resultOK.on('click', function(e){
 		if($data._resultPage == 1 && $data._resultRank){
 			drawRanking($data._resultRank[$data.id]);
