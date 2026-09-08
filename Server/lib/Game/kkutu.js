@@ -881,7 +881,7 @@ exports.Room = function(room, channel){
 		}
 		var robot = new exports.Robot(null, my.id, 4);
 		my.players.push(robot);
-		robot.chat("안녕하세요!");
+		robot.chat(["안녕하세요!", "같이 즐겁게 놀아요!", "좋은 승부가 되겠네요!", "단어를 이어볼게요!", "반가워요!"][Math.floor(Math.random() * 5)]);
 		my.export();
 	};
 	my.setAI = function(target, level, team){
@@ -1252,6 +1252,10 @@ exports.Room = function(room, channel){
 			}
 			pv = res[i].score;
 			rw = getRewards(my.mode, o.game.score / res[i].dim, o.game.bonus, res[i].rank, rl, sumScore);
+			if(my.rule.freeform){
+				rw.score = 0;
+				rw._score = 0;
+			}
 			rw.playTime = now - o.playAt;
 			o.applyEquipOptions(rw); // 착용 아이템 보너스 적용
 			if(rw.together){
@@ -1259,7 +1263,7 @@ exports.Room = function(room, channel){
 				o.onOKG(rw.playTime);
 			}
 			res[i].reward = rw;
-			o.data.score += rw.score || 0;
+			if(!my.rule.freeform) o.data.score += rw.score || 0;
 			o.money += rw.money || 0;
 			if(my.ranked && !o.guest){
 				if(!o.data.ranked) o.data.ranked = {rating: 1000, wins: 0, losses: 0};
@@ -1268,7 +1272,7 @@ exports.Room = function(room, channel){
 				if(res[i].rank === 0) o.data.ranked.wins = Number(o.data.ranked.wins || 0) + 1;
 				else o.data.ranked.losses = Number(o.data.ranked.losses || 0) + 1;
 			}
-			o.data.record[Const.GAME_TYPE[my.mode]][2] += rw.score || 0;
+			if(!my.rule.freeform) o.data.record[Const.GAME_TYPE[my.mode]][2] += rw.score || 0;
 			o.data.record[Const.GAME_TYPE[my.mode]][3] += rw.playTime;
 			if(!my.practice && rw.together){
 				o.data.record[Const.GAME_TYPE[my.mode]][0]++;

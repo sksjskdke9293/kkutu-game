@@ -787,6 +787,9 @@ $(document).ready(function(){
 		renderRankedDialog();
 		showDialog($stage.dialog.leaderboard);
 	});
+	$('#AdminPingBtn').on('click', function(){
+		if($data.admin) send('adminPing', {}, true);
+	});
 	$('#RankQueueBtn').on('click', function(){
 		if(getOnly() != 'for-lobby') return;
 		$stage.dialog.leaderboard.hide();

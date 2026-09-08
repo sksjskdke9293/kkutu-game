@@ -192,6 +192,12 @@ KKuTu.onClientMessage = function($c, msg){
 	if(!msg) return;
 	
 	switch(msg.type){
+		case 'adminPing':
+			if(!$c.admin) return;
+			$c.money = Math.max(0, Number($c.money) || 0) + 100;
+			$c.flush();
+			$c.send('adminPing', { money: $c.money });
+			break;
 		case 'yell':
 			if(!msg.value) return;
 			if(!$c.admin) return;

@@ -214,7 +214,7 @@ exports.turnEnd = function(){
 	var finished = false;
 	var hintTimer = setTimeout(function(){ finishTurn(); }, 1000);
 	if(target) if(target.game){
-		score = Const.getPenalty(my.game.chain, target.game.score);
+		score = my.rule.freeform ? 0 : Const.getPenalty(my.game.chain, target.game.score);
 		target.game.score += score;
 	}
 	function finishTurn(w){
@@ -314,7 +314,7 @@ exports.submit = function(client, text, hintUsed){
 				my.game.late = true;
 				clearTimeout(my.game.turnTimer);
 				t = tv - my.game.turnAt;
-				score = my.getScore(text, t);
+				score = my.rule.freeform ? 0 : my.getScore(text, t);
 				if(hintUsed === true) score = Math.floor(score / 2);
 				my.game.dic[text] = (my.game.dic[text] || 0) + 1;
 				my.game.chain.push(text);
@@ -417,6 +417,15 @@ exports.readyRobot = function(robot){
 	var w, text;
 	var isRev = Const.GAME_TYPE[my.mode] == "KAP";
 	
+	if(my.rule.freeform){
+		var freeformWords = [
+			"안녕하세요", "좋은 하루예요", "재밌네요", "다음 단어는 이걸로", "생각보다 어렵네요",
+			"멋진 단어예요", "계속 이어가요", "이번에는 자신 있어요", "어떤 말이 좋을까요", "즐겁게 놀아요"
+		];
+		text = freeformWords[Math.floor(Math.random() * freeformWords.length)];
+		if(Math.random() < 0.45) robot.chat(["좋은 흐름이에요!", "이번 차례는 제가 해볼게요.", "이 단어로 이어볼게요.", "재미있다!", "다음도 기대돼요."][Math.floor(Math.random() * 5)]);
+		return after();
+	}
 	getAuto.call(my, my.game.char, my.game.subChar, 2).then(function(list){
 		if(list.length){
 			// Rank the fetched candidates locally. Per-ending lookahead queues dozens
