@@ -1338,8 +1338,25 @@ function resolveGameParticipant(entry){
 	}
 	return normalizeGameUser(o);
 }
+function participantKey(entry){
+	if(typeof entry == "string") return entry;
+	return entry && (entry.id || (entry.profile && entry.profile.id));
+}
+function appendGameParticipant($target, entry, renderer, rendered){
+	var id = participantKey(entry);
+	var o = resolveGameParticipant(entry);
+	if(!o || !o.id || rendered[o.id]) return;
+
+	rendered[o.id] = true;
+	$target.append(renderer(o));
+	/* The game panel is rebuilt whenever room data is refreshed.  Rebind an
+	 * existing score animation to the newly created score element before it
+	 * draws its next frame. */
+	if($data["_s" + o.id]) $data["_s" + o.id].$obj = $("#game-user-" + o.id + " .game-user-score");
+	updateScore(o.id, Number(o.game && o.game.score) || 0);
+}
 function updateRoom(gaming){
-	var i, o, $r;
+	var i, o, $r, entries, rendered;
 	var $y, $z;
 	var $m;
 	var $bar;
@@ -1352,25 +1369,19 @@ function updateRoom(gaming){
 	setRoomHead($(".GameBox .product-title"), $data.room);
 	if(gaming){
 		$r = $(".GameBox .game-body").empty();
-		// updateScore(true);
-		for(i in $data.room.game.seq){
+		rendered = {};
+		entries = ($data.room.game && $data.room.game.seq && $data.room.game.seq.length) ? $data.room.game.seq : $data.room.players;
+		for(i in entries){
 			if($data._replay){
-				o = $rec.users[$data.room.game.seq[i]] || $data.room.game.seq[i];
+				o = $rec.users[participantKey(entries[i])] || entries[i];
 			}else{
-				o = $data.users[$data.room.game.seq[i]] || $data.robots[$data.room.game.seq[i].id] || $data.room.game.seq[i];
+				o = entries[i];
 			}
-			o = resolveGameParticipant(o);
-			if(!o || !o.game) continue;
-			$r.append(renderer(o));
-			updateScore(o.id, o.game.score || 0);
+			appendGameParticipant($r, o, renderer, rendered);
 		}
-		if($data.practicing && $data.users[$data.id] && !$("#game-user-"+$data.id).length){
-			o = normalizeGameUser($data.users[$data.id]);
-			if(o && o.game){
-				$r.append(renderer(o));
-				updateScore(o.id, o.game.score || 0);
-			}
-		}
+		/* Always retain the local player card while room snapshots catch up.
+		 * This is required for both normal games and practice games. */
+		if($data.users[$data.id]) appendGameParticipant($r, $data.users[$data.id], renderer, rendered);
 		clearTimeout($data._jamsu);
 		delete $data._jamsu;
 	}else{
@@ -1939,7 +1950,7 @@ function gameReady(){
 		u = normalizeGameUser(u);
 		if(!u || !u.game) continue;
 		u.game.score = 0;
-		delete $data["_s"+$data.room.players[i]];
+		delete $data["_s"+u.id];
 	}
 	delete $data.lastFail;
 	$data._rankResultRecorded = false;

@@ -518,6 +518,20 @@
   text-align:center !important;
  }
 
+ body.modern-classic[data-game-view='for-gaming'] .game-body .game-user-score-char {
+  display:inline-block !important;
+  float:none !important;
+  width:auto !important;
+  min-width:14px !important;
+  height:36px !important;
+  margin:0 !important;
+  padding:0 !important;
+  color:#287c59 !important;
+  font-size:28px !important;
+  font-weight:800 !important;
+  line-height:36px !important;
+ }
+
  body.modern-classic[data-game-view='for-gaming'] .ChatBox {
   position:fixed !important;
   top:auto !important;
