@@ -349,6 +349,7 @@ function onMessage(data){
 			$data._okg = data.okg;
 			$data._gaming = false;
 			$data.box = data.box;
+			$('body').toggleClass('dunggeunmo-font', !!($data.box && $data.box.font_dunggeunmo));
 			if(data.test) alert(L['welcomeTestServer']);
 			if($data._reconnectRoomId !== undefined){
 				addTimeout(function(){
@@ -2466,6 +2467,9 @@ function kickVoteTick(){
 	else $stage.dialog.kickVoteY.trigger('click');
 }
 function loadShop(){
+	$('#ShopMaintenance').remove();
+	$('#shop-shelf').show();
+	return;
 	var $body = $("#shop-shelf");
 	
 	$body.html(L['LOADING']);

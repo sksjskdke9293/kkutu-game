@@ -160,6 +160,21 @@ Server.post("/buy/:id", function(req, res){
 		});
 	}else res.json({ error: 423 });
 });
+Server.post("/buy-font/dunggeunmo", function(req, res){
+	if(!req.session.profile) return res.json({ error: 423 });
+	var uid = req.session.profile.id;
+	MainDB.users.findOne([ '_id', uid ]).limit([ 'money', true ], [ 'box', true ]).on(function($user){
+		if(!$user) return res.json({ error: 400 });
+		if(!$user.box) $user.box = {};
+		if($user.box.font_dunggeunmo) return res.json({ result: 200, money: $user.money, box: $user.box, owned: true });
+		if($user.money < 200) return res.json({ error: 400 });
+		$user.money -= 200;
+		$user.box.font_dunggeunmo = 1;
+		MainDB.users.update([ '_id', uid ]).set([ 'money', $user.money ], [ 'box', $user.box ]).on(function(){
+			res.json({ result: 200, money: $user.money, box: $user.box });
+		});
+	});
+});
 Server.post("/equip/:id", function(req, res){
 	if(!req.session.profile) return res.json({ error: 400 });
 	var uid = req.session.profile.id;

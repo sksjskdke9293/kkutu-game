@@ -41,13 +41,13 @@ block Subject
 	title 끄투게임
 
 block JS
-	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260908-word-meaning-20')
+	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260908-font-shop-21')
 	script(src='https://www.google.com/recaptcha/api.js')
 
 block CSS
 	link(rel='stylesheet', href='/css/in_game_kkutu_shop.css?v=20260907-mobile-11')
 	link(rel='stylesheet', href='/css/play-shell.css?v=20260906-ui-audit-4')
-	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260908-bot-chat-12')
+	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260908-font-shop-13')
 	link(rel='stylesheet', href='/css/settings-ui.css?v=20260906-settings-1')
 	
 block Jungle
@@ -498,9 +498,15 @@ block Middle
 	+Product('RoomList')
 		div 불러오는 중
 	+Product('Shop')
-		div#ShopMaintenance
-			img(src='/img/custom/shop-maintenance.png', alt='상점은 점검중 입니다.')
-		div#shop-shelf(style='display: none;')
+		div#shop-shelf
+			div.shop-welcome 상점에 오신걸 환영합니다
+			div.shop-font-card
+				div.shop-font-preview 끄투게임
+				div.shop-font-info
+					h3 둥근모 글꼴
+					p 게임내에서 써지는 글씨의 폰트를 바꿔줍니다.
+					strong 200핑
+					button#DungGeunMoBuy(type='button') 구매
 	+Product('Room')
 		div.room-stage-actions
 			button#RoomSpectateAction(type='button') 관전

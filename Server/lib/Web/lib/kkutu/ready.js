@@ -711,6 +711,19 @@ $(document).ready(function(){
 		updateUI();
 		return false;
 	});
+	$(document).on('click', '#DungGeunMoBuy', function(){
+		var my = $data.users[$data.id];
+		if($data.guest) return fail(423);
+		$data._fontPurchase = true;
+		showDialog($stage.dialog.purchase, true);
+		$('#purchase-ping-before').html(commify(my.money) + L['ping']);
+		$('#purchase-ping-cost').html('200' + L['ping']);
+		$('#purchase-ping-after').html(commify(my.money - 200) + L['ping']);
+		$('#purchase-item-name').text('둥근모 글꼴');
+		$('#purchase-item-desc').text('해당 상품은 환불이 불가한 상품입니다. 이에 이해 하셨습니까?');
+		$stage.dialog.purchaseOK.attr('disabled', my.money < 200).text('수락');
+		$stage.dialog.purchaseNO.text('거절');
+	});
 	$(".shop-type").on('click', function(e){
 		var $target = $(e.currentTarget);
 		var type = $target.attr('id').slice(10);
@@ -1042,6 +1055,19 @@ $(document).ready(function(){
 		$stage.dialog.kickVote.hide();
 	});
 	$stage.dialog.purchaseOK.on('click', function(e){
+		if($data._fontPurchase){
+			$.post('/buy-font/dunggeunmo', function(res){
+				if(res.error) return fail(res.error);
+				$data.users[$data.id].money = res.money;
+				$data.users[$data.id].box = res.box;
+				$data.box = res.box;
+				$('body').addClass('dunggeunmo-font');
+				updateMe();
+			});
+			delete $data._fontPurchase;
+			$stage.dialog.purchase.hide();
+			return;
+		}
 		$.post("/buy/" + $data._sgood, function(res){
 			var my = $data.users[$data.id];
 			
