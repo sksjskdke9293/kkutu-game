@@ -733,6 +733,8 @@ $(document).ready(function(){
 	$('#RoomSpectateAction').on('click', function(){ $stage.menu.spectate.trigger('click'); });
 	$('#RoomInviteAction').on('click', function(){ $stage.menu.invite.trigger('click'); });
 	$('#RoomBotAction').on('click', function(){ $stage.dialog.inviteRobot.trigger('click'); });
+	$('#RoomStartAction').on('click', function(){ $stage.menu.start.trigger('click'); });
+	$('#RoomReadyAction').on('click', function(){ $stage.menu.ready.trigger('click'); });
 	$('#RoomPrimaryAction').on('click', function(){
 		if($data.master) $stage.menu.start.trigger('click');
 		else $stage.menu.ready.trigger('click');

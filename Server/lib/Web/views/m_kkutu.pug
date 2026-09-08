@@ -41,13 +41,13 @@ block Subject
 	title 끄투게임
 	
 block JS
-	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260908-more-re-mi-17')
+	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260908-room-controls-18')
 	script(src='https://www.google.com/recaptcha/api.js')
 	
 block CSS
 	link(rel='stylesheet', href='/css/in_game_kkutu_shop.css?v=20260907-mobile-11')
 	link(rel='stylesheet', href='/css/play-shell.css?v=20260906-ui-audit-4')
-	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260908-room-action-10')
+	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260908-room-controls-11')
 	link(rel='stylesheet', href='/css/settings-ui.css?v=20260906-settings-1')
 	
 block Jungle
@@ -473,6 +473,8 @@ block Middle
 			button#RoomSpectateAction(type='button') 관전
 			button#RoomInviteAction(type='button') 초대
 			button#RoomBotAction(type='button') 봇 추가
+			button#RoomStartAction(type='button') 시작!
+			button#RoomReadyAction(type='button') 준비
 		div.room-stage-content
 			div.team-selector
 				div.team-button#team-0.team-0= L('teamSolo')

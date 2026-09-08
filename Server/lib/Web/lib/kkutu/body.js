@@ -1010,6 +1010,8 @@ function updateUI(myRoom, refresh){
 	$('#RoomAddBot').toggle(only === 'for-master');
 	$('#RoomSpectateAction').toggle(only === 'for-master' || only === 'for-normal');
 	$('#RoomInviteAction, #RoomBotAction').toggle(only === 'for-master');
+	$('#RoomStartAction').toggle(only === 'for-master');
+	$('#RoomReadyAction').toggle(only === 'for-normal');
 	$('#RoomPrimaryAction').text(only === 'for-master' ? '시작!' : '준비').toggle(only === 'for-master' || only === 'for-normal');
 	setLocation($data.place);
 	$(".kkutu-menu ."+only).show();
