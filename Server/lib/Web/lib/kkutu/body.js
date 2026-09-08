@@ -422,7 +422,7 @@ function onMessage(data){
 			if(data.notice){
 				notice(L['error_' + data.code]);
 			}else{
-				chat(data.profile || { title: L['robot'] }, data.value, data.from, data.timestamp);
+				chat(data.profile || { title: '모레레미 · 연습 봇' }, data.value, data.from, data.timestamp);
 			}
 			break;
 		case 'roomStuck':
@@ -1284,7 +1284,7 @@ function miniGameUserBar(o){
 }
 function getAIProfile(level){
 	return {
-		title: L['aiLevel' + level] + ' ' + L['robot'],
+		title: '모레레미 · 연습 봇',
 		image: "/img/kkutu/robot.png?v=20260906-mascot-2"
 	};
 }
@@ -1812,7 +1812,7 @@ function requestRoomInfo(id){
 		
 		p = $data.users[p] || NULL_USER;
 		if(o.players[i].robot){
-			p.profile = { title: L['robot'] };
+			p.profile = { title: '모레레미 · 연습 봇' };
 			p.equip = { robot: true };
 		}else rd.t = rd.t || 0;
 		
