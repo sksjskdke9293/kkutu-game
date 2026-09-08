@@ -1432,11 +1432,10 @@ function updateRoom(gaming){
 	}
 }
 function onMasterSubJamsu(){
-	notice(L['subJamsu']);
-	$data._jamsu = addTimeout(function(){
-		send('leave');
-		alert(L['masterJamsu']);
-	}, 30000);
+	if($data.room && $data.room.master == $data.id && !$data.room.gaming){
+		send('start');
+	}
+	delete $data._jamsu;
 }
 function updateScore(id, score){
 	var i, o, t;

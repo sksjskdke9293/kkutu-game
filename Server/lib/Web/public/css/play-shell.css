@@ -53,14 +53,14 @@ body:not([data-game-view='for-lobby']) .MeBox { display:none !important; }
 body:has(.RoomListBox[style*='display: block']) #QuickRoomBtn,
 body:has(.ShopBox[style*='display: block']) #QuickRoomBtn { display:none !important; }
 #ShopBtn{
-	opacity:.45 !important;
-	cursor:default !important;
-	filter:grayscale(.25);
-	pointer-events:auto;
+	opacity:1 !important;
+	cursor:pointer !important;
+	filter:none;
+	pointer-events:auto !important;
 }
 #ShopBtn:hover{
-	transform:none !important;
-	box-shadow:none !important;
+	transform:translateY(-2px) !important;
+	box-shadow:0 8px 16px rgba(43,115,77,.24) !important;
 }
 .reconnect-box{
 	box-sizing:border-box;

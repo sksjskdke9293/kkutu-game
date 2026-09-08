@@ -282,6 +282,7 @@
 		"modex11": "주어진 주제에 맞는 영어 어휘를 댑니다.",
 		"modex12": "무작위로 섞인 글자들 속에서 한국어 단어를 솎아 냅니다.",
 		"modex13": "무작위로 섞인 글자들 속에서 영어 단어를 솎아 냅니다.",
+		"modex14": "Enter any text freely without word-chain or dictionary restrictions.",
 		"dictionaryPreset": "낱말집",
 		"dictionaryBasic": "기초 (31,662개)",
 		"dictionaryStandard": "표준 (291,659개)",

@@ -1086,7 +1086,7 @@ $lib.Classic.roundReady = function(data){
 	
 	clearBoard();
 	$data._roundTime = $data.room.time * 1000;
-	$stage.game.display.html(getCharText(data.char, data.subChar));
+	$stage.game.display.html(RULE[MODE[$data.room.mode]].freeform ? "아무 말이나 입력하세요" : getCharText(data.char, data.subChar));
 	$stage.game.chain.show().html($data.chain = 0);
 	if($data.room.opts.mission){
 		$stage.game.items.show().css('opacity', 1).html($data.mission = data.mission);
@@ -1105,7 +1105,7 @@ $lib.Classic.turnStart = function(data){
 	if($data._tid.robot) $data._tid = $data._tid.id;
 	data.id = $data._tid;
 	
-	$stage.game.display.html($data._char = getCharText(data.char, data.subChar, data.wordLength));
+	$stage.game.display.html($data._char = (RULE[MODE[$data.room.mode]].freeform ? "아무 말이나 입력하세요" : getCharText(data.char, data.subChar, data.wordLength)));
 	$("#game-user-"+data.id).addClass("game-user-current");
 	if(!$data._replay){
 		$stage.game.here.css('display', (data.id == $data.id) ? "block" : "none");
