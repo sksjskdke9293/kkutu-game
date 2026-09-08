@@ -4069,6 +4069,7 @@ function loadShop(){
 		$("#ShopMaintenance").remove();
 		$body.show();
 	}
+	if($("#DungGeunMoBuy").length) return;
 	
 	$body.html(L['LOADING']);
 	processShop(function(res){

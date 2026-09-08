@@ -2469,6 +2469,7 @@ function loadShop(){
 	$('#ShopMaintenance').remove();
 	$('#shop-shelf').show();
 	var $body = $("#shop-shelf");
+	if($('#DungGeunMoBuy').length) return;
 	
 	$body.html(L['LOADING']);
 	processShop(function(res){

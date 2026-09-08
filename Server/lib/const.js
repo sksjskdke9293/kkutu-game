@@ -102,7 +102,6 @@ exports.RULE = {
 		big: false,
 		ewq: true
 	},
-	'KAW': { lang: "ko", rule: "Classic", opts: [], time: 1, ai: false, big: false, freeform: true, ewq: true },
 	'CSQ': { lang: "ko",
 		rule: "Jaqwi",
 		opts: [ "ijp" ],
@@ -183,7 +182,8 @@ exports.RULE = {
 		ai: false,
 		big: true,
 		ewq: false
-	}
+	},
+	'KAW': { lang: "ko", rule: "Classic", opts: [], time: 1, ai: false, big: false, freeform: true, ewq: true }
 };
 exports.getPreScore = function(text, chain, tr){
 	return 2 * (Math.pow(5 + 7 * (text || "").length, 0.74) + 0.88 * (chain || []).length) * ( 0.5 + 0.5 * tr );
