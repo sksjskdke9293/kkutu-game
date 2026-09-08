@@ -237,6 +237,8 @@ Server.get("/", function(req, res){
 	});
 	function onFinish($doc){
 		var id = req.session.id;
+		var profile = $doc && $doc.profile;
+		var isAdmin = !!profile && (GLOBAL.ADMIN.indexOf(profile.id) !== -1 || (profile.id === 'local:admin' && profile.authType === 'local' && profile.developer === true));
 
 		if($doc){
 			req.session.profile = $doc.profile;
@@ -247,6 +249,7 @@ Server.get("/", function(req, res){
 		page(req, res, Const.MAIN_PORTS[server] ? "kkutu" : "portal", {
 			'_page': "kkutu",
 			'_id': id,
+			'ADMIN': isAdmin,
 			'PORT': Const.MAIN_PORTS[server],
 			'HOST': process.env.PUBLIC_GAME_HOST || req.hostname,
 			'PROTOCOL': process.env.PUBLIC_GAME_PROTOCOL || ((Const.IS_SECURED || req.get('x-forwarded-proto') == 'https') ? 'wss' : 'ws'),

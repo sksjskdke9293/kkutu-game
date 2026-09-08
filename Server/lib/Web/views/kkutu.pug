@@ -93,7 +93,7 @@ block Middle
 		button#ExitBtn.for-master.for-normal.for-gaming(style='display: none; background-color: #FFADAD;')= L('exit')
 		button#ReplayBtn.for-lobby(style='display: none; background-color: #D9FF82;')= L('replay')
 		button#LeaderboardBtn.for-lobby(style='display: none; background-color: #FFADD3;') 순위전
-		if SESSION && SESSION.admin
+		if ADMIN
 			button#AdminPingBtn.for-lobby(style='display: none; background-color: #FFE482;') 핑 +100
 		div#facebook-menu.fb-like.for-lobby.for-master.for-normal.for-gaming(data-href='http://kkutu.kr', data-width='300', data-layout='button_count', data-action='like', data-show-faces='true', data-share='true')
 	button#GameExitControl(type='button', style='display: none;') 게임 나가기
@@ -280,7 +280,7 @@ block Middle
 				option(value='basic')= L('dictionaryBasic')
 				option(value='standard', selected)= L('dictionaryStandard')
 				option(value='complex')= L('dictionaryComplex')
-		if SESSION && SESSION.admin
+		if ADMIN
 			div.dialog-bar.admin-practice-bot
 				h4 운영자 도구
 				button#admin-practice-bot(type='button') 연습 봇 추가
