@@ -26,7 +26,7 @@ $lib.Classic.roundReady = function(data){
 	$('body').attr('data-game-view', 'for-gaming').addClass('modern-classic');
 
 	clearBoard();
-	$data._prediction = '';
+	$data._inputValues = $data._inputValues || {};
 	$data._hintPending = false;
 	$('#TurnHint').empty();
 	$data._roundTime = $data.room.time * 1000;
@@ -39,11 +39,13 @@ $lib.Classic.roundReady = function(data){
 		$(".jjoDisplayBar .graph-bar").css({ 'float': "right", 'text-align': "left" });
 	}
 	drawRound(data.round);
-	if($data.room.ranked) playBGM('ranked');
+	stopBGM();
 	playSound('round_start');
 	recordEvent('roundReady', { data: data });
 };
 $lib.Classic.turnStart = function(data){
+	stopBGM();
+	playBGM($data.room.ranked ? 'ranked' : 'game');
 	$('#DraftStatus').remove();
 	var remainingShield = Math.max(0, ($data.room.opts.shield == null ? 15 : $data.room.opts.shield) - ($data.chain || 0));
 	if(!$('#ShieldStatus').length) $('.game-head').append($('<div>').attr('id', 'ShieldStatus'));
@@ -57,6 +59,10 @@ $lib.Classic.turnStart = function(data){
 	$stage.game.display.removeClass('dunggeunmo-font').html($data._char = getCharText(data.char, data.subChar, data.wordLength));
 	$("#game-user-"+data.id).addClass("game-user-current");
 	if(!$data._replay){
+		if($data._wordInputMode){
+			$data._inputValues[$data._wordInputMode] = $stage.game.hereText.val();
+			$data._sharedWordInput = $stage.game.hereText.val();
+		}
 		$data._wordInputMode = data.id == $data.id ? 'answer' : 'hint';
 		$data._hintPending = false;
 		$('#TurnHint').empty();
@@ -64,12 +70,7 @@ $lib.Classic.turnStart = function(data){
 		$data._playerHints = [];
 		$stage.game.hereText.prop('readOnly', false).attr('placeholder', data.id == $data.id ? '낱말 입력 · 번호로 힌트 사용 시 점수 50%' : '상대에게 알려줄 힌트를 입력하고 Enter');
 		$('#GameWordSubmit').text(data.id == $data.id ? '입력' : '힌트');
-		if(data.id == $data.id){
-			$stage.game.hereText.val($data._prediction || '').focus();
-			$data._prediction = '';
-		}else{
-			$stage.game.hereText.val('');
-		}
+		$stage.game.hereText.val($data._sharedWordInput || '').focus();
 	}
 	$stage.game.items.html($data.mission = data.mission);
 	
@@ -102,6 +103,7 @@ $lib.Classic.turnGoing = function(){
 	if(!$stage.game.roundBar.hasClass("round-extreme")) if($data._roundTime <= 5000) $stage.game.roundBar.addClass("round-extreme");
 };
 $lib.Classic.turnEnd = function(id, data){
+	stopBGM();
 	var $sc = $("<div>")
 		.addClass("deltaScore")
 		.html((data.score > 0) ? ("+" + (data.score - data.bonus)) : data.score);
@@ -112,12 +114,16 @@ $lib.Classic.turnEnd = function(id, data){
 	addScore(id, data.score);
 	clearInterval($data._tTime);
 	if(data.ok){
+        if(data.hintUsed && data.hintIndex >= 0) $("#TurnHint button").eq(data.hintIndex).addClass("hint-used");
 		checkFailCombo();
 		clearTimeout($data._fail);
 		if(!$data._replay){
+			$data._inputValues = $data._inputValues || {};
+			if($data._wordInputMode) $data._inputValues[$data._wordInputMode] = $stage.game.hereText.val();
+			$data._sharedWordInput = $stage.game.hereText.val();
 			$data._wordInputMode = 'prediction';
 			$stage.game.here.show().attr('data-mode', 'prediction');
-			$stage.game.hereText.prop('readOnly', false).val('').attr('placeholder', '예측 · 다음에 낼 낱말을 미리 적어두세요');
+			$stage.game.hereText.prop('readOnly', false).val($data._sharedWordInput || '').attr('placeholder', '예측 · 다음에 낼 낱말을 미리 적어두세요');
 			$('#GameWordSubmit').text('저장');
 		}
 		$stage.game.chain.html(++$data.chain);
@@ -143,7 +149,7 @@ $lib.Classic.turnEnd = function(id, data){
 			.append($("<label>").css('color', "#AAAAAA").html(data.hint.slice(hi + 1)));
 	}
 	if(data.bonus){
-		mobile ? $sc.html("+" + (b.score - b.bonus) + "+" + b.bonus) : addTimeout(function(){
+		mobile ? $sc.html("+" + (data.score - data.bonus) + "+" + data.bonus) : addTimeout(function(){
 			var $bc = $("<div>")
 				.addClass("deltaScore bonus")
 				.html("+" + data.bonus);

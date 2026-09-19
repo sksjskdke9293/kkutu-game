@@ -16,6 +16,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+// The locale script assigns window.L; keep a local binding for every browser.
+var L = window.L || { null: '', LOGIN: '로그인', GAE: '개', MN: '명' };
+window.L = L;
 var MODE;
 var BEAT = [ null,
 	"10000000",
@@ -45,7 +48,7 @@ var $stage;
 var $sound = {};
 var $_sound = {}; // 현재 재생 중인 것들
 var $data = {};
-var $lib = { Classic: {}, Jaqwi: {}, Crossword: {}, Typing: {}, Hunmin: {}, Daneo: {}, Sock: {} };
+var $lib = { Classic: {}, Jaqwi: {}, Crossword: {}, Typing: {}, Hunmin: {}, Daneo: {}, Sock: {}, Yut: {} };
 var $rec;
 var mobile;
 
@@ -53,6 +56,9 @@ var audioContext = window.hasOwnProperty("AudioContext") ? (new AudioContext()) 
 var _WebSocket = window['WebSocket'];
 var _setInterval = setInterval;
 var _setTimeout = setTimeout;
+if(typeof Proxy !== 'undefined' && typeof L === 'object') L = new Proxy(L, {
+	get: function(target, key){ var value = target[key]; return value === undefined || value === null ? '' : value; }
+});
 
 function unlockAudio(){
 	if(audioContext && audioContext.state == "suspended"){

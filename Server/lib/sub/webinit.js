@@ -96,7 +96,7 @@ exports.init = function(Server, shop){
 		
 		if(page.substr(0, 2) == "m/") page = page.slice(2);
 		if(page == "portal") page = "kkutu";
-		res.send("window.L = "+JSON.stringify(getLanguage(lang, page, shop))+";");
+		res.type("application/javascript").set("Cache-Control", "no-cache").send("window.L = "+JSON.stringify(getLanguage(lang, page, shop))+";");
 	});
 	Server.get("/language/flush", function(req, res){
 		updateLanguage();

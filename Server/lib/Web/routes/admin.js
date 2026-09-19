@@ -21,8 +21,271 @@ var MainDB	 = require("../db");
 var GLOBAL	 = require("../../sub/global.json");
 var JLog	 = require("../../sub/jjlog");
 var Lizard	 = require("../../sub/lizard.js");
+var LocalAuth = require("../local-auth");
+var Path = require("path");
+var Crypto = require("crypto");
+
+function badgeStorageKey(userId){
+	return Crypto.createHash('sha256').update(String(userId || ''), 'utf8').digest('hex');
+}
 
 exports.run = function(Server, page){
+
+Server.get("/admin", function(req, res){
+	if(!checkAdmin(req, res, true)) return;
+	req.session.admin = true;
+	res.sendFile(require("path").resolve(__dirname, "../views/admin.html"));
+});
+Server.get('/user-badge/:id', function(req,res){
+	var id=String(req.params.id||'').trim();
+	if(!id)return res.status(404).end();
+	var base=Path.join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','user-badge-'+badgeStorageKey(id));
+	File.readFile(base,function(error,data){if(error)return res.status(404).end();File.readFile(base+'.type','utf8',function(e,type){res.type(e?'image/png':type).send(data);});});
+});
+Server.post('/admin/api/accounts/badge', require('body-parser').raw({type:['image/png','image/jpeg','image/webp'],limit:'1mb'}), function(req,res){
+	if(!checkAdmin(req,res,true))return;
+	var userId=String(req.query.user_id||'').trim(), safe=badgeStorageKey(userId);
+	if(!userId||userId.length>160||!Buffer.isBuffer(req.body)||!req.body.length)return res.status(400).send({error:'계정과 배지 이미지를 확인하세요.'});
+	MainDB.users.findOne(['_id',userId]).on(function(user){if(!user)return res.status(404).send({error:'계정을 찾을 수 없습니다.'});
+		var storageDir=process.env.KKUTU_PRIVATE_DIR || '/kkutu';
+		try{ File.mkdirSync(storageDir,{recursive:true}); }catch(error){ return res.status(500).send({error:'배지 저장 공간을 준비하지 못했습니다.'}); }
+		var base=Path.join(storageDir,'user-badge-'+safe), url='/user-badge/'+encodeURIComponent(userId)+'?v='+Date.now();
+		File.writeFile(base,req.body,function(error){if(error)return res.status(500).send({error:'배지를 저장하지 못했습니다.'});File.writeFile(base+'.type',req.get('content-type')||'image/png',function(){MainDB.users.update(['_id',userId]).set(['adminBadge',url]).on(function(){noticeAdmin(req,'user-badge',userId);res.send({ok:true,url:url});});});});
+	});
+});
+Server.post('/admin/api/accounts/badge/clear', function(req,res){
+	if(!checkAdmin(req,res,true))return;
+	var userId=String(req.body && req.body.user_id || '').trim();
+	if(!userId)return res.status(400).send({error:'게임 계정 ID를 입력하세요.'});
+	MainDB.users.findOne(['_id',userId]).on(function(user){
+		if(!user)return res.status(404).send({error:'계정을 찾을 수 없습니다.'});
+		var base=Path.join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','user-badge-'+badgeStorageKey(userId));
+		MainDB.users.update(['_id',userId]).set(['adminBadge','']).on(function(){
+			File.unlink(base,function(){}); File.unlink(base+'.type',function(){});
+			noticeAdmin(req,'user-badge-clear',userId); res.send({ok:true});
+		});
+	});
+});
+Server.get('/admin/api/server-status', function(req,res){
+ if(!checkAdmin(req,res,true)) return;
+ LocalAuth.getGameMaintenanceStatus().then(function(status){ res.send(status); })
+  .catch(function(){ res.status(500).send({error:'서버 상태를 불러오지 못했습니다.'}); });
+});
+Server.get('/admin/api/theme', function(req,res){
+ if(!checkAdmin(req,res,true))return;
+ LocalAuth.getActiveTheme(req.query.server).then(function(theme){res.send({theme:theme});})
+  .catch(function(){res.status(500).send({error:'테마 상태를 불러오지 못했습니다.'});});
+});
+Server.post('/admin/api/theme', function(req,res){
+ if(!checkAdmin(req,res,true))return;
+ var theme=String(req.body && req.body.theme || '');
+ if(theme!=='autumn'&&theme!=='chuseok')return res.status(400).send({error:'테마를 확인하세요.'});
+ LocalAuth.setActiveTheme(theme,req.body && req.body.server).then(function(saved){noticeAdmin(req,'site-theme',saved);res.send({ok:true,theme:saved});})
+  .catch(function(){res.status(500).send({error:'테마를 변경하지 못했습니다.'});});
+});
+Server.get('/admin/api/server-access', function(req,res){
+ if(!checkAdmin(req,res,true))return;
+ LocalAuth.listServerAccess(req.query.server || 2).then(function(list){res.send({list:list});}).catch(function(){res.status(500).send({error:'허용 계정을 불러오지 못했습니다.'});});
+});
+Server.post('/admin/api/server-access', function(req,res){
+ if(!checkAdmin(req,res,true))return;
+ var userId=String(req.body && req.body.user_id || '').trim(), server=Number(req.body && req.body.server || 2), remove=req.body && req.body.remove==='true';
+ if(!userId)return res.status(400).send({error:'게임 계정 ID를 입력하세요.'});
+ (remove?LocalAuth.removeServerAccess(server,userId):LocalAuth.addServerAccess(server,userId)).then(function(resolved){noticeAdmin(req,remove?'server-access-remove':'server-access-add',server,resolved||userId);res.send({ok:true,user_id:resolved||userId});}).catch(function(error){res.status(error.code==='ACCOUNT_NOT_FOUND'?404:500).send({error:error.code==='ACCOUNT_NOT_FOUND'?error.message:'허용 계정을 변경하지 못했습니다.'});});
+});
+Server.post('/admin/api/server-status', function(req,res){
+ if(!checkAdmin(req,res,true)) return;
+ var enabled=req.body && (req.body.maintenance==='true'||req.body.maintenance==='1');
+ var server=req.body && req.body.server;
+ LocalAuth.setGameMaintenance(enabled,server).then(function(status){ noticeAdmin(req,'game-maintenance',server||'all',enabled?'on':'off'); res.send(Object.assign({ok:true},status)); })
+  .catch(function(error){ JLog.warn('[ADMIN] maintenance update failed: '+error.toString()); res.status(500).send({error:'서버 상태를 변경하지 못했습니다.'}); });
+});
+Server.get("/admin/api/account", function(req, res){
+	if(!checkAdmin(req, res, true)) return;
+	var id = String(req.query.id || "").trim();
+	if(!id) return res.status(400).send({ error: "계정 ID를 입력하세요." });
+	MainDB.users.findOne([ '_id', id ]).on(function(user){
+		if(!user) return res.status(404).send({ error: "계정을 찾을 수 없습니다." });
+		res.send({ id: user._id, reason: user.black || "", until: user.blockedUntil || 0 });
+	});
+});
+Server.get("/admin/api/ip", function(req, res){
+	if(!checkAdmin(req, res, true)) return;
+	var ip = normalizeIp(req.query.ip);
+	if(!ip) return res.status(400).send({ error: "올바른 IP 주소를 입력하세요." });
+	MainDB.ip_block.findOne([ '_id', ip ]).on(function(row){
+		res.send({ ip: ip, reason: row && row.reasonBlocked || "", until: row && row.ipBlockedUntil || 0 });
+	});
+});
+Server.get("/admin/api/recent", function(req, res){
+	if(!checkAdmin(req, res, true)) return;
+	MainDB.access_log.direct('SELECT * FROM access_log ORDER BY "connectedAt" DESC LIMIT 100', function(error, result){
+		if(error){
+			JLog.warn('[ADMIN] recent access lookup failed: ' + error.toString());
+			return res.status(500).send({ error: '최근 접속 기록을 불러오지 못했습니다.' });
+		}
+		res.send({ list: result && result.rows ? result.rows : [] });
+	});
+});
+Server.get("/admin/api/accounts", function(req, res){
+	if(!checkAdmin(req, res, true)) return;
+	var sql = `WITH known AS (
+		SELECT user_id FROM local_accounts
+		UNION SELECT _id FROM users WHERE _id NOT LIKE 'guest%'
+		UNION SELECT "userId" FROM access_log WHERE guest=false AND "userId" IS NOT NULL
+	), latest_access AS (
+		SELECT DISTINCT ON ("userId") "userId", "displayName" FROM access_log
+		WHERE guest=false AND "userId" IS NOT NULL ORDER BY "userId", "connectedAt" DESC
+	), first_access AS (
+		SELECT "userId", MIN("connectedAt") AS first_seen FROM access_log
+		WHERE guest=false AND "userId" IS NOT NULL GROUP BY "userId"
+	), active_session AS (
+		SELECT DISTINCT ON (profile->>'id') profile->>'id' AS user_id,
+			COALESCE(profile->>'title', profile->>'name') AS nickname
+		FROM session WHERE profile->>'id' IS NOT NULL ORDER BY profile->>'id', "createdAt" DESC
+	)
+	SELECT COALESCE(la.username, known.user_id) AS username, known.user_id,
+		COALESCE(la.nickname, nickname_override.nickname, active_session.nickname, latest_access."displayName", known.user_id) AS nickname,
+		COALESCE(la.developer, false) AS developer,
+		COALESCE(la.created_at, first_access.first_seen, 0) AS created_at,
+		(la.username IS NOT NULL) AS local_account,
+		CASE WHEN la.username IS NOT NULL THEN '로컬' WHEN known.user_id LIKE 'discord-%' THEN 'Discord' ELSE '외부' END AS account_type
+	FROM known LEFT JOIN local_accounts la ON la.user_id=known.user_id
+	LEFT JOIN account_nickname_overrides nickname_override ON nickname_override.user_id=known.user_id
+	LEFT JOIN latest_access ON latest_access."userId"=known.user_id
+	LEFT JOIN first_access ON first_access."userId"=known.user_id
+	LEFT JOIN active_session ON active_session.user_id=known.user_id
+	ORDER BY created_at DESC`;
+	MainDB.users.direct(sql, function(error, result){
+		if(error){
+			JLog.warn('[ADMIN] account list lookup failed: ' + error.toString());
+			return res.status(500).send({ error: '계정 목록을 불러오지 못했습니다.' });
+		}
+		res.send({ list: result && result.rows ? result.rows : [] });
+	});
+});
+Server.get('/admin/api/notices', function(req,res){
+	if(!checkAdmin(req,res,true)) return;
+	LocalAuth.getSiteNotices().then(function(notices){ res.send(notices); }).catch(function(error){ JLog.warn('[ADMIN] notice load failed: '+error.toString()); res.status(500).send({error:'공지를 불러오지 못했습니다.'}); });
+});
+Server.post('/admin/api/notices/game-image', require('body-parser').raw({type:['image/png','image/jpeg','image/webp'],limit:'3mb'}), function(req,res){
+	if(!checkAdmin(req,res,true)) return;
+	if(!Buffer.isBuffer(req.body)||!req.body.length) return res.status(400).send({error:'이미지 파일을 선택하세요.'});
+	var file=Path.join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','game-notice-image');
+	File.writeFile(file,req.body,function(error){ if(error)return res.status(500).send({error:'이미지를 저장하지 못했습니다.'}); File.writeFile(file+'.type',req.get('content-type')||'image/png',function(){ res.send({ok:true,url:'/site-notice-image?v='+Date.now()}); }); });
+});
+Server.get('/admin/api/notice-posts', function(req,res){ if(!checkAdmin(req,res,true))return; LocalAuth.getNoticePosts().then(function(posts){res.send({posts:posts});}).catch(function(){res.status(500).send({error:'공지 목록을 불러오지 못했습니다.'});}); });
+Server.post('/admin/api/notice-posts', require('body-parser').raw({type:['image/png','image/jpeg','image/webp'],limit:'3mb'}), function(req,res){
+ if(!checkAdmin(req,res,true))return; if(!Buffer.isBuffer(req.body)||!req.body.length)return res.status(400).send({error:'이미지를 선택하세요.'});
+ LocalAuth.addNoticePost({image_url:'',target_url:req.query.target_url||''}).then(function(post){ var file=Path.join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','notice-post-'+post.id); File.writeFile(file,req.body,function(error){if(error)return res.status(500).send({error:'이미지를 저장하지 못했습니다.'});File.writeFile(file+'.type',req.get('content-type')||'image/png',function(){LocalAuth.getNoticePosts().then(function(){res.send({ok:true,post:post});});});});}).catch(function(){res.status(500).send({error:'공지를 저장하지 못했습니다.'});});
+});
+Server.post('/admin/api/notice-posts/:id/delete', function(req,res){ if(!checkAdmin(req,res,true))return; var id=String(req.params.id||'').replace(/[^0-9]/g,''); LocalAuth.deleteNoticePost(id).then(function(ok){if(!ok)return res.status(404).send({error:'공지를 찾을 수 없습니다.'});var base=Path.join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','notice-post-'+id);File.unlink(base,function(){});File.unlink(base+'.type',function(){});res.send({ok:true});}).catch(function(){res.status(500).send({error:'공지를 삭제하지 못했습니다.'});}); });
+Server.post('/admin/api/notices/:key', function(req,res){
+	if(!checkAdmin(req,res,true)) return;
+	var key=String(req.params.key||'');
+	LocalAuth.saveSiteNotice(key,{enabled:req.body.enabled==='true'||req.body.enabled==='1',title:req.body.title,message:req.body.message,image_url:req.body.image_url,target_url:req.body.target_url})
+		.then(function(saved){ if(!saved)return res.status(400).send({error:'공지 종류를 확인하세요.'}); noticeAdmin(req,'notice-save',key); res.send({ok:true}); })
+		.catch(function(error){ JLog.warn('[ADMIN] notice save failed: '+error.toString()); res.status(500).send({error:'공지를 저장하지 못했습니다.'}); });
+});
+Server.post("/admin/api/accounts/discord-nickname", function(req, res){
+	if(!checkAdmin(req, res, true)) return;
+	var userId = String(req.body.user_id || "").trim();
+	var nickname = String(req.body.nickname || "").trim().normalize('NFC');
+	if(!/^discord-\d+$/.test(userId) || !LocalAuth.validNickname(nickname)) return res.status(400).send({ error: 'Discord 계정과 닉네임을 확인하세요.' });
+	LocalAuth.changeDiscordNickname(userId, nickname).then(function(changed){
+		if(!changed) return res.status(404).send({ error: 'Discord 계정을 찾을 수 없습니다.' });
+		noticeAdmin(req, 'discord-nickname-change', userId, nickname);
+		res.send({ ok: true });
+	}).catch(function(error){
+		if(error.code === '23505') return res.status(409).send({ error: '이미 사용 중인 닉네임입니다.' });
+		JLog.warn('[ADMIN] Discord nickname change failed: ' + error.toString());
+		res.status(500).send({ error: '닉네임을 변경하지 못했습니다.' });
+	});
+});
+Server.post("/admin/api/accounts/password", function(req, res){
+	if(!checkAdmin(req, res, true)) return;
+	var username = String(req.body.username || "").trim().toLowerCase();
+	var password = String(req.body.password || "");
+	if(!LocalAuth.validUsername(username) || password.length < 8 || password.length > 128){
+		return res.status(400).send({ error: '새 비밀번호는 8~128자로 입력하세요.' });
+	}
+	LocalAuth.resetPassword(username, password).then(function(changed){
+		if(!changed) return res.status(404).send({ error: '계정을 찾을 수 없습니다.' });
+		noticeAdmin(req, 'password-reset', username);
+		res.send({ ok: true });
+	}).catch(function(error){
+		JLog.warn('[ADMIN] password reset failed: ' + error.toString());
+		res.status(500).send({ error: '비밀번호를 변경하지 못했습니다.' });
+	});
+});
+Server.post("/admin/api/accounts/nickname", function(req, res){
+	if(!checkAdmin(req, res, true)) return;
+	var username = String(req.body.username || "").trim().toLowerCase();
+	var nickname = String(req.body.nickname || "").trim().normalize('NFC');
+	if(!LocalAuth.validUsername(username) || !LocalAuth.validNickname(nickname)) return res.status(400).send({ error: '닉네임은 한글·영문·숫자·_ 2~20자로 입력하세요.' });
+	LocalAuth.changeNickname(username, nickname).then(function(changed){
+		if(!changed) return res.status(404).send({ error: '계정을 찾을 수 없습니다.' });
+		noticeAdmin(req, 'nickname-change', username, nickname);
+		res.send({ ok: true });
+	}).catch(function(error){
+		if(error.code === '23505') return res.status(409).send({ error: '이미 사용 중인 닉네임입니다.' });
+		JLog.warn('[ADMIN] nickname change failed: ' + error.toString());
+		res.status(500).send({ error: '닉네임을 변경하지 못했습니다.' });
+	});
+});
+Server.post("/admin/api/accounts/delete", function(req, res){
+	if(!checkAdmin(req, res, true)) return;
+	var username = String(req.body.username || "").trim().toLowerCase();
+	if(!LocalAuth.validUsername(username)) return res.status(400).send({ error: '계정 ID를 확인하세요.' });
+	LocalAuth.deleteAccount(username).then(function(deleted){
+		if(!deleted) return res.status(400).send({ error: '계정을 찾을 수 없거나 운영자 계정은 삭제할 수 없습니다.' });
+		noticeAdmin(req, 'account-delete', username);
+		res.send({ ok: true });
+	}).catch(function(error){
+		JLog.warn('[ADMIN] account delete failed: ' + error.toString());
+		res.status(500).send({ error: '계정을 삭제하지 못했습니다.' });
+	});
+});
+Server.post("/admin/api/account/block", function(req, res){
+	if(!checkAdmin(req, res, true)) return;
+	var id = String(req.body.id || "").trim();
+	var reason = String(req.body.reason || "운영정책 위반").trim().slice(0, 200);
+	var until = blockUntil(req.body.duration);
+	if(!id || until === null) return res.status(400).send({ error: "입력값을 확인하세요." });
+	MainDB.users.findOne([ '_id', id ]).on(function(user){
+		if(!user) return res.status(404).send({ error: "계정을 찾을 수 없습니다." });
+		MainDB.users.update([ '_id', id ]).set([ 'black', reason ], [ 'blockedUntil', until ]).on(function(){
+			noticeAdmin(req, "account-block", id, reason, until || "permanent");
+			res.send({ ok: true });
+		});
+	});
+});
+Server.post("/admin/api/account/unblock", function(req, res){
+	if(!checkAdmin(req, res, true)) return;
+	var id = String(req.body.id || "").trim();
+	if(!id) return res.status(400).send({ error: "계정 ID를 입력하세요." });
+	MainDB.users.update([ '_id', id ]).set([ 'black', '' ], [ 'blockedUntil', 0 ]).on(function(){
+		noticeAdmin(req, "account-unblock", id); res.send({ ok: true });
+	});
+});
+Server.post("/admin/api/ip/block", function(req, res){
+	if(!checkAdmin(req, res, true)) return;
+	var ip = normalizeIp(req.body.ip);
+	var reason = String(req.body.reason || "운영정책 위반").trim().slice(0, 200);
+	var until = blockUntil(req.body.duration);
+	if(!ip || until === null) return res.status(400).send({ error: "입력값을 확인하세요." });
+	MainDB.ip_block.upsert([ '_id', ip ]).set([ 'reasonBlocked', reason ], [ 'ipBlockedUntil', until ]).on(function(){
+		noticeAdmin(req, "ip-block", ip, reason, until || "permanent"); res.send({ ok: true });
+	});
+});
+Server.post("/admin/api/ip/unblock", function(req, res){
+	if(!checkAdmin(req, res, true)) return;
+	var ip = normalizeIp(req.body.ip);
+	if(!ip) return res.status(400).send({ error: "올바른 IP 주소를 입력하세요." });
+	MainDB.ip_block.update([ '_id', ip ]).set([ 'reasonBlocked', '' ], [ 'ipBlockedUntil', 0 ]).on(function(){
+		noticeAdmin(req, "ip-unblock", ip); res.send({ ok: true });
+	});
+});
 
 Server.get("/gwalli", function(req, res){
 	if(!checkAdmin(req, res)) return;
@@ -261,19 +524,30 @@ Server.post("/gwalli/shop", function(req, res){
 function noticeAdmin(req, ...args){
 	JLog.info(`[ADMIN] ${req.originalUrl} ${req.ip} | ${args.join(' | ')}`);
 }
-function checkAdmin(req, res){
+function checkAdmin(req, res, hide){
 	if(global.isPublic){
 		if(req.session.profile){
-			if(GLOBAL.ADMIN.indexOf(req.session.profile.id) == -1){
+			var localDeveloper = req.session.profile.authType === 'local' && req.session.profile.developer === true;
+			if(GLOBAL.ADMIN.indexOf(req.session.profile.id) == -1 && !localDeveloper){
 				req.session.admin = false;
-				return res.send({ error: 400 }), false;
+				return hide ? (res.sendStatus(404), false) : (res.send({ error: 400 }), false);
 			}
 		}else{
 			req.session.admin = false;
-			return res.send({ error: 400 }), false;
+			return hide ? (res.sendStatus(404), false) : (res.send({ error: 400 }), false);
 		}
 	}
 	return true;
+}
+function normalizeIp(value){
+	var ip = String(value || "").trim().replace(/^::ffff:/, "");
+	return (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(ip) || /^[0-9a-f:]+$/i.test(ip)) ? ip : "";
+}
+function blockUntil(duration){
+	if(duration === "permanent") return 0;
+	var minutes = parseInt(duration, 10);
+	if(!isFinite(minutes) || minutes < 1 || minutes > 5256000) return null;
+	return Date.now() + minutes * 60000;
 }
 function parseKKuTuHot(){
 	var R = new Lizard.Tail();

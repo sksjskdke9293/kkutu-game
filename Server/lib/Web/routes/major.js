@@ -60,7 +60,7 @@ Server.get("/box", function(req, res){
 		if(!$body){
 			res.send({ error: 400 });
 		}else{
-			res.send($body.box);
+			res.send($body.box || {});
 		}
 	});
 });
@@ -142,7 +142,9 @@ Server.post("/buy/:id", function(req, res){
 			MainDB.users.findOne([ '_id', uid ]).limit([ 'money', true ], [ 'box', true ]).on(function($user){
 				if(!$user) return res.json({ error: 400 });
 				if(!$user.box) $user.box = {};
-				var postM = $user.money - $item.cost;
+				var money = Number($user.money) || 0;
+				var cost = Number($item.cost) || 0;
+				var postM = money - cost;
 				
 				if(postM < 0) return res.send({ result: 400 });
 				
@@ -151,11 +153,14 @@ Server.post("/buy/:id", function(req, res){
 					[ 'money', postM ],
 					[ 'box', $user.box ]
 				).on(function($fin){
-					res.send({ result: 200, money: postM, box: $user.box });
+					MainDB.users.findOne([ '_id', uid ]).limit([ 'money', true ], [ 'box', true ]).on(function(saved){
+						if(!saved || Number(saved.money) !== postM || !saved.box || !saved.box[gid]) return res.status(500).json({ error: 500 });
+						res.json({ result: 200, money: Number(saved.money), box: saved.box });
+					});
 					JLog.log("[PURCHASED] " + gid + " by " + uid);
 				});
 				// HIT를 올리는 데에 동시성 문제가 발생한다. 조심하자.
-				MainDB.kkutu_shop.update([ '_id', gid ]).set([ 'hit', $item.hit + 1 ]).on();
+				MainDB.kkutu_shop.update([ '_id', gid ]).set([ 'hit', (Number($item.hit) || 0) + 1 ]).on();
 			});
 		});
 	}else res.json({ error: 423 });
@@ -166,10 +171,9 @@ Server.post("/buy-font/dunggeunmo", function(req, res){
 	MainDB.users.findOne([ '_id', uid ]).limit([ 'money', true ], [ 'box', true ], [ 'equip', true ]).on(function($user){
 		if(!$user) return res.json({ error: 400 });
 		if(!$user.box) $user.box = {};
-		if($user.box.font_dunggeunmo) return res.json({ result: 200, money: $user.money, box: $user.box, equip: $user.equip || {}, owned: true });
 		if($user.money < 200) return res.json({ error: 400 });
 		$user.money -= 200;
-		$user.box.font_dunggeunmo = 1;
+		$user.box.font_dunggeunmo = (Number($user.box.font_dunggeunmo) || 0) + 1;
 		MainDB.users.update([ '_id', uid ]).set([ 'money', $user.money ], [ 'box', $user.box ]).on(function(){
 			res.json({ result: 200, money: $user.money, box: $user.box, equip: $user.equip || {} });
 		});
@@ -334,6 +338,7 @@ Server.get("/dict/:word", function(req, res){
         res.send({
             word: $word._id,
             mean: $word.mean,
+            meaningSource: $word.meaning_source || null,
             theme: $word.theme,
             type: $word.type
         });

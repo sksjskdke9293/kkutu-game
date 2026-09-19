@@ -127,6 +127,7 @@ function sqlWhere(q){
 	if(!Object.keys(q).length) return "TRUE";
 	
 	function wSearch(item){
+		if(item[0] === "$or") return "(" + item[1].map(wSearch).join(" OR ") + ")";
 		var c;
 		
 		if((c = item[1]['$not']) !== undefined) return Escape("NOT (%s)", wSearch([ item[0], c ]));

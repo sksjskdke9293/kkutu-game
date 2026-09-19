@@ -161,7 +161,7 @@ exports.Robot = function(target, place, level){
 			DIC[my.target].send(type, data);
 		}
 	};
-	my.chat = function(msg, code){
+	my.chat = function(msg, code, scope){
 		my.publish('chat', { profile: my.profile, value: msg });
 	};
 	my.setLevel(level);
@@ -182,6 +182,9 @@ exports.Data = function(data){
 		wins: Math.max(0, Number(data.ranked.wins) || 0),
 		losses: Math.max(0, Number(data.ranked.losses) || 0)
 	} : null;
+	// Daily quests live in the existing kkutu account document so older
+	// databases do not need a schema migration.
+	this.dailyQuests = data.dailyQuests || null;
 	this.record = {};
 	for(i in Const.GAME_TYPE){
 		this.record[j = Const.GAME_TYPE[i]] = data.record ? (data.record[Const.GAME_TYPE[i]] || [0, 0, 0, 0]) : [0, 0, 0, 0];
@@ -216,13 +219,17 @@ exports.WebServer = function(socket){
 	};
 	socket.on('message', my.onWebServerMessage);
 };
-exports.Client = function(socket, profile, sid){
+exports.Client = function(socket, profile, sid, guestName){
 	var my = this;
 	var gp, okg;
 	
 	if(profile){
 		my.id = profile.id;
 		my.profile = profile;
+		// Older account titles sometimes carried a built-in pencil marker.
+		// Badges are rendered separately, so keep every visible nickname clean.
+		if(my.profile.title) my.profile.title = String(my.profile.title).replace(/^[✏🖊🖋📝]\uFE0F?\s*/, '');
+		if(my.profile.name) my.profile.name = String(my.profile.name).replace(/^[✏🖊🖋📝]\uFE0F?\s*/, '');
 		/* 망할 셧다운제
 		if(Cluster.isMaster){
 			my.isAjae = Ajae.checkAjae(profile.birth, profile._age);
@@ -244,13 +251,18 @@ exports.Client = function(socket, profile, sid){
 		my.id = "guest__" + sid;
 		my.guest = true;
 		my.isAjae = false;
+		var chosenGuestName = String(guestName || '').trim().replace(/[^0-9A-Za-z가-힣 _-]/g, '').slice(0, 12);
+		my.guestNamed = chosenGuestName.length >= 2;
 		my.profile = {
 			id: sid,
-			title: getGuestName(sid),
+			title: chosenGuestName.length >= 2 ? chosenGuestName + '(손님)' : getGuestName(sid),
+			name: chosenGuestName.length >= 2 ? chosenGuestName + '(손님)' : getGuestName(sid),
+			guestNumber: getGuestName(sid),
 			image: GUEST_IMAGE
 		};
 	}
 	my.socket = socket;
+	my.sessionId = sid;
 	my.place = 0;
 	my.team = 0;
 	my.ready = false;
@@ -286,14 +298,18 @@ exports.Client = function(socket, profile, sid){
 			// process.send({ type: 'okg', id: my.id, time: time });
 		};
 	}
-	socket.on('close', function(code){
+	my.disconnect = function(code){
+		if(my._closed) return;
+		my._closed = true;
 		if(ROOM[my.place]) ROOM[my.place].go(my);
 		if(my.subPlace) my.pracRoom.go(my);
 		exports.onClientClosed(my, code);
-	});
+		if(socket.readyState < 2) socket.close();
+	};
+	socket.on('close', my.disconnect);
 	socket.on('message', function(msg){
 		var data, room = ROOM[my.place];
-		if(!my) return;
+		if(my._closed || DIC[my.id] !== my) return;
 		if(!msg) return;
 		
 		JLog.log(`Chan @${channel} Msg #${my.id}: ${msg}`);
@@ -370,16 +386,100 @@ exports.Client = function(socket, profile, sid){
 				}else my.blocked = false;
 			}
 		}
+		// A successful turnEnd is emitted by the player who submitted the word.
+		// Count it here so every word game mode shares the same quest rules.
+		if(type == 'turnEnd' && data && data.value && data.ok !== false){
+			my.updateDailyQuests('word', { word: String(data.value) });
+		}
 		data.profile = my.profile;
 		if(my.subPlace && type != 'chat') my.send(type, data);
 		else for(i in DIC){
-			if(DIC[i].place == my.place) DIC[i].send(type, data);
+			if((type === "chat" && data.scope === "main") || DIC[i].place == my.place) DIC[i].send(type, data);
 		}
 		if(Cluster.isWorker && type == 'user') process.send({ type: "user-publish", data: data });
+		if(type == 'chat' && !data.notice && typeof data.value == 'string') {
+			require('./discord-chat').forward({name: my.profile.title || my.profile.name || '손님', value: data.value, timestamp: Date.now()});
+		}
 	};
-	my.chat = function(msg, code){
+	my.chat = function(msg, code, scope){
 		if(my.noChat) return my.send('chat', { notice: true, code: 443 });
-		my.publish('chat', { value: msg, notice: code ? true : false, code: code });
+		my.publish('chat', { value: msg, notice: code ? true : false, code: code, scope: scope || (my.place ? "room" : "main") });
+	};
+	my.getDailyQuestDate = function(){
+		var now = new Date(Date.now() + 9 * 60 * 60 * 1000);
+		return now.getUTCFullYear() + '-' + String(now.getUTCMonth() + 1).padStart(2, '0') + '-' + String(now.getUTCDate()).padStart(2, '0');
+	};
+	my.ensureDailyQuests = function(){
+		var date = my.getDailyQuestDate();
+		var state = my.data && my.data.dailyQuests;
+		var seed = date.split('-').join('') * 1;
+		var groups = [
+			[
+				{ id: 'long5', title: '긴 낱말 첫걸음', description: '5글자 이상 낱말을 1회 사용하세요.', event: 'word', minLength: 5, target: 1 },
+				{ id: 'words5', title: '가볍게 이어가기', description: '정답 낱말을 5회 사용하세요.', event: 'word', target: 5 }
+			],
+			[
+				{ id: 'words10', title: '낱말 이어 달리기', description: '정답 낱말을 10회 사용하세요.', event: 'word', target: 10 },
+				{ id: 'long6x3', title: '긴 낱말 수집가', description: '6글자 이상 낱말을 3회 사용하세요.', event: 'word', minLength: 6, target: 3 }
+			],
+			[
+				{ id: 'win1', title: '오늘의 승리', description: '게임에서 1회 승리하세요.', event: 'win', target: 1 },
+				{ id: 'words20', title: '낱말 마라톤', description: '정답 낱말을 20회 사용하세요.', event: 'word', target: 20 },
+				{ id: 'long7x3', title: '고난도 장문', description: '7글자 이상 낱말을 3회 사용하세요.', event: 'word', minLength: 7, target: 3 }
+			]
+		];
+		if(!state || state.date !== date || !Array.isArray(state.quests) || state.quests.length !== 3){
+			state = { date: date, rewardVersion: 2, quests: groups.map(function(group, index){
+				var source = group[(seed + index * 7) % group.length];
+				return {
+					id: source.id, title: source.title, description: source.description,
+					event: source.event, minLength: source.minLength || 0,
+					target: source.target, progress: 0, completed: false, reward: 50 + ((seed + index * 5) % 6)
+				};
+			}) };
+			my.data.dailyQuests = state;
+			my._dailyQuestReset = true;
+		}
+		if(state.rewardVersion !== 2){
+			state.quests.forEach(function(quest, index){
+				if(!quest.completed) quest.reward = 50 + ((seed + index * 5) % 6);
+			});
+			state.rewardVersion = 2;
+			my.data.dailyQuests = state;
+			my._dailyQuestReset = true;
+		}
+		return state;
+	};
+	my.getDailyQuestData = function(){
+		if(my.guest) return { guest: true, reward: 50, quests: [] };
+		var state = my.ensureDailyQuests();
+		if(my._dailyQuestReset){
+			my._dailyQuestReset = false;
+			setTimeout(function(){ my.flush(); }, 0);
+		}
+		return { date: state.date, reward: 50, money: my.money, quests: state.quests };
+	};
+	my.updateDailyQuests = function(event, payload){
+		if(my.guest || !my.data) return;
+		var state = my.ensureDailyQuests();
+		var changed = false;
+		var rewarded = [];
+		state.quests.forEach(function(quest){
+			if(quest.completed || quest.event !== event) return;
+			if(event === 'word' && quest.minLength && (!payload.word || payload.word.length < quest.minLength)) return;
+			quest.progress = Math.min(quest.target, Number(quest.progress || 0) + 1);
+			changed = true;
+			if(quest.progress >= quest.target){
+				quest.completed = true;
+				var reward = Math.max(50, Math.min(55, Number(quest.reward) || 50));
+				my.money += reward;
+				rewarded.push({ id: quest.id, reward: reward });
+			}
+		});
+		if(!changed) return;
+		my.send('dailyQuest', Object.assign(my.getDailyQuestData(), { completed: rewarded }));
+		if(my._dailyQuestFlush) clearTimeout(my._dailyQuestFlush);
+		my._dailyQuestFlush = setTimeout(function(){ my.flush(); }, rewarded.length ? 0 : 800);
 	};
 	my.checkExpire = function(){
 		var now = new Date();
@@ -456,6 +556,8 @@ exports.Client = function(socket, profile, sid){
 			my.data = new exports.Data($user.kkutu);
 			my.money = Number($user.money);
 			my.friends = $user.friends || {};
+			my.profile.adminBadge = $user.adminBadge || '';
+			my.ensureDailyQuests();
 			if(first) my.flush();
 			else{
 				my.checkExpire();
@@ -467,7 +569,8 @@ exports.Client = function(socket, profile, sid){
 				else R.go({ result: 444, black: black });
 			}
 			/* Enhanced User Block System [E] */
-			else if(Cluster.isMaster && $user.server) R.go({ result: 409, black: $user.server });
+			// A login on another game server takes ownership below. The previous
+			// server observes the changed owner and closes its older connection.
 			else if(exports.NIGHT && my.isAjae === false) R.go({ result: 440 });
 			else R.go({ result: 200 });
 		});
@@ -506,8 +609,8 @@ exports.Client = function(socket, profile, sid){
 			my.game.wpc.push(v);
 		}
 	};
-	my.enter = function(room, spec, pass){
-		var $room, i;
+	my.enter = function(room, spec, pass, reservedLateJoin){
+		var $room, i, lateJoin = !!reservedLateJoin;
 		
 		if(my.place){
 			my.send('roomStuck');
@@ -528,7 +631,8 @@ exports.Client = function(socket, profile, sid){
 			if($room._rankedClosed) return my.sendError(430, room.id);
 			if(!spec){
 				if($room.gaming){
-					return my.send('error', { code: 416, target: $room.id });
+					if($room.opts && $room.opts.latejoin) lateJoin = spec = true;
+					else return my.send('error', { code: 416, target: $room.id });
 				}else if(my.guest) if(!GUEST_PERMISSION.enter){
 					return my.sendError(401);
 				}
@@ -541,7 +645,7 @@ exports.Client = function(socket, profile, sid){
 			}
 			if(Cluster.isMaster){
 				my.send('preRoom', { id: $room.id, pw: room.password, channel: $room.channel });
-				CHAN[$room.channel].send({ type: "room-reserve", session: sid, room: room, spec: spec, pass: pass });
+				CHAN[$room.channel].send({ type: "room-reserve", target: my.id, session: sid, room: room, spec: spec, pass: pass, lateJoin: lateJoin });
 				
 				$room = undefined;
 			}else{
@@ -572,7 +676,7 @@ exports.Client = function(socket, profile, sid){
 				room.id = _rid;
 				room._create = true;
 				my.send('preRoom', { id: _rid, channel: av });
-				CHAN[av].send({ type: "room-reserve", create: true, session: sid, room: room });
+				CHAN[av].send({ type: "room-reserve", target: my.id, create: true, session: sid, room: room });
 				
 				do{
 					if(++_rid > 999) _rid = 100;
@@ -593,7 +697,7 @@ exports.Client = function(socket, profile, sid){
 			}
 		}
 		if($room){
-			if(spec) $room.spectate(my, room.password);
+			if(spec) $room.spectate(my, room.password, lateJoin);
 			else $room.come(my, room.password, pass);
 		}
 	};
@@ -906,7 +1010,7 @@ exports.Room = function(room, channel){
 			if(!my.players[i]) continue;
 			if(!my.players[i].robot) continue;
 			if(!target || my.players[i].id == target){
-				my.players[i].chat("ㅠㅠㅠㅠ");
+				if(typeof my.players[i].chat === "function") my.players[i].chat("ㅠㅠㅠㅠ");
 				if(my.gaming){
 					j = my.game.seq.indexOf(my.players[i]);
 					if(j != -1) my.game.seq.splice(j, 1);
@@ -942,7 +1046,7 @@ exports.Room = function(room, channel){
 			}
 		}
 	};
-	my.spectate = function(client, password){
+	my.spectate = function(client, password, lateJoin){
 		if(!my.practice) client.place = my.id;
 		var len = my.players.push(client.id);
 		
@@ -950,7 +1054,8 @@ exports.Room = function(room, channel){
 			client.ready = false;
 			client.team = 0;
 			client.cameWhenGaming = true;
-			client.form = (len > my.limit) ? "O" : "S";
+			client.form = lateJoin ? "L" : ((len > my.limit) ? "O" : "S");
+			client.lateJoinPending = !!lateJoin;
 			
 			process.send({ type: "room-spectate", target: client.id, id: my.id, pw: password });
 			my.export(client.id, false, true);
@@ -976,23 +1081,8 @@ exports.Room = function(room, channel){
 			if(my.gaming){
 				x = my.game.seq.indexOf(client.id);
 				if(x != -1){
-					if(my.game.seq.length <= 2){
-						my.game.seq.splice(x, 1);
-						my.roundEnd();
-					}else{
-						me = my.game.turn == x;
-						if(me && my.rule.ewq){
-							clearTimeout(my.game._rrt);
-							my.game.loading = false;
-							if(Cluster.isWorker) my.turnEnd();
-						}
-						my.game.seq.splice(x, 1);
-						if(my.game.turn > x){
-							my.game.turn--;
-							if(my.game.turn < 0) my.game.turn = my.game.seq.length - 1;
-						}
-						if(my.game.turn >= my.game.seq.length) my.game.turn = 0;
-					}
+					my.game.departed = my.game.departed || {};
+					my.game.departed[client.id] = true;
 				}
 			}
 		}else{
@@ -1177,6 +1267,22 @@ exports.Room = function(room, channel){
 	};
 	my.roundReady = function(){
 		if(!my.gaming) return;
+		var joined = false;
+		my.players.forEach(function(id){
+			var client = DIC[id];
+			if(!client || !client.lateJoinPending) return;
+			client.lateJoinPending = false;
+			client.cameWhenGaming = false;
+			client.form = "J";
+			client.playAt = Date.now();
+			client.game.score = 0;
+			client.game.bonus = 0;
+			client.game.item = [];
+			client.game.wpc = [];
+			if(my.game.seq.indexOf(id) === -1) my.game.seq.push(id);
+			joined = true;
+		});
+		if(joined) my.export();
 		
 		return my.route("roundReady");
 	};
@@ -1257,7 +1363,20 @@ exports.Room = function(room, channel){
 				rw._score = 0;
 			}
 			rw.playTime = now - o.playAt;
+			// Yut finishes only when a team brings all four pieces home. Award its
+			// longer match bonus only on completion, never on an interrupted match.
+			if(Const.GAME_TYPE[my.mode] === 'YUT' && data && data.winnerTeam){
+				var yutWon = Number(o.game.team || o.team) === Number(data.winnerTeam);
+				var yutDuration = Math.min(1, Math.max(0, rw.playTime / 600000));
+				rw.score += Math.round((yutWon ? 240 : 110) + (yutWon ? 260 : 130) * yutDuration);
+				// Yut takes considerably longer than ordinary matches. A completed
+				// match pays about 50 Ping to every signed-in participant.
+				rw.money = Math.max(Number(rw.money || 0), 50);
+			}
 			o.applyEquipOptions(rw); // 착용 아이템 보너스 적용
+			// A match against only robots has no other human participant and
+			// must not award Ping, including Yut and equipment bonuses.
+			if(rl < 2) rw.money = 0;
 			if(rw.together){
 				if(o.game.wpc) o.game.wpc.forEach(function(item){ o.obtain("$WPC" + item, 1); }); // 글자 조각 획득 처리
 				o.onOKG(rw.playTime);
@@ -1277,6 +1396,9 @@ exports.Room = function(room, channel){
 			if(!my.practice && rw.together){
 				o.data.record[Const.GAME_TYPE[my.mode]][0]++;
 				if(res[i].rank == 0) o.data.record[Const.GAME_TYPE[my.mode]][1]++;
+			}
+			if(!my.practice && rw.together && res[i].rank === 0){
+				o.updateDailyQuests('win', { won: true });
 			}
 			users[o.id] = o.getData();
 			
@@ -1515,7 +1637,10 @@ function getRewards(mode, score, bonus, rank, all, ss){
 		* (0.77 + 0.05 * (all - rank) * (all - rank)) // 순위
 		* 1.25 / (1 + 1.25 * sr * sr) // 점차비(양학했을 수록 ↓)
 	;
-	rw.money = 1 + rw.score * 0.01;
+	// A completed multiplayer match should always give a useful amount of Ping.
+	// The previous 1 + 1% formula commonly rounded to only 1~2 Ping even after
+	// a full game. Keep the existing score/rank balance and raise only currency.
+	rw.money = Math.min(15, 8 + rw.score * 0.02);
 	if(all < 2){
 		rw.score = rw.score * 0.05;
 		rw.money = rw.money * 0.05;

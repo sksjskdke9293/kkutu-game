@@ -18,7 +18,8 @@
 
 var GLOBAL = require("./sub/global.json");
 
-exports.KKUTU_MAX = 400;
+exports.KKUTU_MAX = 100;
+exports.SERVER_LIMITS = [ 100, 100, 50 ];
 exports.MAIN_PORTS = GLOBAL.MAIN_PORTS;
 exports.TEST_PORT = 4040;
 exports.SPAM_CLEAR_DELAY = 1600;
@@ -40,7 +41,8 @@ exports.OPTIONS = {
 	'prv': { name: "Proverb" },
 	'str': { name: "Strict" },
 	'k32': { name: "Sami" },
-	'no2': { name: "No2" }
+	'no2': { name: "No2" },
+	'lat': { name: "LateJoin" }
 };
 exports.MOREMI_PART = [ 'back', 'eye', 'mouth', 'shoes', 'clothes', 'head', 'lhand', 'rhand', 'front' ];
 exports.CATEGORIES = [ "all", "spec", "skin", "badge", "head", "eye", "mouth", "clothes", "hs", "back" ];
@@ -183,8 +185,19 @@ exports.RULE = {
 		big: true,
 		ewq: false
 	},
-	'KAW': { lang: "ko", rule: "Classic", opts: [], time: 1, ai: true, big: false, freeform: true, ewq: true }
+	'KAW': { lang: "ko", rule: "Classic", opts: [], time: 1, ai: true, big: false, freeform: true, ewq: true },
+	'YUT': { lang: "ko",
+		rule: "Yut",
+		opts: [ "ext" ],
+		time: 1,
+		ai: true,
+		big: true,
+		ewq: false
+	}
 };
+Object.keys(exports.RULE).forEach(function(key){
+	if(exports.RULE[key].opts.indexOf('lat') === -1) exports.RULE[key].opts.push('lat');
+});
 exports.getPreScore = function(text, chain, tr){
 	return 2 * (Math.pow(5 + 7 * (text || "").length, 0.74) + 0.88 * (chain || []).length) * ( 0.5 + 0.5 * tr );
 };

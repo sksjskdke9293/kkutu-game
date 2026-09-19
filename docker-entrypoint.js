@@ -15,9 +15,10 @@ if (missing.length) {
 const configPath = '/app/Server/lib/sub/global.json';
 const authPath = '/app/Server/lib/sub/auth.json';
 const config = {
-	ADMIN: [],
-	MAIN_PORTS: [ 8080 ],
+	ADMIN: (process.env.KKUTU_ADMIN_IDS || '').split(',').map((id) => id.trim()).filter(Boolean),
+	MAIN_PORTS: [ 8080, 8081, 8082 ],
 	GAME_SERVER_HOST: process.env.GAME_SERVER_HOST || 'game',
+	GAME_SERVER_HOSTS: (process.env.GAME_SERVER_HOSTS || 'game,game2,game3').split(','),
 	KKUTUHOT_PATH: '/kkutu/data/kkutuhot.json',
 	PASS: process.env.KKUTU_PASS,
 	PG_HOST: process.env.PG_HOST || 'db',
@@ -32,7 +33,7 @@ const config = {
 	IS_SECURED: false,
 	SSL_OPTIONS: { PRIVKEY: '', CERT: '', CA: '', PFX: '', isPFX: false, isCA: false },
 	USER_BLOCK_OPTIONS: {
-		USE_MODULE: false,
+		USE_MODULE: true,
 		USE_X_FORWARDED_FOR: false,
 		BLOCK_IP_ONLY_FOR_GUEST: true,
 		DEFAULT_BLOCKED_TEXT: 'Service unavailable.',
@@ -54,6 +55,26 @@ if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
 		clientID: process.env.DISCORD_CLIENT_ID,
 		clientSecret: process.env.DISCORD_CLIENT_SECRET,
 		callbackURL: process.env.DISCORD_CALLBACK_URL || 'https://kkutugame.kro.kr/login/discord/callback'
+	});
+	Fs.writeFileSync(authPath, `${JSON.stringify(auth, null, 2)}\n`, { mode: 0o600 });
+}
+
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+	const auth = JSON.parse(Fs.readFileSync(authPath, 'utf8'));
+	auth.google = Object.assign({}, auth.google, {
+		clientID: process.env.GOOGLE_CLIENT_ID,
+		clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+		callbackURL: process.env.GOOGLE_CALLBACK_URL || 'https://kkutugame.kro.kr/login/google/callback'
+	});
+	Fs.writeFileSync(authPath, `${JSON.stringify(auth, null, 2)}\n`, { mode: 0o600 });
+}
+
+if (process.env.KAKAO_CLIENT_ID) {
+	const auth = JSON.parse(Fs.readFileSync(authPath, 'utf8'));
+	auth.kakao = Object.assign({}, auth.kakao, {
+		clientID: process.env.KAKAO_CLIENT_ID,
+		clientSecret: process.env.KAKAO_CLIENT_SECRET || '',
+		callbackURL: process.env.KAKAO_CALLBACK_URL || 'https://kkutugame.kro.kr/login/kakao/callback'
 	});
 	Fs.writeFileSync(authPath, `${JSON.stringify(auth, null, 2)}\n`, { mode: 0o600 });
 }

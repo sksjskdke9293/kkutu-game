@@ -9,14 +9,16 @@
 #AccountCard button { display:block; position:static; width:100%; min-height:46px; margin:12px 0 0; border:0; padding:10px 12px; border-radius:12px; background:#d9f0df; color:#24553a; cursor:pointer; font:bold 16px Arial,sans-serif; }
 #AccountCard button.primary { background:#287950; color:white; }
 #AccountCard button.account-discord { background:#5865f2; color:white; }
+#AccountCard button.account-google { background:#fff; color:#202124; border:1px solid #dadce0; }
+#AccountCard button.account-kakao { background:#fee500; color:#191919; }
 #AccountCard button.account-link { background:transparent; text-decoration:underline; font-size:14px; }
 #AccountCard #AccountClose { position:absolute; width:36px; min-height:36px; right:14px; top:14px; margin:0; padding:0; background:#eff6f1; }
 #AccountCard .account-warning { color:#8a4d19; font-size:12px; background:#fff3df; border-radius:8px; padding:10px; }
 #AccountError { color:#a32929; font-size:14px; min-height:20px; }
 #AccountCard button:disabled { opacity:.55; cursor:wait; }
-#AccountBar { position:fixed; top:8px; left:12px; z-index:90; display:flex; gap:6px; align-items:center; max-width:calc(100vw - 140px); font:14px Arial,sans-serif; }
+#AccountBar { position:fixed; top:8px; right:12px; left:auto; z-index:90; display:flex; gap:6px; align-items:center; max-width:calc(100vw - 140px); font:14px Arial,sans-serif; }
 #AccountBar button { float:none; width:auto; min-height:34px; padding:6px 10px; margin:0; border:1px solid #c5dfcc; border-radius:12px; background:#f7fff9; color:#28573f; cursor:pointer; }
-.moremi-developer-badge { display:inline-block; width:22px; height:22px; object-fit:contain; vertical-align:middle; margin-left:4px; float:none !important; }
+.moremi-developer-badge { display:inline-block !important; width:22px !important; height:22px !important; min-width:22px !important; max-width:22px !important; min-height:22px !important; max-height:22px !important; object-fit:contain !important; object-position:center !important; vertical-align:middle; margin-left:4px; float:none !important; flex:0 0 22px !important; border-radius:4px; }
 body[data-game-view='for-lobby'] .MeBox { top:48px !important; }
 body:not([data-game-view='for-lobby'])[data-game-view] .kkutu-menu { top:48px !important; }
 body[data-game-view='for-gaming'] .GameBox { top:0 !important; }

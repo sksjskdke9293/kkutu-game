@@ -1,0 +1,167 @@
+/* Shared autumn theme for every game screen. */
+body[data-game-view], body.ranked-match[data-game-view='for-gaming'] {
+ background:#342012 url('/img/custom/lobby-desktop.png?v=20260913-lobby-1') center / cover fixed no-repeat !important;
+ color:#fff;
+ color-scheme:dark;
+}
+body[data-game-view] #Middle, body[data-game-view] #Jungle,
+body.ranked-match[data-game-view='for-gaming'] #Middle { background:transparent !important; }
+body[data-game-view] :is(.RoomListBox,.ShopBox,.RoomBox,.GameBox,.ChatBox,.dialog,#AccountCard,#MatchOverlay section,#RankMatchOverlay section,#TutorialOverlay section) {
+ background:rgba(0,0,0,.64) !important;
+ border-color:rgba(255,255,255,.24) !important;
+ color:#fff !important;
+ box-shadow:0 12px 32px rgba(0,0,0,.25) !important;
+}
+body[data-game-view] :is(.product-title,.product-body,.dialog-head,.dialog-body,.dialog-bar,.tail-button,#RoomBrowseTools,.ranked-panel,.settings-panel) {
+ background:transparent !important;
+ color:#fff !important;
+ border-color:rgba(255,255,255,.2) !important;
+}
+body[data-game-view] :is(.RoomListBox,.ShopBox,.RoomBox,.GameBox,.dialog,#MatchOverlay,#RankMatchOverlay,#AccountCard) :is(h2,h3,h4,h5,p,label,strong,small,.rooms-title,.rooms-number,.rooms-limit,.rooms-mode,.rooms-round,.rooms-time,.rooms-lock,.room-head-title,.room-head-number,.room-head-mode,.room-head-limit,.room-head-round,.room-head-time,.room-user-name,.shop-welcome,.ranked-rules,.ranked-guest-warning,.word-meaning-word,.word-meaning-definition,.game-user-name,.game-user-score,.game-user-score-char) {
+ color:#fff !important;
+ text-shadow:none !important;
+}
+body[data-game-view] :is(.rooms-item,.rooms-gaming,.rooms-create,.shop-font-card,.room-user,.game-user,.rank-tier-gallery,.rank-result-summary,.settings-section,.settings-intro,.settings-audio-row,.result-board-item) {
+ background:rgba(0,0,0,.38) !important;
+ border-color:rgba(255,255,255,.22) !important;
+ color:#fff !important;
+ box-shadow:none !important;
+}
+body[data-game-view] :is(.RoomListBox,.RoomBox,.ShopBox,.GameBox,.dialog,.kkutu-menu,#MatchOverlay,#RankMatchOverlay,#TutorialOverlay) button,
+body[data-game-view] :is(#RoomPrimaryAction,#RoomStartAction,#RoomReadyAction,#RankQueueBtn,.panel-close,.closeBtn) {
+ background:rgba(0,0,0,.65) !important;
+ border:1px solid rgba(255,255,255,.28) !important;
+ color:#fff !important;
+ box-shadow:none !important;
+}
+body[data-game-view] :is(.dialog,.RoomListBox,.ChatBox,.GameBox) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea),
+body[data-game-view] #game-input {
+ background:rgba(0,0,0,.48) !important;
+ border-color:rgba(255,255,255,.4) !important;
+ color:#fff !important;
+}
+body[data-game-view] input::placeholder { color:rgba(255,255,255,.65) !important; }
+body[data-game-view] select option { background:#252525; color:#fff; }
+body[data-game-view] button:focus-visible,body[data-game-view] input:focus-visible { outline:2px solid #ffd68b !important; outline-offset:2px; }
+body[data-game-view] button:disabled { opacity:.45; }
+body[data-game-view] #SettingDiag {
+ --settings-ink:#fff; --settings-muted:#ddd; --settings-line:rgba(255,255,255,.25); --settings-mint:rgba(0,0,0,.3);
+ background:rgba(0,0,0,.8) !important;
+}
+body[data-game-view] #SettingDiag :is(.dialog-head,.settings-section,.settings-intro,.settings-audio-row) { background:rgba(0,0,0,.24) !important; }
+body[data-game-view] .ChatBox .product-title { display:none !important; }
+body[data-game-view] .ChatBox .product-body { height:100% !important; }
+body[data-game-view] .ChatBox #Chat,body[data-game-view] .ChatBox #Chat * { color:#fff !important; background-color:transparent !important; }
+body[data-game-view='for-gaming'] .GameBox .game-input,
+body[data-game-view='for-gaming'] .GameBox .word-meaning-panel,
+body[data-game-view='for-gaming'] .GameBox .history-holder,
+body[data-game-view='for-gaming'] .GameBox .hints {
+ background:rgba(0,0,0,.64) !important;
+ border:1px solid rgba(255,255,255,.25) !important;
+ border-radius:18px !important;
+ color:#fff !important;
+ box-shadow:0 6px 20px rgba(0,0,0,.2) !important;
+}
+
+body[data-game-view='for-gaming'] .GameBox .game-user-current { border-color:#ffd68b !important; box-shadow:0 0 0 2px #ffd68b !important; }
+body[data-game-view] #ResultDiag .result-board-me { background:rgba(255,255,255,.15) !important; }
+body[data-game-view] :is(#RankResultDelta,#RankResultRating,.settings-audio-label span) { color:#fff !important; }
+@media(max-width:800px) {
+ body[data-game-view],body.ranked-match[data-game-view='for-gaming'] { background-image:url('/img/custom/lobby-mobile.png?v=20260913-lobby-1') !important; }
+}
+/* Explicit component surfaces prevent white-on-white legacy controls. */
+body[data-game-view] #SettingDiag .settings-select,
+body[data-game-view] #SettingDiag .settings-check,
+body[data-game-view] #SettingDiag .settings-mute label,
+body[data-game-view] #RoomDiag .dialog-opt {
+ background:rgba(0,0,0,.48) !important; color:#fff !important; border-color:rgba(255,255,255,.35) !important;
+}
+body[data-game-view] #SettingDiag :is(.settings-check-text,.settings-check-text span,.settings-check-text strong,output),
+body[data-game-view] #TutorialOverlay :is(h2,p,span),body[data-game-view] #TutorialBtn { color:#fff !important; }
+body[data-game-view] .RoomListBox .rooms-item,
+body[data-game-view] .RoomListBox .rooms-create,
+body.waiting-room[data-game-view] .RoomBox :is(.room-stage-actions,.room-stage-footer,.room-user-title,.room-user-empty,.room-user-ready) {
+ background:rgba(0,0,0,.48) !important; color:#fff !important; border-color:rgba(255,255,255,.25) !important;
+}
+body.waiting-room[data-game-view] .RoomBox .room-user-empty span { background:rgba(255,255,255,.16) !important; color:#fff !important; }
+body.waiting-room[data-game-view] .RoomBox .room-user::before { background:transparent !important; }
+body.modern-classic[data-game-view='for-gaming'] .GameBox {
+ background:transparent !important; backdrop-filter:none !important;
+}
+body.modern-classic[data-game-view='for-gaming'],body.ranked-match[data-game-view='for-gaming'] {
+ background:#342012 url('/img/custom/lobby-desktop.png?v=20260913-lobby-1') center / cover fixed no-repeat !important;
+}
+body.modern-classic[data-game-view='for-gaming'] #Middle,
+body.modern-classic[data-game-view='for-gaming'] .GameBox .product-body { background:transparent !important; }
+@media(max-width:800px){body.modern-classic[data-game-view='for-gaming'],body.ranked-match[data-game-view='for-gaming'] {background-image:url('/img/custom/lobby-mobile.png?v=20260913-lobby-1') !important;}}
+body[data-game-view='for-lobby'] .RoomListBox .rooms-item.rooms-create { background:rgba(0,0,0,.48) !important; color:#fff !important; }
+body[data-game-view] .dialog .dialog-title {color:#fff !important;}
+/* Starting arrives while the game panel is hidden: never inherit its zero rect. */
+body[data-game-view] #Loading.game-data-loading {
+ position:fixed !important; inset:0 !important; width:100vw !important; height:100dvh !important;
+ z-index:2147483001 !important; box-sizing:border-box !important;
+ background:#342012 url('/img/custom/lobby-desktop.png?v=20260913-lobby-1') center / cover no-repeat !important;
+ color:#fff !important; text-align:center !important; padding-top:70vh !important;
+ font-size:20px !important; text-shadow:0 2px 5px #000 !important;
+}
+body[data-game-view] #RoomPrimaryAction,
+body[data-game-view] .kkutu-menu #StartBtn { display:none !important; }
+@media(max-width:800px){body[data-game-view] #Loading.game-data-loading {background-image:url('/img/custom/lobby-mobile.png?v=20260913-lobby-1') !important;}}
+body[data-game-view] #StartBtn#StartBtn, body[data-game-view] #RoomPrimaryAction#RoomPrimaryAction { display:none !important; }
+body[data-game-view] .ChatBox #Chat .chat-notice *,body[data-game-view] .ChatBox #Chat .chat-notice {color:#fff !important;}
+body[data-game-view] #MyCurrentGameScore#MyCurrentGameScore {display:none !important;}
+body.modern-classic[data-game-view='for-gaming'] .GameBox .game-body .game-user {margin-top:0 !important; margin-bottom:0 !important; top:0 !important; transform:none !important; animation:none !important; align-self:start !important;}
+body.modern-classic[data-game-view='for-gaming'] .GameBox .game-body .game-user-score {display:flex !important; position:relative !important; grid-row:3 !important; height:32px !important; color:#fff !important;}
+/* Keep every participant in the row, rather than stacking absolute cards. */
+body.modern-classic[data-game-view='for-gaming'] .GameBox .game-body { display:flex !important; flex-wrap:nowrap !important; align-items:flex-start !important; overflow-x:auto !important; }
+body.modern-classic[data-game-view='for-gaming'] .GameBox .game-body .game-user {
+ position:relative !important; inset:auto !important; float:none !important; flex:0 0 128px !important;
+ display:grid !important; grid-template-rows:100px 28px 32px !important; grid-template-columns:minmax(0,1fr) !important;
+ height:176px !important; min-height:176px !important; padding:8px !important; box-sizing:border-box !important;
+ visibility:visible !important; opacity:1 !important; overflow:visible !important;
+}
+body.modern-classic[data-game-view='for-gaming'] .GameBox .game-body .game-user-image { position:relative !important; inset:auto !important; grid-row:1 !important; width:96px !important; height:96px !important; margin:0 auto !important; transform:none !important; display:block !important; }
+body.modern-classic[data-game-view='for-gaming'] .GameBox .game-body .game-user-title { position:relative !important; inset:auto !important; grid-row:2 !important; height:28px !important; margin:0 !important; display:flex !important; }
+body.modern-classic[data-game-view='for-gaming'] .GameBox .game-body .game-user-score { position:relative !important; inset:auto !important; grid-row:3 !important; display:flex !important; visibility:visible !important; opacity:1 !important; justify-content:center !important; width:100% !important; margin:0 !important; }
+body[data-game-view] #SettingDiag .settings-intro-icon,body[data-game-view] #SettingDiag .settings-section-icon { background:rgba(255,255,255,.18) !important; color:#fff !important; }
+body[data-game-view] #SettingDiag .settings-intro-icon i,body[data-game-view] #SettingDiag .settings-section-icon i { color:#fff !important; }
+/* New UI input state colours apply only to the surrounding frame. */
+body.modern-classic[data-game-view='for-gaming'] .GameBox .game-input[data-mode='answer'] {background:rgba(49,178,103,.48) !important; border-color:rgba(120,245,164,.75) !important;}
+body.modern-classic[data-game-view='for-gaming'] .GameBox .game-input[data-mode='hint'] {background:rgba(229,109,160,.48) !important; border-color:rgba(255,176,211,.75) !important;}
+body.modern-classic[data-game-view='for-gaming'] .GameBox .game-input[data-mode='prediction'] {background:rgba(236,198,63,.48) !important; border-color:rgba(255,231,134,.8) !important;}
+body.modern-classic[data-game-view='for-gaming'] .GameBox .game-body .game-user-score {min-height:32px !important; font-size:22px !important; line-height:32px !important; overflow:visible !important;}
+body.modern-classic[data-game-view='for-gaming'] .GameBox .game-user-score-char {position:static !important; display:block !important; color:#fff !important; line-height:32px !important;}
+body[data-game-view]:not(.guest-name-locked) #GuestNameEntry {display:none !important;}
+body[data-game-view='for-lobby'] .RoomListBox .rooms-item.rooms-create {background:#fff !important; color:#000 !important;}
+body[data-game-view='for-lobby'] .RoomListBox .rooms-create > div {color:#000 !important;}
+body[data-game-view='for-lobby'] .RoomListBox .rooms-details {display:flex !important; flex-wrap:wrap !important; gap:5px 10px !important; height:auto !important; min-height:28px !important;}
+body[data-game-view='for-lobby'] .RoomListBox .rooms-details > div {position:static !important; float:none !important; width:auto !important; margin:0 !important; font-size:12px !important; line-height:18px !important;}
+body[data-game-view] #ChatTabs {display:flex;gap:8px;padding:8px 12px;height:38px;box-sizing:border-box;}
+body[data-game-view] #ChatTabs button {color:white;background:rgba(0,0,0,.5);border:1px solid #888;border-radius:8px;cursor:pointer;}
+body[data-game-view] #ChatTabs button[aria-selected=true] {border-color:#ff99c5;background:rgba(220,85,140,.3);}
+body[data-game-view] .ChatBox .product-body {height:calc(100% - 38px) !important;}
+.ChatBox[data-chat-tab=main] [data-chat-scope=room],.ChatBox[data-chat-tab=room] [data-chat-scope=main] {display:none !important;}
+body[data-game-view] #TurnHint button.hint-used {border:3px solid #ff80bc !important;box-shadow:0 0 0 2px rgba(255,128,188,.25) !important;}
+#SocialRequests {position:fixed;top:80px;left:50%;transform:translateX(-50%);width:min(620px,calc(100vw - 24px));z-index:11000;display:grid;gap:12px;}
+body[data-game-view] .social-request {padding:20px;border:1px solid #ffacd0;border-radius:18px;background:rgba(0,0,0,.88);color:white;box-sizing:border-box;}
+.social-request strong {display:block;font-size:20px;margin-bottom:14px;color:#fff !important;}
+.social-request > div {display:flex;gap:12px;}
+body[data-game-view] .social-request button {padding:10px 24px;border:1px solid #fff;border-radius:10px;color:white;background:rgba(255,255,255,.15);cursor:pointer;}
+body[data-game-view] .social-request button:first-child {background:#805269;}
+body[data-game-view] .social-request-chat {padding:10px;float:none;width:100%;margin:6px 0;}
+.social-request-chat strong {font-size:14px;}
+
+/* The add-room plus has its own pseudo-element background. */
+body[data-game-view] .RoomListBox .rooms-create div::before { background: #fff !important; color: #000 !important; box-shadow: none !important; }
+
+body.guest-name-locked #GuestNameEntry { box-sizing:border-box !important; transform:none !important; margin:0 !important; width:100% !important; max-width:100% !important; height:100dvh !important; overflow-y:auto; padding:24px max(20px,env(safe-area-inset-right)) !important; }
+body.guest-name-locked #GuestNameInput, body.guest-name-locked #GuestNameSave { box-sizing:border-box !important; max-width:100% !important; flex-shrink:0; }
+body.modern-classic[data-game-view='for-gaming'] .GameBox .game-input { box-sizing:border-box !important; border-radius:18px !important; padding:10px !important; gap:8px !important; }
+body.modern-classic[data-game-view='for-gaming'] #game-input { box-sizing:border-box !important; border:1px solid rgba(255,255,255,.35) !important; border-radius:12px !important; padding:10px 14px !important; background:rgba(0,0,0,.5) !important; color:#fff !important; min-width:0 !important; }
+body.modern-classic[data-game-view='for-gaming'] .GameBox .word-meaning-panel { display:block !important; }
+@media(max-width:767px) { body.guest-name-locked #GuestNameEntry::before {font-size:26px !important;} body.modern-classic[data-game-view='for-gaming'] .GameBox .word-meaning-panel {max-width:calc(100vw - 24px) !important;} }
+
+.word-meaning-source { display:block; margin-top:5px; color:#fff; font-size:11px; }
+
+body.guest-name-locked #GuestNameInput {background:rgba(0,0,0,.6) !important;color:#fff !important;border:1px solid rgba(255,255,255,.5) !important;}
+body.guest-name-locked #GuestNameInput::placeholder {color:#ddd !important;}

@@ -21,7 +21,7 @@
  * getCookie 코드오류로 인한 코드 수정
  */
 var global = {};
-var L;
+var L = window.L || { LOGIN: '로그인', ASK_LOGOUT: '로그아웃하시겠습니까?' };
 
 (function(){
 	var size;
@@ -122,7 +122,7 @@ var L;
 		
 		if(global.profile.token){
 			$("#account-info").html(global.profile.title || global.profile.name).on('click', function(e){
-				if(confirm(L['ASK_LOGOUT'])) requestLogout(e);
+				requestLogout(e);
 			});
 		}else{
 			if(window['FB']){

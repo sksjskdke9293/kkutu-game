@@ -12,13 +12,73 @@
 }
 
 https://kkutugame.kro.kr {
-	reverse_proxy web:80
+	handle_path /room/* {
+		reverse_proxy game:8496 {
+			header_up Host {http.request.host}
+		}
+	}
+	handle_path /room2/* {
+		reverse_proxy game2:8497 {
+			header_up Host {http.request.host}
+		}
+	}
+	handle_path /room3/* {
+		reverse_proxy game3:8498 {
+			header_up Host {http.request.host}
+		}
+	}
+	handle_path /game/* {
+		reverse_proxy game:8080 {
+			header_up Host {http.request.host}
+		}
+	}
+	handle_path /game2/* {
+		reverse_proxy game2:8081 {
+			header_up Host {http.request.host}
+		}
+	}
+	handle_path /game3/* {
+		reverse_proxy game3:8082 {
+			header_up Host {http.request.host}
+		}
+	}
+	handle {
+		reverse_proxy web:80
+	}
 }
 
 https://kkutugame.kro.kr:8080 {
-	reverse_proxy game:8080
+	reverse_proxy game:8080 {
+		header_up Host {http.request.host}
+	}
+}
+
+https://kkutugame.kro.kr:8081 {
+	reverse_proxy game2:8081 {
+		header_up Host {http.request.host}
+	}
+}
+
+https://kkutugame.kro.kr:8082 {
+	reverse_proxy game3:8082 {
+		header_up Host {http.request.host}
+	}
 }
 
 https://kkutugame.kro.kr:8496 {
-	reverse_proxy game:8496
+	reverse_proxy game:8496 {
+		header_up Host {http.request.host}
+	}
+}
+
+https://kkutugame.kro.kr:8497 {
+	reverse_proxy game2:8497 {
+		header_up Host {http.request.host}
+	}
+}
+
+https://kkutugame.kro.kr:8498 {
+	reverse_proxy game3:8498 {
+		header_up Host {http.request.host}
+	}
 }

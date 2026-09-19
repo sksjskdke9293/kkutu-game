@@ -20,6 +20,8 @@ var Const = require('../../const');
 var Lizard = require('../../sub/lizard');
 var DB;
 var DIC;
+var AUTO_EXISTS_CACHE = new Map();
+const AUTO_EXISTS_CACHE_TTL = 30000;
 
 const ROBOT_START_DELAY = [ 1200, 800, 400, 200, 0 ];
 const ROBOT_TYPE_COEF = [ 1250, 750, 500, 250, 0 ];
@@ -34,6 +36,10 @@ const MORAE_DICTIONARY_COLUMNS = {
 	complex: "morae_complex"
 };
 
+function getDictionaryQuery(opts){
+ var base = [getDictionaryColumn(opts), true];
+ return opts && opts.injeong ? ['$or', [base, ['injeong_extra', true], ['flag', {'$not': {'$nand': Const.KOR_FLAG.INJEONG}}]]] : base;
+}
 function getDictionaryColumn(opts){
 	return MORAE_DICTIONARY_COLUMNS[opts && opts.dictionary] || MORAE_DICTIONARY_COLUMNS.standard;
 }
@@ -85,7 +91,7 @@ exports.getTitle = function(){
 		var titleQuery = [
 			[ '_id', new RegExp(eng + ".{" + Math.max(1, my.round - 1) + "}$") ]
 		];
-		if(l.lang == "ko") titleQuery.push([ getDictionaryColumn(my.opts), true ]);
+		if(l.lang == "ko") titleQuery.push(getDictionaryQuery(my.opts));
 		else titleQuery.push([ '_id', Const.ENG_ID ]);
 		DB.kkutu[l.lang].find.apply(DB.kkutu[l.lang], titleQuery).limit(20).on(function($md){
 			var list;
@@ -199,10 +205,12 @@ exports.turnStart = function(force){
 exports.turnEnd = function(){
 	var my = this;
 	var target;
+	var targetId;
 	var score;
 	
 	if(!my.game.seq) return;
-	target = DIC[my.game.seq[my.game.turn]] || my.game.seq[my.game.turn];
+	targetId = typeof my.game.seq[my.game.turn] === 'string' ? my.game.seq[my.game.turn] : my.game.seq[my.game.turn].id;
+	target = DIC[targetId] || my.game.seq[my.game.turn];
 	
 	if(my.game.loading && Date.now() < my.game.turnAt + Math.min(my.game.roundTime, my.game.turnTime + 100) + 3000){
 		my.game.turnTimer = setTimeout(my.turnEnd, 100);
@@ -224,10 +232,17 @@ exports.turnEnd = function(){
 		if(!my.gaming || my.game.turnAt !== endedAt) return;
 		my.byMaster('turnEnd', {
 			ok: false,
-			target: target ? target.id : null,
+			target: targetId || null,
 			score: score,
 			hint: w
 		}, true);
+		if(targetId && my.game.departed && my.game.departed[targetId]){
+			var departedIndex = my.game.seq.indexOf(targetId);
+			if(departedIndex >= 0) my.game.seq.splice(departedIndex, 1);
+			delete my.game.departed[targetId];
+			if(my.game.seq.length < 2) return my.roundEnd();
+			if(my.game.turn >= my.game.seq.length) my.game.turn = 0;
+		}
 		my.game._rrt = setTimeout(my.roundReady, 3000);
 	}
 	if(my.rule.freeform) finishTurn();
@@ -243,13 +258,8 @@ exports.playerHint = function(client, data){
 	var at = my.game.turnAt;
 	validateDraft.call(my, client, word, 'hint', function(){
 	if(my.game.turnAt !== at || my.game.late) return;
-	var previous = my.game.hintAuthors[client.id];
-	if(previous !== undefined) my.game.playerHints[previous] = word;
-	else{
-		if(my.game.playerHints.length >= 9) return;
-		my.game.hintAuthors[client.id] = my.game.playerHints.length;
-		my.game.playerHints.push(word);
-	}
+	if(my.game.playerHints.indexOf(word) >= 0 || my.game.playerHints.length >= 9) return;
+	my.game.playerHints.push(word);
 	my.byMaster('playerHints', {hints:my.game.playerHints}, true);
 	});
 };
@@ -260,7 +270,7 @@ function validateDraft(client, word, kind, accepted){
 	client._draftCheckAt = Date.now();
 	word = word.trim();
 	var query = [['_id', word]];
-	if(my.rule.lang === 'ko') query.push([getDictionaryColumn(my.opts), true]);
+	if(my.rule.lang === 'ko') query.push(getDictionaryQuery(my.opts));
 	DB.kkutu[my.rule.lang].findOne.apply(DB.kkutu[my.rule.lang], query).on(function(doc){
 		if(!my.gaming || my.game.turnAt !== at) return;
 		var valid = !!doc;
@@ -289,8 +299,8 @@ exports.submit = function(client, text, hintUsed){
 	if(!mgt.robot) if(mgt != client.id) return;
 	if(!my.rule.freeform && !my.game.char) return;
 	
-	if(my.rule.freeform){ text = String(text || "").trim(); if(!text || text.length > 50) return client.chat(text); }
-	else if(!isChainable(text, my.mode, my.game.char, my.game.subChar)) return client.chat(text);
+	if(my.rule.freeform){ text = String(text || "").trim(); if(!text) return; }
+	else if(!isChainable(text, my.mode, my.game.char, my.game.subChar)) return client.publish('turnError', { code: 400, value: text }, true);
 	if(my.game.chain.indexOf(text) != -1) return client.publish('turnError', { code: 409, value: text }, true);
 	
 	l = my.rule.lang;
@@ -332,6 +342,7 @@ exports.submit = function(client, text, hintUsed){
 					score: score,
 					bonus: (my.game.mission === true) ? score - Math.floor(my.getScore(text, t, true) * (hintUsed === true ? 0.5 : 1)) : 0,
 					hintUsed: hintUsed === true,
+                    hintIndex: hintUsed ? my.game.playerHints.indexOf(text) : -1,
 					baby: $doc.baby
 				}, true);
 				if(my.game.mission === true){
@@ -344,6 +355,11 @@ exports.submit = function(client, text, hintUsed){
 				}
 			}
 			if(my.rule.freeform) approved();
+			// These endings have isolated entries in the standard word set, but
+			// still function as one-shot words in play. Respect an active shield.
+			else if(my.opts.dictionary === 'standard' &&
+				(firstMove || my.opts.manner || my.game.chain.length < (my.opts.shield == null ? 15 : my.opts.shield)) &&
+				(preChar === '둬' || preChar === '댐')) denied(403);
 			else if(firstMove || my.opts.manner || my.game.chain.length < (my.opts.shield == null ? 15 : my.opts.shield)) getAuto.call(my, preChar, preSubChar, 1).then(function(w){
 				if(w) approved();
 				else{
@@ -390,7 +406,7 @@ exports.submit = function(client, text, hintUsed){
 	var wordQuery = [
 		[ '_id', text ]
 	];
-	if(l == "ko") wordQuery.push([ getDictionaryColumn(my.opts), true ]);
+	if(l == "ko") wordQuery.push(getDictionaryQuery(my.opts));
 	else wordQuery.push([ '_id', Const.ENG_ID ]);
 	DB.kkutu[l].findOne.apply(DB.kkutu[l], wordQuery).on(onDB);
 };
@@ -495,6 +511,12 @@ function getAuto(char, subc, type){
 	var key = gameType + "_" + keyByOptions(my.opts);
 	var MAN = DB.kkutu_manner[my.rule.lang];
 	var bool = type == 1;
+	var cacheKey = my.rule.lang + '|' + key + '|' + char + '|' + (subc || '');
+	var cached = bool && AUTO_EXISTS_CACHE.get(cacheKey);
+	if(cached && cached.until > Date.now()){
+		R.go(cached.value);
+		return R;
+	}
 	
 	adc = char + (subc ? ("|"+subc) : "");
 	switch(gameType){
@@ -531,7 +553,7 @@ function getAuto(char, subc, type){
 		var lst;
 		
 		if(my.rule.lang == "ko"){
-			aqs.push([ getDictionaryColumn(my.opts), true ]);
+			aqs.push(getDictionaryQuery(my.opts));
 		}else{
 			if(!my.opts.injeong) aqs.push([ 'flag', { '$nand': Const.KOR_FLAG.INJEONG } ]);
 			aqs.push([ '_id', Const.ENG_ID ]);
@@ -545,7 +567,13 @@ function getAuto(char, subc, type){
 				break;
 			case 1:
 				aft = function($md){
-					R.go($md.length ? true : false);
+					var exists = $md.length ? true : false;
+					AUTO_EXISTS_CACHE.set(cacheKey, {value:exists, until:Date.now() + AUTO_EXISTS_CACHE_TTL});
+					if(AUTO_EXISTS_CACHE.size > 2048){
+						var now = Date.now();
+						AUTO_EXISTS_CACHE.forEach(function(value, name){ if(value.until <= now) AUTO_EXISTS_CACHE.delete(name); });
+					}
+					R.go(exists);
 				};
 				break;
 			case 2:

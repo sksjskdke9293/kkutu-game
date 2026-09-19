@@ -1,4 +1,4 @@
-﻿//-
+//-
 	Rule the words! KKuTu Online
 	Copyright (C) 2017 JJoriping(op@jjo.kr)
 	
@@ -28,9 +28,9 @@ mixin GameOption(key, prefix)
 	- var sid = name.toLowerCase();
 	div.dialog-opt(id=`${prefix}-${sid}-panel`)
 		input.game-option(id=`${prefix}-${sid}`, type='checkbox', style='margin-top: 5px; width: auto;')
-		label(for=`${prefix}-${sid}`)= L(`opt${name}`)
+		label(for=`${prefix}-${sid}`)= name === 'Injeong' ? '어인정 모드' : L(`opt${name}`)
 		+Expl(true)
-			div!= L(`expl${name}`)
+			div!= name === 'Injeong' ? '어인정 낱말을 사용할 수 있습니다.' : L(`expl${name}`)
 
 mixin SettingOption(id, text, st)
 	div.dialog-opt(style=st || "")
@@ -41,23 +41,29 @@ block Subject
 	title 끄투게임
 
 block JS
-	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260908-font-shop-21')
+	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260917-guest-name-1')
 	script(src='https://www.google.com/recaptcha/api.js')
 
 block CSS
-	link(rel='stylesheet', href='/css/in_game_kkutu_shop.css?v=20260907-mobile-11')
+	link(rel='stylesheet', href='/css/in_game_kkutu_shop.css?v=20260914-inventory-layout-5')
 	link(rel='stylesheet', href='/css/play-shell.css?v=20260906-ui-audit-4')
-	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260908-font-shop-13')
-	link(rel='stylesheet', href='/css/settings-ui.css?v=20260906-settings-1')
+	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260917-no-level-icon-1')
+	link(rel='stylesheet', href='/css/settings-ui.css?v=20260910-lobby-music-1')
+	link(rel='stylesheet', href='/css/autumn-theme.css?v=20260913-15')
 	
 block Jungle
 	span#PUBLIC= PUBLIC ? "true" : undefined
+	span#IS_GUEST= SESSION.profile ? "false" : "true"
 	// span#PORT= locals.PORT
-	span#URL= `${locals.PROTOCOL}://${locals.HOST}:${locals.PORT}/${locals._id}`
+	span#URL= `${locals.PROTOCOL}://${locals.HOST}:${locals.PORT}${locals.GAME_PATH || ''}/${locals._id}`
 	span#MOREMI_PART= locals.MOREMI_PART.join(',')
 	span#AVAIL_EQUIP= locals.AVAIL_EQUIP.join(',')
 	span#RULE= JSON.stringify(locals.RULE)
 	span#OPTIONS= JSON.stringify(locals.OPTIONS)
+	script.
+		window.addEventListener('load', function(){
+			setTimeout(function(){ if(window.__kkutuConnect) window.__kkutuConnect(); }, 1200);
+		});
 	div#Yell
 	div#Loading= L('LOADING')
 	div#Balloons(style='position: absolute;')
@@ -72,7 +78,7 @@ block Middle
 	- var VERSION = L('version');
 	- var nick = SESSION.profile ? (SESSION.profile.title || SESSION.profile.name) : null;
 	div#Intro
-		img#intro(src='/img/custom/autumn-main-intro.png?v=20260906-autumn-1')
+		img#intro(src='/img/custom/intro-desktop.png?v=20260913-intro-2')
 		// img#intro-start(src='/img/kkutu/intro_start.gif')
 		div#version= VERSION
 		div#intro-text= L('LOADING')
@@ -84,6 +90,9 @@ block Middle
 		button#SetRoomBtn.for-master(style='display: none; background-color: #B0D2F3;')= L('setRoom')
 		button#NewRoomBtn.for-lobby(style='display: none; background-color: #8EC0F3;')= L('newRoom')
 		button#QuickRoomBtn.for-lobby(style='display: none; background-color: #B0D2F3;')= L('quickRoom')
+		button#TutorialBtn.for-lobby(type='button', style='display: none; background-color: #F5D875;') 튜토리얼
+		button#DailyQuestBtn.for-lobby(type='button', style='display: none;') 일일 퀘스트
+		button#DailySpinBtn.for-lobby(type='button', style='display: none;') 일일 팽이 돌리기
 		button#ShopBtn.for-lobby(style='display: none; background-color: #B3E7B7;')= L('shop')
 		button#DictionaryBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #73D07A;')= L('dict')
 		// button#WordPlusBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #73D07A;')= L('wordPlus')
@@ -100,6 +109,12 @@ block Middle
 			img.moremies.moremi-body(src='/img/custom/moremi-yellow.png?v=20260907-face-4', data-moremi-base='/img/custom/moremi-yellow.png?v=20260907-face-4', alt='모레미')
 		h3#LobbyHeroName= L('guest')
 		div#LobbyHeroSub 끄투게임
+
+	form#GuestNameEntry.for-lobby(style='display: none;', autocomplete='off')
+		label(for='GuestNameInput') 손님 이름
+		input#GuestNameInput(type='text', maxlength='12', placeholder='2~12자', aria-label='손님 이름')
+		button#GuestNameSave(type='submit') 적용
+		span#GuestNameHint
 	+Dialog('SettingDiag', 560, 610, '환경설정')
 		div.settings-panel
 			div.settings-intro
@@ -125,6 +140,14 @@ block Middle
 						div.settings-mute
 							input.settings-switch#mute-bgm(type='checkbox')
 							label(for='mute-bgm') 음소거
+				div.settings-audio-row
+					div.settings-audio-label
+						strong 로비 음악
+						span 로비에서 재생할 곡
+					div.settings-audio-controls
+						select#settings-lobby-bgm.settings-select(aria-label='로비 음악 선택')
+							option(value='default') 일반 음악
+							option(value='autumn') 가을 음악(기본)
 				div.settings-audio-row
 					div.settings-audio-label
 						strong 효과음
@@ -252,6 +275,7 @@ block Middle
 				optgroup(label=L('mcKorean'))
 					option(value=3)= L('modeKSH')
 					option(value=14)= L('modeKAW')
+					option(value=15)= L('modeYUT')
 					option(value=2)= L('modeKKT')
 					option(value=8)= L('modeKAP')
 					option(value=6)= L('modeKTY')
@@ -361,7 +385,6 @@ block Middle
 			div.expl.result-me-expl
 		div.dialog-bar.tail-button
 			button#result-ok= L('OK')
-			button#result-save 방금 게임 리플레이 저장
 	+Dialog('DictionaryDiag', 400, 300, L('dict'))
 		div.dialog-bar
 			h4= L('wpHere')
@@ -453,7 +476,7 @@ block Middle
 			h4.dialog-bar-value#replay-players -
 		div.dialog-bar.tail-button
 			button#replay-view= L('replayView')
-	+Dialog('DressDiag', 600, 280, L('dress'))
+	+Dialog('DressDiag', 600, 420, L('dress'))
 		div.dialog-bar
 			h4(style='width: 150px;')= L('myExordial')
 			input#dress-exordial(type='textfield', placeholder=L('myExordialX'), style='width: 435px;', maxlength=100)
@@ -461,10 +484,7 @@ block Middle
 			div.moremi#dress-view(style='float: left; width: 150px; height: 150px;')
 			h4(style='width: 100%; font-weight: bold;')= L('myMoremi')
 		div.dialog-bar(style='padding: 5px; width: 440px;')
-			div(style='border-bottom: 1px solid #CCCCCC; height: 20px;')
-				- for(var i in locals.CATEGORIES)
-					- var v = locals.GROUPS[locals.CATEGORIES[i]] || [];
-					div.category-filter.dress-type(id="dress-type-" + locals.CATEGORIES[i], value=v.join(','))= L('category_' + locals.CATEGORIES[i])
+			div.inventory-all-label 전체
 			div#dress-goods.goods-box
 		div.dialog-bar.tail-button
 			button#dress-ok= L('OK')
@@ -511,8 +531,11 @@ block Middle
 	+Product('Room')
 		div.room-stage-actions
 			button#RoomSpectateAction(type='button') 관전
+			button#RoomSettingsAction(type='button') 방 설정
 			button#RoomInviteAction(type='button') 초대
 			button#RoomBotAction(type='button') 봇 추가
+			button#RoomDictionaryAction(type='button') 사전
+			button#RoomExitAction(type='button') 나가기
 			button#RoomStartAction(type='button') 시작!
 			button#RoomReadyAction(type='button') 준비
 		div.room-stage-content
@@ -523,8 +546,6 @@ block Middle
 				div.team-button#team-3.team-3 C
 				div.team-button#team-4.team-4 D
 			div.room-users
-		div.room-stage-footer
-			button#RoomPrimaryAction(type='button') 준비
 	+Product('Game')
 		div.game-head
 			div.items
@@ -536,8 +557,10 @@ block Middle
 			div.b-left.bb(style='display: none;')
 			div.jjoriping
 				img.jjoObj.jjoEyeL(src='/img/jjoeyeL.png')
+				img.jjoEyeClosed.jjoEyeClosedL(src='/img/jjoeye-closed.png', aria-hidden='true')
 				img.jjoObj.jjoNose(src='/img/jjonose.png')
 				img.jjoObj.jjoEyeR(src='/img/jjoeyeR.png')
+				img.jjoEyeClosed.jjoEyeClosedR(src='/img/jjoeye-closed.png', aria-hidden='true')
 				div.jjoDisplayBar
 					div.jjo-display.ellipse
 					+GraphBar('jjo-turn-time')
@@ -571,7 +594,7 @@ block Middle
 		div.bar-text.my-gauge-text
 	+Product('Chat')
 		div#Chat
-		input#Talk(maxlength=200)
+		input#Talk
 		button#ChatBtn= L('send')
 	+Product('AD')
 

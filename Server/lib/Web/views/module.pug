@@ -105,17 +105,17 @@ mixin PageHead(min)
 		link(rel='stylesheet', href='/css/fa.css')
 		link(rel='stylesheet', href='/css/expl.css')
 	script(type='text/javascript', src='/js/jquery.js')
-	script(type='text/javascript', src='/language/'+locals.page.replace("/", "_")+'/'+locals.lang)
+	script(type='text/javascript', src='/language/'+locals.page.replace("/", "_")+'/'+locals.lang+'?v=20260913-mime-1')
 	
 	if PUBLIC && !SESSION.admin
 		//script(type='text/javascript', src='/js/google.js')
-	script(type='text/javascript', src='/js/global.min.js')
+	script(type='text/javascript', src='/js/global.min.js?v=20260912-language-fix-1')
 	if !min
 		//script(type='text/javascript', src='/js/facebook.js')
 	if block
 		block
 	- var pageAsset = locals.page.replace("/", "_");
-	- var assetVersion = (pageAsset === 'portal' || pageAsset === 'm_portal' || pageAsset === 'kkutu' || pageAsset === 'm_kkutu') ? '?v=20260906-autumn-1' : '';
+	- var assetVersion = (pageAsset === 'portal' || pageAsset === 'm_portal') ? '?v=20260917-server-gauge-2' : '';
 	link(rel='stylesheet', href='/css/in_'+pageAsset+'.css'+assetVersion)
 	// The KKuTu game pages load their combined client bundle in the page view.
 	// There is no standalone in_kkutu/minified asset, so avoid a permanent 404

@@ -28,6 +28,7 @@ var Const = require("../const");
 var JLog = require('../sub/jjlog');
 var Secure = require('../sub/secure');
 var Recaptcha = require('../sub/recaptcha');
+var LocalAuth = require('../Web/local-auth');
 
 var MainDB;
 
@@ -62,6 +63,11 @@ var T_USER = {};
 
 var SID;
 var WDIC = {};
+var discordChat;
+var discordStatus;
+var discordPasswordTickets;
+var latestLogin;
+var maintenanceActive = false;
 
 const DEVELOP = exports.DEVELOP = global.test || false;
 const GUEST_PERMISSION = exports.GUEST_PERMISSION = {
@@ -173,7 +179,7 @@ function processAdmin(id, value){
 			return null;
 		case 'unban':
 			try {
-				MainDB.users.update([ '_id', value ]).set([ 'black', null ], [ 'blockedUntil', 0 ]).on();								
+				MainDB.users.update([ '_id', value ]).set([ 'black', '' ], [ 'blockedUntil', 0 ]).on();
 				JLog.info(`[Block] 사용자 #${value}(이)가 이용제한 해제 처리되었습니다.`);
 			}catch(e){
 				processAdminErrorCallback(e, id);
@@ -181,7 +187,7 @@ function processAdmin(id, value){
 			return null;
 		case 'ipunban':
 			try {
-				MainDB.ip_block.update([ '_id', value ]).set([ 'reasonBlocked', null ], [ 'ipBlockedUntil', 0 ]).on();								
+				MainDB.ip_block.update([ '_id', value ]).set([ 'reasonBlocked', '' ], [ 'ipBlockedUntil', 0 ]).on();
 				JLog.info(`[Block] IP 주소 ${value}(이)가 이용제한 해제 처리되었습니다.`);
 			}catch(e){
 				processAdminErrorCallback(e, id);
@@ -242,6 +248,12 @@ Cluster.on('message', function(worker, msg){
 	var temp;
 	
 	switch(msg.type){
+		case "login-retired":
+			if(latestLogin) latestLogin.ack(worker, msg);
+			break;
+		case "discord-chat-out":
+			if(discordChat) discordChat.send(msg.data);
+			break;
 		case "admin":
 			if(DIC[msg.id] && DIC[msg.id].admin) processAdmin(msg.id, msg.value);
 			break;
@@ -263,10 +275,7 @@ Cluster.on('message', function(worker, msg){
 				worker.send({ type: "invite-error", target: msg.id, code: 417 });
 				break;
 			}
-			if(DIC[msg.target].place != 0){
-				worker.send({ type: "invite-error", target: msg.id, code: 417 });
-				break;
-			}
+
 			if(!GUEST_PERMISSION.invite) if(DIC[msg.target].guest){
 				worker.send({ type: "invite-error", target: msg.id, code: 422 });
 				break;
@@ -276,7 +285,7 @@ Cluster.on('message', function(worker, msg){
 				break;
 			}
 			DIC[msg.target]._invited = msg.place;
-			DIC[msg.target].send('invited', { from: msg.place });
+			DIC[msg.target].send('invited', { from: msg.place, inviterName: DIC[msg.id] && (DIC[msg.id].profile.title || DIC[msg.id].profile.name) });
 			break;
 		case "room-new":
 			if(ROOM[msg.room.id] || !DIC[msg.target]){ // 이미 그런 ID의 방이 있다... 그 방은 없던 걸로 해라.
@@ -330,6 +339,10 @@ Cluster.on('message', function(worker, msg){
 				for(var i in msg.data){
 					temp[i] = msg.data[i];
 				}
+				if(temp.guest && msg.data.profile){
+					var publishedGuestName = String(msg.data.profile.title || msg.data.profile.name || '').replace(/\(손님\)$/, '');
+					MainDB.access_log.update([ 'userId', temp.id.replace('guest__', '') ]).set([ 'displayName', (temp.profile.guestNumber || '손님') + '(' + publishedGuestName + ')' ]).on();
+				}
 			}
 			break;
 		case "room-publish":
@@ -369,16 +382,81 @@ Cluster.on('message', function(worker, msg){
 });
 exports.init = function(_SID, CHAN){
 	SID = _SID;
+	latestLogin = require('./latest-login').create(DIC, CHAN);
+	discordChat = require('./discord-chat').create({
+		log: function(message){ JLog.warn(message); },
+		onMessage: function(message){
+			// Every player retains this master socket, including players in rooms.
+			// Send once here, never again through a worker or Client.chat().
+			for(var id in DIC) DIC[id].send('discordChat', message);
+		}
+	});
+	process.on('discord-chat-out', function(message){ discordChat.send(message); });
+	discordChat.start();
+	discordStatus = require('./discord-status').create({
+		log: function(message){ JLog.warn(message); },
+		getCount: function(){ return Object.keys(DIC).length; },
+		env: SID === '0' ? process.env : {}
+	});
+	discordStatus.start();
+	discordPasswordTickets = require('./discord-password-tickets').create({
+		log: function(message){ JLog.warn(message); },
+		env: SID === '0' ? process.env : {}
+	});
+	discordPasswordTickets.start();
 	MainDB = require('../Web/db');
 	MainDB.ready = function(){
 		JLog.success("Master DB is ready.");
+		function refreshMaintenance(){
+			LocalAuth.getGameMaintenanceStatus().then(function(status){
+				var active=!!status.maintenance || !!(status.servers||[])[Number(SID)];
+				if(active && !maintenanceActive){
+					Object.keys(DIC).forEach(function(id){
+						var client=DIC[id];
+						if(!client || client.admin) return;
+						client.send('error',{code:503,message:'서버 점검 중입니다.'});
+						client.disconnect();
+					});
+				}
+				maintenanceActive=active;
+			}).catch(function(error){ JLog.warn('Maintenance status check failed: '+error.toString()); });
+		}
+		refreshMaintenance();
+		setInterval(refreshMaintenance, 2000);
+		setInterval(function(){Object.keys(DIC).forEach(function(id){var client=DIC[id];if(!client||client.guest||client._closed||!client._loginToken)return;LocalAuth.ownsGameLogin(client.id,client._loginToken).then(function(owned){if(!owned&&!client._closed){client._replaced=true;client.sendError(408);client.disconnect();}}).catch(function(){});});},1000);
 		
 		MainDB.users.update([ 'server', SID ]).set([ 'server', "" ]).on();
+		setInterval(function(){
+			Object.keys(DIC).forEach(function(id){
+				var client = DIC[id];
+				if(!client || client._closed || client.admin) return;
+				if(client.guest && GLOBAL.USER_BLOCK_OPTIONS.USE_MODULE){
+					MainDB.ip_block.findOne([ '_id', client.remoteAddress ]).on(function(row){
+						if(!row || !row.reasonBlocked) return;
+						if(row.ipBlockedUntil && Number(row.ipBlockedUntil) < Date.now()) return MainDB.ip_block.update([ '_id', client.remoteAddress ]).set([ 'reasonBlocked', '' ], [ 'ipBlockedUntil', 0 ]).on();
+						client.send('error', { code: 446, reasonBlocked: row.reasonBlocked, ipBlockedUntil: row.ipBlockedUntil || GLOBAL.USER_BLOCK_OPTIONS.BLOCKED_FOREVER });
+						client.disconnect();
+					});
+				}else if(!client.guest){
+					MainDB.users.findOne([ '_id', client.id ]).limit([ 'black', true ], [ 'blockedUntil', true ], [ 'server', true ]).on(function(row){
+						if(row && row.server && String(row.server) !== String(SID)){
+							client._replaced = true;
+							client.sendError(408);
+							return client.disconnect();
+						}
+						if(!row || !row.black) return;
+						if(row.blockedUntil && Number(row.blockedUntil) < Date.now()) return MainDB.users.update([ '_id', client.id ]).set([ 'black', '' ], [ 'blockedUntil', 0 ]).on();
+						client.send('error', { code: 444, message: row.black, blockedUntil: row.blockedUntil || 0 });
+						client.disconnect();
+					});
+				}
+			});
+		}, 3000);
 		if(Const.IS_SECURED) {
 			const options = Secure();
 			HTTPS_Server = https.createServer(options)
 				.listen(global.test ? (Const.TEST_PORT + 416) : process.env['KKUTU_PORT']);
-			Server = new WebSocket.Server({server: HTTPS_Server});
+			Server = new WebSocket.Server({server: HTTPS_Server, perMessageDeflate: false});
 		} else {
 			Server = new WebSocket.Server({
 				port: global.test ? (Const.TEST_PORT + 416) : process.env['KKUTU_PORT'],
@@ -386,14 +464,17 @@ exports.init = function(_SID, CHAN){
 			});
 		}
 		Server.on('connection', function(socket, info){
-			var key = info.url.slice(1);
+			if(socket._socket && socket._socket.setNoDelay) socket._socket.setNoDelay(true);
+			var connectionOrder = latestLogin.order();
+			var parsedUrl = require('url').parse(info.url, true);
+			var key = parsedUrl.pathname.slice(1);
 			var $c;
 			
 			socket.on('error', function(err){
 				JLog.warn("Error on #" + key + " on ws: " + err.toString());
 			});
 			// 웹 서버
-			if(info.headers.host.startsWith(GLOBAL.GAME_SERVER_HOST + ":")){
+			if((GLOBAL.GAME_SERVER_HOSTS || [ GLOBAL.GAME_SERVER_HOST ]).some(function(host){ return info.headers.host.startsWith(host + ":"); })){
 				if(WDIC[key]) WDIC[key].socket.close();
 				WDIC[key] = new KKuTu.WebServer(socket);
 				JLog.info(`New web server #${key}`);
@@ -409,23 +490,32 @@ exports.init = function(_SID, CHAN){
 				return;
 			}
 			MainDB.session.findOne([ '_id', key ]).limit([ 'profile', true ]).on(function($body){
-				$c = new KKuTu.Client(socket, $body ? $body.profile : null, key);
+				$c = new KKuTu.Client(socket, $body ? $body.profile : null, key, parsedUrl.query.guestName);
+				$c._loginToken=String(SID)+'-'+Date.now()+'-'+Math.random().toString(36).slice(2);
 				$c.admin = GLOBAL.ADMIN.indexOf($c.id) != -1 || !!($c.profile && $c.profile.authType === 'local' && $c.profile.developer === true);
+				if(maintenanceActive && !$c.admin){
+					$c.send('error',{code:503,message:'서버 점검 중입니다. 운영자만 접속할 수 있습니다.'});
+					$c.socket.close();
+					return;
+				}
+				if(Number(SID)===2 && !$c.admin){
+					LocalAuth.hasServerAccess(2,$c.guest?'':$c.id).then(function(allowed){if(!allowed&&!$c._closed){$c.send('error',{code:503,message:'추석 서버는 허용된 계정만 접속할 수 있습니다.'});$c.disconnect();}}).catch(function(){if(!$c._closed)$c.disconnect();});
+				}
 				/* Enhanced User Block System [S] */
 				$c.remoteAddress = GLOBAL.USER_BLOCK_OPTIONS.USE_X_FORWARDED_FOR ? info.connection.remoteAddress : (info.headers['x-forwarded-for'] || info.connection.remoteAddress);
+				$c.remoteAddress = String($c.remoteAddress || '').split(',')[0].trim().replace(/^::ffff:/, '');
+				MainDB.access_log.insert([ '_id', Date.now() + '-' + Math.random().toString(36).slice(2) ], [ 'userId', $c.guest ? $c.id.replace('guest__', '') : $c.id ], [ 'displayName', $c.guest ? ($c.profile.guestNumber + '(' + (($c.profile.title || '').replace(/\(손님\)$/, '')) + ')') : ($c.profile.title || $c.profile.name || $c.id) ], [ 'ip', $c.remoteAddress ], [ 'guest', !!$c.guest ], [ 'connectedAt', Date.now() ]).on();
 				/* Enhanced User Block System [E] */
 				
-				if(DIC[$c.id]){
-					DIC[$c.id].sendError(408);
-					DIC[$c.id].socket.close();
-				}
+				if(!latestLogin.claim($c, connectionOrder)) return $c.disconnect();
+				$c.takeoverServer = String(SID);
 				if(DEVELOP && !Const.TESTER.includes($c.id)){
 					$c.sendError(500);
 					$c.socket.close();
 					return;
 				}
 				if($c.guest){
-					if(SID != "0"){
+					if(SID != "0" && SID != "1"){
 						$c.sendError(402);
 						$c.socket.close();
 						return;
@@ -440,11 +530,12 @@ exports.init = function(_SID, CHAN){
 				if(GLOBAL.USER_BLOCK_OPTIONS.USE_MODULE && ((GLOBAL.USER_BLOCK_OPTIONS.BLOCK_IP_ONLY_FOR_GUEST && $c.guest) || !GLOBAL.USER_BLOCK_OPTIONS.BLOCK_IP_ONLY_FOR_GUEST)){
 					MainDB.ip_block.findOne([ '_id', $c.remoteAddress ]).on(function($body){
 						if ($body && $body.reasonBlocked) {
-							if($body.ipBlockedUntil < Date.now()) {
-								MainDB.ip_block.update([ '_id', $c.remoteAddress ]).set([ 'ipBlockedUntil', 0 ], [ 'reasonBlocked', null ]).on();
+							if($body.ipBlockedUntil && $body.ipBlockedUntil < Date.now()) {
+								MainDB.ip_block.update([ '_id', $c.remoteAddress ]).set([ 'ipBlockedUntil', 0 ], [ 'reasonBlocked', '' ]).on();
 								JLog.info(`IP 주소 ${$c.remoteAddress}의 이용제한이 해제되었습니다.`);
 							}
 							else {
+								$c.blocked = true;
 								$c.socket.send(JSON.stringify({
 									type: 'error',
 									code: 446,
@@ -464,12 +555,13 @@ exports.init = function(_SID, CHAN){
 					return;
 				}
 				$c.refresh().then(function(ref){
+					if($c.blocked || $c._closed || socket.readyState !== 1) return;
+					if(!latestLogin.current($c)) return $c.disconnect();
 					/* Enhanced User Block System [S] */
 					let isBlockRelease = false;
 					
-					if(ref.blockedUntil < Date.now()) {
-						DIC[$c.id] = $c;
-						MainDB.users.update([ '_id', $c.id ]).set([ 'blockedUntil', 0 ], [ 'black', null ]).on();
+					if(ref.blockedUntil && ref.blockedUntil < Date.now()) {
+						MainDB.users.update([ '_id', $c.id ]).set([ 'blockedUntil', 0 ], [ 'black', '' ]).on();
 						JLog.info(`사용자 #${$c.id}의 이용제한이 해제되었습니다.`);
 						isBlockRelease = true;
 					}
@@ -478,6 +570,13 @@ exports.init = function(_SID, CHAN){
 					/* Enhanced User Block System [S] */
 					if(ref.result == 200 || isBlockRelease){
 					/* Enhanced User Block System [E] */
+						if(Object.keys(DIC).length >= (Const.SERVER_LIMITS[Number(SID)] || Const.KKUTU_MAX)){
+							$c.sendError(429);
+							$c.socket.close();
+							return;
+						}
+						latestLogin.replace($c, function(){
+						LocalAuth.claimGameLogin($c.id,SID,$c._loginToken).then(function(){
 						DIC[$c.id] = $c;
 						DNAME[($c.profile.title || $c.profile.name).replace(/\s/g, "")] = $c.id;
 						MainDB.users.update([ '_id', $c.id ]).set([ 'server', SID ]).on();
@@ -492,6 +591,8 @@ exports.init = function(_SID, CHAN){
 
 							joinNewUser($c);
 						}
+						}).catch(function(){ $c.disconnect(); });
+						});
 					} else {
 						/* Enhanced User Block System [S] */
 						if(ref.blockedUntil) $c.send('error', {
@@ -565,8 +666,37 @@ function processClientRequest($c, msg) {
 	var stable = true;
 	var temp;
 	var now = (new Date()).getTime();
+	// A guest stays in the name setup screen until a valid temporary name is set.
+	// Enforce this server-side so direct client messages cannot start or join a game.
+	if($c.guest && !$c.guestNamed && msg.type !== 'guestName' && msg.type !== 'refresh'){
+		$c.send('guestNameRequired', {});
+		return;
+	}
 	
 	switch (msg.type) {
+		case 'dailySpinGet':
+			if($c.guest)return $c.send('dailySpin',{guest:true});
+			LocalAuth.getDailySpin($c.id).then(function(result){$c.send('dailySpin',result);}).catch(function(){$c.sendError(500);});
+			break;
+		case 'dailySpinPlay':
+			if($c.guest)return $c.send('dailySpin',{guest:true});
+			LocalAuth.playDailySpin($c.id).then(function(result){if(!result.already)$c.money=result.money;$c.send('dailySpin',result);}).catch(function(){$c.sendError(500);});
+			break;
+		case 'dailyQuestGet':
+			$c.send('dailyQuest', $c.getDailyQuestData());
+			break;
+		case 'guestName':
+			if(!$c.guest || typeof msg.value !== 'string') return;
+			var guestName = msg.value.trim().replace(/[^0-9A-Za-z가-힣 _-]/g, '').slice(0, 12);
+			if(guestName.length < 2) return $c.sendError(400);
+			$c.guestNamed = true;
+			delete DNAME[($c.profile.title || '').replace(/\s/g, '')];
+			$c.profile.title = guestName + '(손님)';
+			$c.profile.name = $c.profile.title;
+			DNAME[$c.profile.title.replace(/\s/g, '')] = $c.id;
+			MainDB.access_log.update([ 'userId', $c.id.replace('guest__', '') ]).set([ 'displayName', ($c.profile.guestNumber || '손님') + '(' + guestName + ')' ]).on();
+			$c.publish('user', $c.getData());
+			break;
 		case 'matchJoin':
 			matchmaker.join($c);
 			break;
@@ -589,7 +719,7 @@ function processClientRequest($c, msg) {
 			$c.publish('yell', {value: msg.value});
 			break;
 		case 'refresh':
-			$c.refresh();
+			$c.refresh().then(function(result){if(result && result.result===200)$c.send('user',$c.getData());});
 			break;
 		case 'talk':
 			if (!msg.value) return;
@@ -616,7 +746,7 @@ function processClientRequest($c, msg) {
 					}
 				});
 			} else {
-				$c.chat(msg.value);
+				$c.chat(msg.value, undefined, msg.scope === "main" ? "main" : undefined);
 			}
 			break;
 		case 'friendAdd':
@@ -687,6 +817,7 @@ function processClientRequest($c, msg) {
 					stable = false;
 				}
 				if (msg.mode < 0 || msg.mode >= MODE_LENGTH) stable = false;
+				// The active theme, rather than a fixed server number, controls Yut.
 				if (msg.round < 1 || msg.round > 10) {
 					msg.code = 433;
 					stable = false;
@@ -694,10 +825,16 @@ function processClientRequest($c, msg) {
 				if (ENABLE_ROUND_TIME.indexOf(msg.time) == -1) stable = false;
 			}
 			if (msg.type == 'enter') {
-				if (msg.id || stable) $c.enter(msg, msg.spectate);
+				if (msg.id || stable){
+					if(!msg.id && Const.GAME_TYPE[msg.mode] === 'YUT') LocalAuth.getActiveTheme(SID).then(function(theme){if(theme==='chuseok')$c.enter(msg,msg.spectate);else $c.sendError(431,'추석 테마에서만 윷놀이를 만들 수 있습니다.');}).catch(function(){$c.sendError(500);});
+					else $c.enter(msg, msg.spectate);
+				}
 				else $c.sendError(msg.code || 431);
 			} else if (msg.type == 'setRoom') {
-				if (stable) $c.setRoom(msg);
+				if (stable){
+					if(Const.GAME_TYPE[msg.mode] === 'YUT')LocalAuth.getActiveTheme(SID).then(function(theme){if(theme==='chuseok')$c.setRoom(msg);else $c.sendError(431);}).catch(function(){$c.sendError(500);});
+					else $c.setRoom(msg);
+				}
 				else $c.sendError(msg.code || 431);
 			}
 			break;
@@ -732,9 +869,12 @@ function processClientRequest($c, msg) {
 }
 
 KKuTu.onClientClosed = function($c, code){
+	if(latestLogin) latestLogin.release($c);
+	if(!$c.guest&&$c._loginToken) LocalAuth.releaseGameLogin($c.id,$c._loginToken).catch(function(){});
+	if(DIC[$c.id] !== $c) return;
 	delete DIC[$c.id];
-	if($c._error != 409) MainDB.users.update([ '_id', $c.id ]).set([ 'server', "" ]).on();
-	if($c.profile) delete DNAME[$c.profile.title || $c.profile.name];
+	if(!$c._replaced && $c._error != 409) MainDB.users.update([ '_id', $c.id ], [ 'server', SID ]).set([ 'server', "" ]).on();
+	if($c.profile) delete DNAME[($c.profile.title || $c.profile.name).replace(/\s/g, "")];
 	if($c.socket) $c.socket.removeAllListeners();
 	if($c.friends) narrateFriends($c.id, $c.friends, "off");
 	KKuTu.publish('disconn', { id: $c.id });

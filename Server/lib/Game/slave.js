@@ -39,6 +39,7 @@ var Master = require('./master');
 var KKuTu = require('./kkutu');
 var Lizard = require('../sub/lizard');
 var MainDB = require('../Web/db');
+var LocalAuth = require('../Web/local-auth');
 var JLog = require('../sub/jjlog');
 var GLOBAL = require('../sub/global.json');
 
@@ -46,6 +47,9 @@ var DIC = {};
 var DNAME = {};
 var ROOM = {};
 var RESERVED = {};
+var pendingClients = new Set();
+var retiredLogins = new Map();
+var connectionSequence = 0;
 
 const CHAN = process.env['CHANNEL'];
 const DEVELOP = Master.DEVELOP;
@@ -72,6 +76,29 @@ process.on('uncaughtException', function(err){
 });
 process.on('message', function(msg){
 	switch(msg.type){
+		case 'guestName':
+			if(!$c.guest || typeof msg.value !== 'string') return;
+			var guestName = msg.value.trim().replace(/[^0-9A-Za-z가-힣 _-]/g, '').slice(0, 12);
+			if(guestName.length < 2) return $c.sendError(400);
+			$c.guestNamed = true;
+			delete DNAME[($c.profile.title || '').replace(/\s/g, '')];
+			$c.profile.title = guestName + '(손님)';
+			$c.profile.name = $c.profile.title;
+			DNAME[$c.profile.title.replace(/\s/g, '')] = $c.id;
+			$c.publish('user', $c.getData());
+			break;
+		case "retire-login":
+			retiredLogins.set(msg.target, ++connectionSequence);
+			pendingClients.forEach(function(c){ if(c.id === msg.target) c.disconnect(); });
+			for(var session in RESERVED) if(RESERVED[session].target === msg.target) delete RESERVED[session];
+			if(DIC[msg.target]){
+				var previous = DIC[msg.target];
+				delete RESERVED[previous.sessionId];
+				previous.sendError(408);
+				previous.disconnect();
+			}
+			process.send({type: 'login-retired', request: msg.request});
+			break;
 		case "invite-error":
 			if(!DIC[msg.target]) break;
 			DIC[msg.target].sendError(msg.code);
@@ -81,10 +108,12 @@ process.on('message', function(msg){
 				// 이미 입장 요청을 했는데 또 하는 경우
 				break;
 			}else RESERVED[msg.session] = {
+				target: msg.target,
 				profile: msg.profile,
 				room: msg.room,
 				spec: msg.spec,
 				pass: msg.pass,
+				lateJoin: msg.lateJoin,
 				_expiration: setTimeout(function(tg, create){
 					process.send({ type: "room-expired", id: msg.room.id, create: create });
 					delete RESERVED[tg];
@@ -103,6 +132,8 @@ MainDB.ready = function(){
 	KKuTu.init(MainDB, DIC, ROOM, GUEST_PERMISSION);
 };
 Server.on('connection', function(socket, info){
+	if(socket._socket && socket._socket.setNoDelay) socket._socket.setNoDelay(true);
+	var connectionOrder = ++connectionSequence;
 	var chunk = info.url.slice(1).split('&');
 	var key = chunk[0];
 	var reserve = RESERVED[key] || {}, room;
@@ -131,13 +162,18 @@ Server.on('connection', function(socket, info){
 	}
 	MainDB.session.findOne([ '_id', key ]).limit([ 'profile', true ]).on(function($body){
 		$c = new KKuTu.Client(socket, $body ? $body.profile : null, key);
+		if((retiredLogins.get($c.id) || 0) > connectionOrder) return $c.disconnect();
+		pendingClients.add($c);
 		$c.admin = GLOBAL.ADMIN.indexOf($c.id) != -1 || !!($c.profile && $c.profile.authType === 'local' && $c.profile.developer === true);
 		
 		/* Enhanced User Block System [S] */
 		$c.remoteAddress = GLOBAL.USER_BLOCK_OPTIONS.USE_X_FORWARDED_FOR ? info.connection.remoteAddress : (info.headers['x-forwarded-for'] || info.connection.remoteAddress);
+		$c.remoteAddress = String($c.remoteAddress || '').split(',')[0].trim().replace(/^::ffff:/, '');
 		if(GLOBAL.USER_BLOCK_OPTIONS.USE_MODULE && ((GLOBAL.USER_BLOCK_OPTIONS.BLOCK_IP_ONLY_FOR_GUEST && $c.guest) || !GLOBAL.USER_BLOCK_OPTIONS.BLOCK_IP_ONLY_FOR_GUEST)){
 			MainDB.ip_block.findOne([ '_id', $c.remoteAddress ]).on(function($body){
 				if ($body && $body.reasonBlocked) {
+					if($body.ipBlockedUntil && Number($body.ipBlockedUntil) < Date.now()) return MainDB.ip_block.update([ '_id', $c.remoteAddress ]).set([ 'reasonBlocked', '' ], [ 'ipBlockedUntil', 0 ]).on();
+					$c.blocked = true;
 					$c.socket.send(JSON.stringify({
 						type: 'error',
 						code: 446,
@@ -152,7 +188,7 @@ Server.on('connection', function(socket, info){
 		/* Enhanced User Block System [E] */
 		if(DIC[$c.id]){
 			DIC[$c.id].send('error', { code: 408 });
-			DIC[$c.id].socket.close();
+			DIC[$c.id].disconnect();
 		}
 		if(DEVELOP && !Const.TESTER.includes($c.id)){
 			$c.send('error', { code: 500 });
@@ -160,11 +196,13 @@ Server.on('connection', function(socket, info){
 			return;
 		}
 		$c.refresh().then(function(ref){
+			pendingClients.delete($c);
+			if($c.blocked || $c._closed || socket.readyState !== 1) return;
 			if(ref.result == 200){
 				DIC[$c.id] = $c;
 				DNAME[($c.profile.title || $c.profile.name).replace(/\s/g, "")] = $c.id;
 				
-				$c.enter(room, reserve.spec, reserve.pass);
+				$c.enter(room, reserve.spec, reserve.pass, reserve.lateJoin);
 				if($c.place == room.id){
 					$c.publish('connRoom', { user: $c.getData() });
 				}else{ // 입장 실패
@@ -192,6 +230,28 @@ KKuTu.onClientMessage = function($c, msg){
 	if(!msg) return;
 	
 	switch(msg.type){
+		case 'dailySpinGet':
+			if($c.guest)return $c.send('dailySpin',{guest:true});
+			LocalAuth.getDailySpin($c.id).then(function(result){$c.send('dailySpin',result);}).catch(function(){$c.sendError(500);});
+			break;
+		case 'dailySpinPlay':
+			if($c.guest)return $c.send('dailySpin',{guest:true});
+			LocalAuth.playDailySpin($c.id).then(function(result){if(!result.already)$c.money=result.money;$c.send('dailySpin',result);}).catch(function(){$c.sendError(500);});
+			break;
+		case 'dailyQuestGet':
+			$c.send('dailyQuest', $c.getDailyQuestData());
+			break;
+		case 'yutMove':
+			temp = $c.subPlace ? $c.pracRoom : ROOM[$c.place];
+			if(!temp || !temp.gaming || temp.rule.rule !== 'Yut') return;
+			temp.route('yutMove', $c, msg);
+			break;
+		case 'yutForceRoll':
+			if(!$c.admin) return;
+			temp = $c.subPlace ? $c.pracRoom : ROOM[$c.place];
+			if(!temp || !temp.gaming || temp.rule.rule !== 'Yut') return;
+			temp.route('yutForceRoll', $c, msg);
+			break;
 		case 'yell':
 			if(!msg.value) return;
 			if(!$c.admin) return;
@@ -199,7 +259,7 @@ KKuTu.onClientMessage = function($c, msg){
 			$c.publish('yell', { value: msg.value });
 			break;
 		case 'refresh':
-			$c.refresh();
+			$c.refresh().then(function(result){if(result && result.result===200)$c.send('user',$c.getData());});
 			break;
 		case 'checkPrediction':
 		case 'playerHint':
@@ -216,7 +276,6 @@ KKuTu.onClientMessage = function($c, msg){
 				$c.send('error', { code: 401 });
 				return;
 			}
-			msg.value = msg.value.substr(0, 200);
 			if(msg.relay){
 				if($c.subPlace) temp = $c.pracRoom;
 				else if(!(temp = ROOM[$c.place])) return;
@@ -281,10 +340,20 @@ KKuTu.onClientMessage = function($c, msg){
 				if(ENABLE_ROUND_TIME.indexOf(msg.time) == -1) stable = false;
 			}
 			if(msg.type == 'enter'){
-				if(msg.id || stable) $c.enter(msg, msg.spectate);
+				if(msg.id || stable){
+					if(!msg.id && Const.GAME_TYPE[msg.mode] === 'YUT'){
+						var serverIndex=Const.MAIN_PORTS.findIndex(function(port){return Number(port)+416===Number(process.env.KKUTU_PORT);});
+						LocalAuth.getActiveTheme(serverIndex).then(function(theme){if(theme==='chuseok')$c.enter(msg,msg.spectate);else $c.sendError(431);}).catch(function(){$c.sendError(500);});
+					}else $c.enter(msg, msg.spectate);
+				}
 				else $c.sendError(msg.code || 431);
 			}else if(msg.type == 'setRoom'){
-				if(stable) $c.setRoom(msg);
+				if(stable){
+					if(Const.GAME_TYPE[msg.mode] === 'YUT'){
+						var serverIndex=Const.MAIN_PORTS.findIndex(function(port){return Number(port)+416===Number(process.env.KKUTU_PORT);});
+						LocalAuth.getActiveTheme(serverIndex).then(function(theme){if(theme==='chuseok')$c.setRoom(msg);else $c.sendError(431);}).catch(function(){$c.sendError(500);});
+					}else $c.setRoom(msg);
+				}
 				else $c.sendError(msg.code || 431);
 			}
 			break;
@@ -414,8 +483,10 @@ KKuTu.onClientMessage = function($c, msg){
 	}
 };
 KKuTu.onClientClosed = function($c, code){
+	pendingClients.delete($c);
+	if(DIC[$c.id] !== $c) return;
 	delete DIC[$c.id];
-	if($c.profile) delete DNAME[$c.profile.title || $c.profile.name];
+	if($c.profile) delete DNAME[($c.profile.title || $c.profile.name).replace(/\s/g, "")];
 	if($c.socket) $c.socket.removeAllListeners();
 	KKuTu.publish('disconnRoom', { id: $c.id });
 

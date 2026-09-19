@@ -131,8 +131,8 @@ body[data-game-view='for-gaming'] .ChatBox {
 }
 #TurnHint { position:absolute; top:calc(100% + 6px); left:0; width:100%; display:flex; flex-wrap:wrap; justify-content:center; gap:4px; z-index:4; }
 #TurnHint button { float:none; width:auto; height:auto; margin:0; padding:3px 8px; font-size:12px; border:1px solid #c6dfd0; border-radius:6px; color:#2a624b; background:#fff; cursor:pointer; }
-.game-input[data-mode='hint'] { background:#e9effc !important; border-color:#b8caeb !important; }
-.game-input[data-mode='prediction'] { background:#fff1d9 !important; border-color:#e5ce9e !important; }
+.game-input[data-mode='hint'] { background:#ffe1ee !important; border-color:#f09abc !important; }
+.game-input[data-mode='prediction'] { background:#fff4b8 !important; border-color:#e5c54f !important; }
 body[data-game-view='for-master'] .RoomBox, body[data-game-view='for-normal'] .RoomBox {
  position:fixed !important; inset:72px 24px 204px 220px !important; width:auto !important; height:auto !important;
  min-height:0; margin:0; background:#f8fff9; border:1px solid #d0e6d7; border-radius:20px; overflow:hidden;

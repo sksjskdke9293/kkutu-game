@@ -9,6 +9,10 @@ Server/lib/sub/global.json
 .env
 .env.*
 !.env.example
+*.cookies
+accounts-live.json
+admin-state.json
+.tmp-*
 Server/lib/Web/local-admin-seed.json
 *.pem
 *.key

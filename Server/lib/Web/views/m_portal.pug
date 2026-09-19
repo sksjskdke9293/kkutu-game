@@ -17,36 +17,105 @@
 extends m_layout
 
 block Subject
-	title= L('title')
+	title 끄투게임
 
 block CSS
-	link(rel='stylesheet', href='/css/in_portal.css?v=20260906-autumn-3')
+	link(rel='stylesheet', href='/css/in_portal.css?v=20260917-motion-1')
+	link(rel='stylesheet', href='/css/server-select.css?v=20260917-motion-1')
 
 	if PUBLIC && false
 		script(async, src='//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js')
 		script (adsbygoogle = window.adsbygoogle || []).push({google_ad_client: "ca-pub-3784210391085906", enable_page_level_ads: true});
 
 block Middle
-	div.mobile-portal
-		section.mobile-hero
-			img.mobile-hero-art(src='/img/custom/autumn-main-intro.png?v=20260906-autumn-1', alt='끄투게임')
-			div.mobile-hero-card
-				h1 끄투게임
-				p.mobile-version 버전 1.0.0
-				p 글자로 놀자! 언제 어디서나 끝말잇기
-				div.portal-actions
-					button#game-start(type='button')= L('gameStart')
-					a#official-discord(href='https://discord.gg/exfaWJDjU', target='_blank', rel='noopener noreferrer') 공식 디스코드 가기
-		section.mobile-servers
-			h3.server-list-title
-				a#server-refresh
-					+FA('refresh')
-					+Expl(L('serverRefresh'))
-				label 서버 선택
-				label#server-total
-			div#server-list
-		section.mobile-notice
-			iframe#kkutu-bulletin(width='100%', height='260px', src='/kkutu_bulletin.html')
+	- var MAINTENANCE = !!locals.MAINTENANCE && !locals.ADMIN;
+	- var UNAVAILABLE = !!locals.ACCESS_BLOCKED;
+	- var MAINTENANCE_SERVERS = locals.MAINTENANCE_SERVERS || [false, false];
+	- var PLAY_DISABLED = MAINTENANCE || UNAVAILABLE;
+	- var PLAY_LABEL = UNAVAILABLE ? '사용불가 계정' : (MAINTENANCE ? '점검중' : '게임 시작');
+	- var ENTRY_NAME = SESSION.profile ? (SESSION.profile.title || SESSION.profile.name || '비회원') : '비회원';
+	- var ENTRY_GUEST = !SESSION.profile;
+	main.portal-home.mobile-portal
+		header.portal-nav
+			a.portal-brand(href='/')
+				img(src='/img/custom/site-logo.png?v=20260910', alt='끄투게임')
+			nav
+				a(href='/event') 추석 이벤트
+				a(href='https://naver.me/5ulax0y9', target='_blank', rel='noopener noreferrer') 네이버 카페
+				a(href='https://www.youtube.com/@kkutugame', target='_blank', rel='noopener noreferrer') 유튜브
+			div.portal-account
+				button#game-start.maintenance-button(type='button', disabled=PLAY_DISABLED, data-maintenance=MAINTENANCE ? 'true' : 'false', data-unavailable=UNAVAILABLE ? 'true' : 'false', data-server-maintenance=JSON.stringify(MAINTENANCE_SERVERS), data-disabled-label=PLAY_LABEL, onclick="document.getElementById('ServerSelectOverlay').hidden=false;")= PLAY_LABEL
+				if SESSION.profile
+					span.portal-login= SESSION.profile.title || SESSION.profile.name
+				else
+					a.portal-login(href='/?account=login') 로그인
+		div#ServerSelectOverlay(hidden, role='dialog', aria-modal='true', aria-labelledby='ServerSelectTitle')
+			section.server-select-card
+				button#ServerSelectClose.server-select-close(type='button', aria-label='닫기') ×
+				header.server-select-head
+					img(src='/img/custom/server-select-logo.png?v=20260912', alt='끄투게임')
+					div.server-select-heading
+						span 함께 놀 서버
+						h2#ServerSelectTitle 게임 서버 고르기
+				div#ServerSelectList.server-select-list
+					- var chooserList = locals.SERVER_LIST || [0, 0];
+					- var chooserLimits = locals.SERVER_LIMITS || [100, 100];
+					for chooserCount, chooserIndex in chooserList
+						- var chooserLimit = chooserLimits[chooserIndex] || chooserLimits[0] || 100;
+						article.server-choice(data-server=chooserIndex, data-maintenance=MAINTENANCE_SERVERS[chooserIndex] ? 'true' : 'false', style='--server-load: '+Math.min(100, chooserCount / chooserLimit * 100)+'%')
+							div.server-choice-copy
+								div.server-choice-name= chooserIndex === 0 ? '나무' : (chooserIndex === 1 ? '유리' : '개발자 서버')
+								div.server-choice-count= chooserCount + ' / ' + chooserLimit + '명 접속 중'
+							span.server-choice-state= MAINTENANCE_SERVERS[chooserIndex] ? '점검중' : (chooserCount / chooserLimit >= .75 ? '보통' : '쾌적')
+							button(type='button', disabled=MAINTENANCE_SERVERS[chooserIndex], aria-label=(chooserIndex === 0 ? '나무' : '유리') + ' 접속')= MAINTENANCE_SERVERS[chooserIndex] ? '점검중' : '입장'
+		section.portal-hero#play
+			div.portal-slides
+				section.portal-entry-card(data-guest=ENTRY_GUEST ? 'true' : 'false', style='--entry-progress:'+(ENTRY_GUEST ? '100%' : '0%'))
+					div.portal-entry-welcome
+						img(src='/img/custom/site-favicon.png?v=20260912', alt='')
+						span
+							strong= ENTRY_NAME
+							| 님 환영합니다.
+					div.portal-entry-main
+						div.portal-entry-profile
+							b= ENTRY_NAME
+							div.portal-entry-level
+								span#portal-entry-level= ENTRY_GUEST ? 'Lv.∞' : 'Lv. 불러오는 중'
+						button.portal-main-start.maintenance-button(type='button', disabled=PLAY_DISABLED, onclick="document.getElementById('game-start').click()")= PLAY_LABEL
+		section.portal-content
+			section.portal-notice#notice
+				div.notice-heading
+					h2 공지사항
+					span 끄투게임의 새로운 소식
+				a.portal-featured-notice#portal-latest-notice(href='/notices.html')
+					span 최신 공지를 불러오는 중입니다.
+			aside.portal-side#servers
+				div.server-list-box
+					h3.server-list-title
+						img(src='/img/custom/site-favicon.png?v=20260912', alt='')
+						span 서버 목록
+						span#server-total
+						a#server-refresh(title='새로고침')
+							+FA('refresh')
+					div#server-list
+						//- Render the known servers on the first mobile paint. The
+						//- browser then replaces these counts with the live /servers response.
+						- var serverList = locals.SERVER_LIST || [0, 0];
+						- var serverLimits = locals.SERVER_LIMITS || [100, 100];
+						for count, index in serverList
+							- var limit = serverLimits[index] || serverLimits[0] || 100;
+							- var load = Math.min(100, Math.max(0, Number(count || 0) / limit * 100));
+							div.server(id='server-'+index, class=MAINTENANCE_SERVERS[index] ? 'is-maintenance' : (load >= 75 ? 'is-high' : (load >= 50 ? 'is-medium' : 'is-normal')), data-server=index, data-maintenance=MAINTENANCE_SERVERS[index] ? 'true' : 'false')
+								div.server-status(class=MAINTENANCE_SERVERS[index] ? 'ss-x' : 'ss-o')
+								div.server-name= index === 0 ? '나무' : (index === 1 ? '유리' : '개발자 서버')
+								div.server-people.graph
+									div.graph-bar(style='width: '+(MAINTENANCE_SERVERS[index] ? 100 : load)+'%')
+									label= MAINTENANCE_SERVERS[index] ? '점검중' : (count + ' / ' + limit)
+								div.server-enter= MAINTENANCE_SERVERS[index] ? '점검중' : '접속'
+				div.portal-link-grid
+					a(href='https://discord.gg/exfaWJDjU', target='_blank', rel='noopener noreferrer')
+						strong 공식 디스코드
+						span 함께 이야기해요
 
 block Bottom
 	div.bottom-legal!= L('dictionarySupport')

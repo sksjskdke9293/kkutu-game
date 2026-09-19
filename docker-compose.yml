@@ -65,6 +65,52 @@ services:
       start_period: 20s
     logging: *default-logging
 
+  game2:
+    build: *app-build
+    image: kkutu-app:local
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["node", "/app/Server/lib/Game/cluster.js", "1", "1"]
+    environment:
+      NODE_OPTIONS: --max-old-space-size=256
+    expose:
+      - "8081"
+      - "8497"
+    healthcheck:
+      test: ["CMD", "node", "-e", "const net=require('net');const s=net.connect(8081,'127.0.0.1');const t=setTimeout(()=>process.exit(1),2000);s.once('connect',()=>{clearTimeout(t);s.destroy();process.exit(0)});s.once('error',()=>process.exit(1));"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 20s
+    logging: *default-logging
+
+  game3:
+    build: *app-build
+    image: kkutu-app:local
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["node", "/app/Server/lib/Game/cluster.js", "2", "1"]
+    environment:
+      NODE_OPTIONS: --max-old-space-size=256
+    expose:
+      - "8082"
+      - "8498"
+    healthcheck:
+      test: ["CMD", "node", "-e", "const net=require('net');const s=net.connect(8082,'127.0.0.1');const t=setTimeout(()=>process.exit(1),2000);s.once('connect',()=>{clearTimeout(t);s.destroy();process.exit(0)});s.once('error',()=>process.exit(1));"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 20s
+    logging: *default-logging
+
   web:
     build: *app-build
     image: kkutu-app:local
@@ -75,6 +121,10 @@ services:
       db:
         condition: service_healthy
       game:
+        condition: service_healthy
+      game2:
+        condition: service_healthy
+      game3:
         condition: service_healthy
     command: ["node", "/app/Server/lib/Web/cluster.js", "1"]
     environment:
@@ -101,11 +151,17 @@ services:
         condition: service_healthy
       game:
         condition: service_healthy
+      game3:
+        condition: service_healthy
     ports:
       - "80:80"
       - "443:443"
       - "8080:8080"
+      - "8081:8081"
+      - "8082:8082"
       - "8496:8496"
+      - "8497:8497"
+      - "8498:8498"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

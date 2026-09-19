@@ -41,6 +41,7 @@ $(document).ready(function(){
 	
 	$data.PUBLIC = $("#PUBLIC").html() == "true";
 	$data.URL = $("#URL").html();
+	window.__kkutuConnect = function(){ connect(); };
 	$data.version = $("#version").html();
 	$data.server = location.href.match(/\?.*server=(\d+)/)[1];
 	$data.shop = {};
@@ -79,6 +80,9 @@ $(document).ready(function(){
 			newRoom: $("#NewRoomBtn"),
 			setRoom: $("#SetRoomBtn"),
 			quickRoom: $("#QuickRoomBtn"),
+			tutorial: $("#TutorialBtn"),
+			dailyQuest: $("#DailyQuestBtn"),
+			dailySpin: $("#DailySpinBtn"),
 			spectate: $("#SpectateBtn"),
 			shop: $("#ShopBtn"),
 			dict: $("#DictionaryBtn"),
@@ -284,18 +288,22 @@ $(document).ready(function(){
 		});
 	}
 	if(_WebSocket == undefined){
+		$('#intro-text').text('브라우저 WebSocket을 사용할 수 없습니다.');
 		loading(L['websocketUnsupport']);
 		alert(L['websocketUnsupport']);
 		return;
 	}
 	$data._soundList = [
 		{ key: "k", value: "/media/kkutu/k.mp3" },
-		{ key: "lobby", value: "/media/kkutu/LobbyBGM.mp3?v=uploaded-20260906" },
+		{ key: "lobby", value: "/media/kkutu/LobbyBGM.mp3?v=uploaded-20260906-restored" },
+		{ key: "lobbyAutumn", value: "/media/kkutu/LobbyAutumnBGM.mp3?v=autumn-20260910" },
+		{ key: "lobbyChuseok", value: "/media/kkutu/LobbyChuseokBGM.mp3?v=chuseok-20260914" },
+		{ key: "game", value: "/media/kkutu/GameBGM.mp3?v=small-moments-game-20260910" },
 		{ key: "jaqwi", value: "/media/kkutu/JaqwiBGM.mp3" },
 		{ key: "jaqwiF", value: "/media/kkutu/JaqwiFastBGM.mp3" },
 		{ key: "ranked", value: "/media/kkutu/RankedBGM.mp3?v=ranked-20260907" },
-		{ key: "game_start", value: "/media/kkutu/game_start.mp3?v=gayageum-effects-20260906" },
-		{ key: "round_start", value: "/media/kkutu/round_start.mp3?v=gayageum-effects-20260906" },
+		{ key: "game_start", value: "/media/kkutu/game_start.wav?v=gayageum-piano-20260910b" },
+		{ key: "round_start", value: "/media/kkutu/round_start.wav?v=gayageum-piano-20260910b" },
 		{ key: "fail", value: "/media/kkutu/fail.mp3" },
 		{ key: "timeout", value: "/media/kkutu/timeout.mp3" },
 		{ key: "lvup", value: "/media/kkutu/lvup.mp3" },
@@ -306,13 +314,12 @@ $(document).ready(function(){
 		{ key: "horr", value: "/media/kkutu/horr.mp3" },
 	];
 	for(i=0; i<=10; i++) $data._soundList.push(
-		{ key: "T"+i, value: "/media/kkutu/T"+i+".mp3?v=uploaded-20260906" },
-		{ key: "K"+i, value: "/media/kkutu/K"+i+".wav?v=gayageum-clean-20260908" },
-		{ key: "As"+i, value: "/media/kkutu/As"+i+".wav?v=gayageum-clean-20260908" }
+		{ key: "T"+i, value: "/media/kkutu/T"+i+".mp3?v=original-20260909" },
+		{ key: "K"+i, value: "/media/kkutu/K"+i+".wav?v=piano-20260910" },
+		{ key: "As"+i, value: "/media/kkutu/As"+i+".wav?v=piano-20260910" }
 	);
-	loadSounds($data._soundList, function(){
-		processShop(connect);
-	});
+	loadSounds($data._soundList, function(){ processShop(); });
+	_setTimeout(connect, 80);
 	delete $data._soundList;
 	
 	MOREMI_PART = $("#MOREMI_PART").html().split(',');
@@ -320,6 +327,7 @@ $(document).ready(function(){
 	RULE = JSON.parse($("#RULE").html());
 	OPTIONS = JSON.parse($("#OPTIONS").html());
 	MODE = Object.keys(RULE);
+	if(document.documentElement.getAttribute('data-site-theme') !== 'chuseok') $('#room-mode option, #quick-mode option').filter(function(){return MODE[Number(this.value)]==='YUT';}).remove();
 	mobile = $("#mobile").html() == "true";
 	if(mobile) TICK = 200;
 	$data._timePercent = false ? function(){
@@ -378,7 +386,13 @@ $(document).ready(function(){
 	$data.opts = $.cookie('kks');
 	if($data.opts){
 		try{
-			applyOptions(JSON.parse($data.opts));
+			var savedOptions = JSON.parse($data.opts);
+			if(!savedOptions.lm2){
+				savedOptions.lb = 'autumn';
+				savedOptions.lm2 = true;
+				$.cookie('kks', JSON.stringify(savedOptions));
+			}
+			applyOptions(savedOptions);
 		}catch(ex){
 			applyOptions(defaultSettingsOptions());
 		}
@@ -395,7 +409,20 @@ $(document).ready(function(){
 		stopDrag();
 	});
 	// addInterval(checkInput, 1);
-	$stage.chatBtn.on('click', function(e){
+	var tabs = $('<div id="ChatTabs"><button type="button" data-scope="main">메인</button><button type="button" data-scope="room">방</button></div>').prependTo('.ChatBox');
+ window.syncChatTabs = function(){
+  var roomId=$data.room && $data.room.id;
+  if(roomId && roomId !== $data._chatRoomId) $data.chatScope='room';
+  $data._chatRoomId=roomId;
+  if(!$data.room) $data.chatScope='main';
+  if(!$data.chatScope) $data.chatScope=$data.room ? 'room' : 'main';
+  tabs.find('[data-scope="room"]').toggle(!!$data.room);
+  tabs.find('button').each(function(){ $(this).attr('aria-selected',$(this).attr('data-scope') === $data.chatScope); });
+  $('.ChatBox').attr('data-chat-tab',$data.chatScope);
+ };
+ tabs.on('click','button',function(){ $data.chatScope=$(this).attr('data-scope'); syncChatTabs(); });
+ syncChatTabs();
+ $stage.chatBtn.on('click', function(e){
 		checkInput();
 		
 		var value = $stage.talk.val();
@@ -405,7 +432,8 @@ $(document).ready(function(){
 			o.cmd = o.value.split(" ");
 			runCommand(o.cmd);
 		}else{
-			send('talk', o);
+			o.scope = $data.chatScope || ($data.room ? 'room' : 'main');
+			send('talk', o, o.scope === 'main');
 		}
 		if($data._whisper){
 			$stage.talk.val("/e " + $data._whisper + " ");
@@ -420,16 +448,24 @@ $(document).ready(function(){
 			if($data._wordInputMode === 'hint'){
 				var hint = $stage.game.hereText.val().trim();
 				if(hint) send('playerHint', {value:hint});
-				$stage.game.hereText.val('');
+				$data._inputValues = $data._inputValues || {};
+				$data._inputValues.hint = $stage.game.hereText.val();
+				$data._sharedWordInput = $stage.game.hereText.val();
 				return;
 			}
 			var prediction = $stage.game.hereText.val().trim();
 			if(prediction) send('checkPrediction', {value:prediction});
+			$data._inputValues = $data._inputValues || {};
+			$data._inputValues.prediction = $stage.game.hereText.val();
+			$data._sharedWordInput = $stage.game.hereText.val();
 			return;
 		}
 		var value = $stage.game.hereText.val().trim();
 		if(!value) return;
 		send('talk', {value:value, relay:true});
+		$data._sharedWordInput = '';
+		$data._inputValues = $data._inputValues || {};
+		$data._inputValues.answer = '';
 		$stage.game.hereText.val('').focus();
 	}
 	function blocksGameInputAutomation(inputType){
@@ -437,7 +473,20 @@ $(document).ready(function(){
 			inputType === 'insertFromYank' || inputType === 'insertReplacementText';
 	}
 	var wordComposing = false, lastGameWordValue = '';
-	$stage.game.hereText.prop('readOnly', false).attr({
+		function syncWrappedWordBoard(){
+		if(!$('body').is('[data-game-view="for-gaming"]')) return;
+		var $board = $('.GameBox .jjoDisplayBar'), $frame = $('.GameBox .jjoriping'), $head = $('.GameBox .game-head');
+		if(!$board.length || !$frame.length || !$head.length) return;
+		var extra = Math.max(0, Math.ceil($frame.outerHeight(true)) - 112);
+		$head.css({ height:(250 + extra) + 'px', 'min-height':(250 + extra) + 'px' });
+		$('.GameBox .history-holder').css('top', (153 + extra) + 'px');
+		$('.GameBox .hints').css('top', (201 + extra) + 'px');
+	}
+	if(window.ResizeObserver){
+		var wordBoardNode = $('.GameBox .jjoDisplayBar').get(0);
+		if(wordBoardNode) new ResizeObserver(function(){ window.requestAnimationFrame(syncWrappedWordBoard); }).observe(wordBoardNode);
+	}
+$stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 		enterkeyhint:'send', autocomplete:'off', autocorrect:'off', autocapitalize:'none',
 		spellcheck:'false', inputmode:'text', 'aria-autocomplete':'none'
 	})
@@ -486,7 +535,11 @@ $(document).ready(function(){
 		if($data._wordInputMode === 'answer' && $data._playerHints && $data._playerHints[Number(e.key)-1]){ e.preventDefault(); usePlayerHint(Number(e.key)-1); }
 	});
 	$stage.game.hereText.on('input.prediction', function(){
-		if($data._wordInputMode === 'prediction') $data._prediction = '';
+		if($data._wordInputMode){
+			$data._inputValues = $data._inputValues || {};
+			$data._inputValues[$data._wordInputMode] = $(this).val();
+			$data._sharedWordInput = $(this).val();
+		}
 	});
 	$("#cw-q-input").on('keydown', function(e){
 		if(e.keyCode == 13){
@@ -564,6 +617,9 @@ $(document).ready(function(){
 		applyOptions(readSettingsOptions());
 	});
 	$("#mute-bgm, #mute-effect").on('change', function(e){
+		applyOptions(readSettingsOptions());
+	});
+	$("#settings-lobby-bgm").on('change', function(e){
 		applyOptions(readSettingsOptions());
 	});
 	$stage.menu.community.on('click', function(e){
@@ -665,12 +721,38 @@ $(document).ready(function(){
 		}
 		$("#quick-status").html(L['quickStatus'] + " " + ct);
 	});
-	$stage.menu.quickRoom.on('click', function(e){
-		if(getOnly() != 'for-lobby') return;
+	function beginQuickMatch(){
+		$stage.dialog.quick.hide();
 		$('#MatchOverlay').remove();
-		$('<div id="MatchOverlay"><section><h2>빠른 시작</h2><p id="MatchStatus">상대방을 기다리는 중 · 1 / 2</p><div id="MatchVotes"></div><p id="MatchHint"></p><button id="MatchCancel">매칭 취소</button></section></div>').appendTo('body');
+		$('<div id="MatchOverlay"><section><h2>빠른 시작</h2><p id="MatchStatus">상대방을 기다리는 중 · 1 / 2</p><div id="MatchVotes"></div><p id="MatchHint"></p><button id="MatchCancel" type="button">매칭 취소</button></section></div>').appendTo('body');
 		$('#MatchCancel').on('click', function(){ send('matchCancel', {}, true); $('#MatchOverlay').remove(); });
 		send('matchJoin', {}, true);
+	}
+	function tutorialKey(){ return 'kkutu-tutorial-complete:' + ($data.id || ''); }
+	window.refreshTutorialEntry = function(){
+		var me = $data.users && $data.users[$data.id];
+		var isNew = me && me.data && Number(me.data.score || 0) === 0 && !$data.guest;
+		var done = false; try { done = !!localStorage.getItem(tutorialKey()); } catch(_) {}
+		$stage.menu.tutorial.toggle(!!isNew && !done && getOnly() == 'for-lobby');
+	};
+	function openTutorial(){
+		var steps=[['환영합니다!','방 만들기나 빠른 시작으로 한국어 끝말잇기 2인 매칭에 참여할 수 있어요.'],['낱말 입력','내 차례에는 화면 아래 입력칸에 앞말의 마지막 글자로 시작하는 낱말을 입력하세요.'],['게임 시작','정답을 빠르게 제출해 점수를 얻고, 라운드가 끝날 때 가장 높은 점수를 노려 보세요.']];
+		var index=0, shade=$('<div id="TutorialOverlay"><section><h2></h2><p></p><button type="button" class="tutorial-next"></button></section></div>').appendTo('body');
+		function draw(){shade.find('h2').text(steps[index][0]);shade.find('p').text(steps[index][1]);shade.find('.tutorial-next').text(index===steps.length-1?'시작하기':'다음');}
+		shade.find('.tutorial-next').on('click',function(){if(++index>=steps.length){try{localStorage.setItem(tutorialKey(),'1');}catch(_){}shade.remove();window.refreshTutorialEntry();}else draw();});draw();
+	}
+	$stage.menu.tutorial.on('click.tutorialMenu',function(e){e.preventDefault();openTutorial();});
+	$stage.menu.quickRoom.on('click.quickMenu', function(e){
+		e.preventDefault();
+		if(getOnly() != 'for-lobby') return;
+		// Fast start is a fixed two-player Korean word-chain match. The
+		// server matchmaker presents the dictionary vote after both players join.
+		beginQuickMatch();
+	});
+	$stage.dialog.quickOK.on('click.quickMenu', function(e){
+		e.preventDefault();
+		if(getOnly() != 'for-lobby') return;
+		beginQuickMatch();
 	});
 	$("#room-mode").on('change', function(e){
 		var v = $("#room-mode").val();
@@ -678,11 +760,11 @@ $(document).ready(function(){
 		$("#game-mode-expl").html(L['modex' + v]);
 
 		updateGameOptions(rule.opts, 'room');
-		var isMoraeClassic = ["2", "3", "8"].indexOf(String(v)) != -1;
-		$("#room-dictionary-panel").toggle(isMoraeClassic);
-		var legacyWordOptions = { injeong: "ext", loanword: "loa", strict: "str" };
+		var usesMoraeDictionary = ["2", "3", "8"].indexOf(String(v)) != -1 || rule.rule == "Yut";
+		$("#room-dictionary-panel").toggle(usesMoraeDictionary);
+		var legacyWordOptions = { loanword: "loa", strict: "str" };
 		Object.keys(legacyWordOptions).forEach(function(option){
-			$("#room-" + option + "-panel").toggle(!isMoraeClassic && rule.opts.indexOf(legacyWordOptions[option]) != -1);
+			$("#room-" + option + "-panel").toggle(!usesMoraeDictionary && rule.opts.indexOf(legacyWordOptions[option]) != -1);
 		});
 		
 		$data._injpick = [];
@@ -749,19 +831,19 @@ $(document).ready(function(){
 		updateUserList(true);
 	});
 	$('#RoomSpectateAction').on('click', function(){ $stage.menu.spectate.trigger('click'); });
+	$('#RoomSettingsAction').on('click', function(){ $stage.menu.setRoom.trigger('click'); });
 	$('#RoomInviteAction').on('click', function(){ $stage.menu.invite.trigger('click'); });
 	$('#RoomBotAction').on('click', function(){ $stage.dialog.inviteRobot.trigger('click'); });
+	$('#RoomDictionaryAction').on('click', function(){ $stage.menu.dict.trigger('click'); });
+	$('#RoomExitAction').on('click', function(){ $stage.menu.exit.trigger('click'); });
 	$('#RoomStartAction').on('click', function(){ $stage.menu.start.trigger('click'); });
 	$('#RoomReadyAction').on('click', function(){ $stage.menu.ready.trigger('click'); });
-	$('#RoomPrimaryAction').on('click', function(){
-		if($data.master) $stage.menu.start.trigger('click');
-		else $stage.menu.ready.trigger('click');
-	});
 	$stage.menu.ready.on('click', function(e){
 		send('ready');
 	});
 	$stage.menu.start.on('click', function(e){
-		send('start');
+		loading(L['gameLoading'] || '게임을 불러오는 중…');
+		requestAnimationFrame(function(){ setTimeout(function(){ send('start'); }, 0); });
 	});
 	$stage.menu.exit.on('click', function(e){
 		if($data.room.gaming){
@@ -904,14 +986,14 @@ $(document).ready(function(){
 		
 		if($target.is(':disabled')) return;
 		$target.prop('disabled', true);
-		$("#dict-output").html(L['searching']);
+		$("#dict-output").text(L['searching'] || '검색 중…');
 		tryDict($("#dict-input").val(), function(res){
 			addTimeout(function(){
 				$target.prop('disabled', false);
 			}, 500);
-			if(res.error) return $("#dict-output").html(res.error + ": " + L['wpFail_' + res.error]);
+			if(res.error) return $("#dict-output").text(res.message || (res.error == 404 ? '사전에 등록되지 않은 단어입니다.' : (L['wpFail_' + res.error] || '검색에 실패했습니다. 다시 시도해 주세요.')));
 			
-			$("#dict-output").html(processWord(res.word, res.mean, res.theme, res.type.split(',')));
+			$("#dict-output").html(processWord(res.word, res.mean, res.theme, String(res.type || '').split(',')));
 		});
 	}).hotkey($("#dict-input"), 13);
 	$stage.dialog.wordPlusOK.on('click', function(e){
@@ -965,11 +1047,13 @@ $(document).ready(function(){
 		if($data.guest) return fail(421);
 		if($data._gaming) return fail(438);
 		$stage.dialog.dress.find('.dialog-title').text('보관함');
-		if(showDialog($stage.dialog.dress)) $.get("/box", function(res){
-			if(res.error) return fail(res.error);
-			
-			$data.box = res;
-			drawMyDress();
+		if(showDialog($stage.dialog.dress)) processShop(function(shop){
+			if(shop && shop.error) return fail(shop.error);
+			$.get("/box", function(res){
+				if(res.error) return fail(res.error);
+				$data.box = res || {};
+				drawMyDress(true);
+			}).fail(function(){ fail(500); });
 		});
 	});
 	$stage.dialog.dressOK.on('click', function(e){
@@ -980,15 +1064,6 @@ $(document).ready(function(){
 			
 			$stage.dialog.dress.hide();
 		});
-	});
-	$("#DressDiag .dress-type").on('click', function(e){
-		var $target = $(e.currentTarget);
-		var type = $target.attr('id').slice(11);
-		
-		$(".dress-type.selected").removeClass("selected");
-		$target.addClass("selected");
-		
-		drawMyGoods(type == 'all' || $target.attr('value'));
 	});
 	$("#dress-cf").on('click', function(e){
 		if($data._gaming) return fail(438);
@@ -1060,31 +1135,33 @@ $(document).ready(function(){
 		clearTimeout($data._kickTimer);
 		$stage.dialog.kickVote.hide();
 	});
-	$stage.dialog.purchaseOK.on('click', function(e){
-		if($data._fontPurchase){
-			$.post('/buy-font/dunggeunmo', function(res){
-				if(res.error) return fail(res.error);
-				$data.users[$data.id].money = res.money;
-				$data.users[$data.id].box = res.box;
-				$data.box = res.box;
-				$data.users[$data.id].equip = res.equip || $data.users[$data.id].equip || {};
-				updateMe();
-				notice('구매 완료! 보관함에서 둥근모 글꼴을 장착하세요.');
-			});
+	$stage.dialog.purchaseOK.on('click', function(){
+		if($data._purchasePending) return;
+		var font = !!$data._fontPurchase;
+		$data._purchasePending = true;
+		$stage.dialog.purchaseOK.prop('disabled', true).text('구매 중…');
+		$.ajax({url:font ? '/buy-font/dunggeunmo' : '/buy/' + encodeURIComponent($data._sgood), type:'POST', dataType:'json', timeout:15000})
+		.done(function(res){
+			if(!res || res.error || res.result !== 200 || !res.box || !isFinite(Number(res.money))){
+				$('#purchase-item-desc').text(res && res.error === 423 ? '로그인 후 구매할 수 있습니다.' : '구매하지 못했습니다. 잔액을 확인하고 다시 시도해 주세요.');
+				return;
+			}
+			var my = $data.users[$data.id];
+			my.money = Number(res.money); my.box = res.box; $data.box = res.box;
+			if(res.equip) my.equip = res.equip;
+			send('refresh', {}, true);
+			if(rws && rws.readyState === 1) send('refresh');
+			updateMe();
+			if($stage.dialog.dress.is(':visible')) drawMyDress($data._avGroup);
 			delete $data._fontPurchase;
 			$stage.dialog.purchase.hide();
-			return;
-		}
-		$.post("/buy/" + $data._sgood, function(res){
-			var my = $data.users[$data.id];
-			
-			if(res.error) return fail(res.error);
-			alert(L['purchased']);
-			my.money = res.money;
-			my.box = res.box;
-			updateMe();
+			notice(res.owned ? '이미 보유한 아이템입니다. 핑은 추가 차감되지 않습니다. 보관함에서 장착하세요.' : '구매 완료! 보관함에 아이템이 지급되었습니다.');
+		}).fail(function(){
+			$('#purchase-item-desc').text('구매 결과를 확인하지 못했습니다. 보관함과 잔액을 확인해 주세요.');
+		}).always(function(){
+			$data._purchasePending = false;
+			$stage.dialog.purchaseOK.prop('disabled', false).text('구매');
 		});
-		$stage.dialog.purchase.hide();
 	});
 	$stage.dialog.purchaseNO.on('click', function(e){
 		$stage.dialog.purchase.hide();
@@ -1197,9 +1274,121 @@ $(document).ready(function(){
 			else draw();
 		}, 1000);
 	}
+
+	function normalizeGuestName(value){ return String(value || '').trim().replace(/[^0-9A-Za-z가-힣 _-]/g, '').slice(0, 12); }
+	function setGuestNameLocked(locked){
+		$('body').toggleClass('guest-name-locked', !!locked);
+		$('#GuestNameEntry').attr('aria-hidden', locked ? 'false' : 'true');
+	}
+	window.refreshGuestNameEntry = function(){
+		var $entry=$('#GuestNameEntry'), $input=$('#GuestNameInput');
+		if(!$entry.length) return;
+		if(!$data.guest){ $entry.hide(); setGuestNameLocked(false); return; }
+		var saved=normalizeGuestName(sessionStorage.getItem('kkutu-guest-name') || '');
+		if(saved) $input.val(saved);
+		$entry.show();
+		setGuestNameLocked(saved.length < 2);
+		if(saved.length < 2) setTimeout(function(){ $input.focus(); }, 100);
+	};
+	$(document).on('submit', '#GuestNameEntry', function(e){
+		e.preventDefault();
+		var name=normalizeGuestName($('#GuestNameInput').val());
+		if(name.length < 2){ $('#GuestNameHint').text('이름은 2~12자로 입력해 주세요.'); $('#GuestNameInput').focus(); return; }
+		try{ sessionStorage.setItem('kkutu-guest-name', name); }catch(ex){}
+		$data.guestNamed=true;
+		var mine=$data.users && $data.users[$data.id];
+		if(mine && mine.profile){ mine.profile.title=name+'(손님)'; mine.profile.name=mine.profile.title; $data.setUser($data.id,mine); if(typeof updateMe==='function')updateMe(); }
+		send('guestName',{value:name});
+		$('#GuestNameHint').text('이름이 적용되었습니다.');
+		setGuestNameLocked(false);
+	});
+
+	window.renderDailyQuests = function(data){
+		var $overlay = $('#DailyQuestOverlay');
+		if(!$overlay.length) return;
+		var $body = $overlay.find('.daily-quest-list').empty();
+		if(!data || data.guest){
+			$body.append($('<div class="daily-quest-login">').text('로그인하면 매일 일일 퀘스트 3개에 도전할 수 있어요.'));
+			$overlay.find('.daily-quest-money').text('계정 전용');
+			return;
+		}
+		$overlay.find('.daily-quest-money').text('보유 핑 ' + Number(data.money || 0).toLocaleString() + '개');
+		(data.quests || []).forEach(function(quest){
+			var progress = Math.min(Number(quest.progress || 0), Number(quest.target || 1));
+			var percent = Math.round(progress / Number(quest.target || 1) * 100);
+			var $card = $('<article class="daily-quest-card">').toggleClass('is-complete', !!quest.completed);
+			$card.append($('<div class="daily-quest-card-head">')
+				.append($('<div>').append($('<strong>').text(quest.title)).append($('<p>').text(quest.description)))
+				.append($('<span class="daily-quest-reward">').text(quest.completed ? '완료 · +' + quest.reward + '핑' : '보상 ' + quest.reward + '핑')));
+			$card.append($('<div class="daily-quest-progress">').append($('<i>').css('width', percent + '%')));
+			$card.append($('<small>').text(progress + ' / ' + quest.target));
+			$body.append($card);
+		});
+		if(data.completed && data.completed.length && typeof notice === 'function'){
+			var totalReward = data.completed.reduce(function(sum, item){ return sum + Number(item.reward || 0); }, 0);
+			notice('일일 퀘스트 완료! ' + totalReward + '핑을 받았습니다.');
+		}
+	};
+	$(document).on('click', '#DailyQuestBtn', function(){
+		$('#DailyQuestOverlay').remove();
+		var $overlay = $('<section id="DailyQuestOverlay" role="dialog" aria-modal="true" aria-label="일일 퀘스트">');
+		var $panel = $('<div class="daily-quest-panel">').appendTo($overlay);
+		$('<button type="button" class="daily-quest-close" aria-label="닫기">×</button>').appendTo($panel).on('click', function(){ $overlay.remove(); });
+		$panel.append($('<header>').append('<div><h2>일일 퀘스트</h2><p>하루에 3개 · 완료 즉시 퀘스트마다 50~55핑 지급</p></div>').append('<b class="daily-quest-money">불러오는 중…</b>'));
+		$panel.append('<div class="daily-quest-list"><div class="daily-quest-login">퀘스트를 불러오는 중입니다.</div></div>');
+		$panel.append('<footer>매일 자정에 미완료 진행도를 포함해 새로운 퀘스트로 초기화됩니다.</footer>');
+		$overlay.appendTo('body').on('click', function(e){ if(e.target === this) $overlay.remove(); });
+		if($data._dailyQuest) window.renderDailyQuests($data._dailyQuest);
+		send('dailyQuestGet');
+	});
+	setInterval(function(){
+		if($('#DailyQuestOverlay').length) send('dailyQuestGet');
+	}, 60000);
+	var spinRewards=[5,10,15,20,25,30,40,50],spinBusy=false;
+	window.renderDailySpin=function(data){
+		var $panel=$('#DailySpinOverlay');if(!$panel.length)return;
+		var $button=$panel.find('.daily-spin-button'),$message=$panel.find('.daily-spin-message');
+		if(data.guest){$button.prop('disabled',true);$message.text('로그인한 계정만 하루에 한 번 돌릴 수 있어요.');return;}
+		if(data.already||(!spinBusy&&data.played)){$button.prop('disabled',true);$message.text('오늘은 이미 돌렸어요. 받은 보상: '+data.reward+'핑');return;}
+		if(data.played&&spinBusy){
+			spinBusy=false;$button.prop('disabled',true);
+			var index=spinRewards.indexOf(Number(data.reward));
+			if(index<0){$message.text('결과를 확인할 수 없습니다.');return;}
+			var degrees=2160-(index+.5)*45;
+			$panel.find('.daily-spin-wheel').css('transform','rotate('+degrees+'deg)');
+			$message.text('팽이가 도는 중…');
+			setTimeout(function(){if($panel.closest('body').length){$message.text(data.reward+'핑을 받았습니다!');if($data.users&&$data.users[$data.id])$data.users[$data.id].money=data.money;if(typeof updateMe==='function')updateMe();}},4700);
+			return;
+		}
+		$button.prop('disabled',false);$message.text('오늘의 한 번! 화살표가 가리킨 핑을 받아요.');
+	};
+	$(document).on('click','#DailySpinBtn',function(){
+		$('#DailySpinOverlay').remove();spinBusy=false;
+		var $overlay=$('<section id="DailySpinOverlay" role="dialog" aria-modal="true" aria-label="일일 팽이 돌리기">').appendTo('body');
+		var $card=$('<div class="daily-spin-card">').appendTo($overlay);
+		$('<button type="button" class="daily-spin-close" aria-label="닫기">×</button>').appendTo($card).on('click',function(){$overlay.remove();});
+		$card.append('<h2>일일 팽이 돌리기</h2><p>매일 자정에 한 번 다시 돌릴 수 있어요.</p>');
+		var $stage=$('<div class="daily-spin-stage"><div class="daily-spin-pointer">▼</div><div class="daily-spin-wheel"></div><div class="daily-spin-center">핑</div></div>').appendTo($card);
+		spinRewards.forEach(function(reward,index){var angle=(index+.5)*45;$('<b>').text(reward).css('transform','translate(-50%,-50%) rotate('+angle+'deg) translateY(-112px) rotate('+(-angle)+'deg)').appendTo($stage.find('.daily-spin-wheel'));});
+		$card.append('<div class="daily-spin-message">보상을 확인하는 중…</div>');
+		$('<button class="daily-spin-button" type="button" disabled>팽이 돌리기</button>').appendTo($card).on('click',function(){if(spinBusy)return;spinBusy=true;$(this).prop('disabled',true);send('dailySpinPlay');});
+		$overlay.on('click',function(e){if(e.target===this)$overlay.remove();});
+		send('dailySpinGet');
+	});
+
 	function connect(){
-		ws = new _WebSocket($data.URL);
+		if(ws && (ws.readyState === 0 || ws.readyState === 1)) return;
+		$('#intro-text').text('게임 서버에 연결하는 중…');
+		var connectUrl = $data.URL;
+		if($('#IS_GUEST').text() === 'true'){
+			var guestName = (sessionStorage.getItem('kkutu-guest-name') || '').trim().replace(/[^0-9A-Za-z가-힣 _-]/g, '').slice(0, 12);
+			// Guests enter a custom name from the lobby UI after connection. A
+			// neutral fallback keeps the initial socket handshake prompt-free.
+			connectUrl += '?guestName=' + encodeURIComponent(guestName.length >= 2 ? guestName : '손님');
+		}
+		ws = new _WebSocket(connectUrl);
 		ws.onopen = function(e){
+			$('#intro-text').text('게임 정보를 불러오는 중…');
 			clearReconnectTimer();
 			loading();
 			/*if($data.PUBLIC && mobile) $("#ad").append($("<ins>").addClass("daum_ddn_area")
@@ -1223,6 +1412,7 @@ $(document).ready(function(){
 			onMessage(JSON.parse(e.data));
 		};
 		ws.onclose = function(e){
+			$('#intro-text').text('연결이 끊겼습니다. 다시 연결하는 중…');
 			if(rws) rws.close();
 			stopAllSounds();
 			showReconnect(e);

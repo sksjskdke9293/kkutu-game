@@ -86,6 +86,7 @@ Pub.ready = function(isPub){
 			DB.users = new mainAgent.Table("users");
 			/* Enhanced User Block System [S] */
 			DB.ip_block = new mainAgent.Table("ip_block");
+			DB.access_log = new mainAgent.Table("access_log");
 			/* Enhanced User Block System [E] */
 			
 			if(exports.ready) exports.ready(Redis, Pg);
