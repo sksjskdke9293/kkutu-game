@@ -406,7 +406,7 @@ exports.submit = function(client, text, hintUsed){
 					DB.kkutu[l].update([ '_id', text ]).set([ 'hit', $doc.hit + 1 ]).on();
 				}
 			}
-			if(my.rule.freeform || nuclearRobot) approved();
+			if(my.rule.freeform || nuclearRobot || my.opts.dictionary === 'standard') approved();
 			// These endings have isolated entries in the standard word set, but
 			// still function as one-shot words in play. Respect an active shield.
 			else if(my.opts.dictionary === 'standard' &&

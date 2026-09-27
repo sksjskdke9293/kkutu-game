@@ -9119,3 +9119,182 @@ html body #DictionaryDiag #wordbook-catalog-results .wordbook-row button {
     top: 350px !important;
   }
 }
+
+/* Dark glass settings and room browser from the current KKuTu Games Korea visual system. */
+.panel-brand-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 13px;
+  height: 100%;
+  color: #fff;
+  white-space: nowrap;
+}
+.panel-brand-title img {
+  width: 68px;
+  height: 38px;
+  object-fit: contain;
+}
+.panel-brand-title i {
+  display: block;
+  width: 3px;
+  height: 34px;
+  border-radius: 99px;
+  background: rgba(255,255,255,.92);
+}
+.panel-brand-title b {
+  font-size: 25px;
+  line-height: 1;
+}
+
+body #SettingDiag {
+  border: 1px solid rgba(255,255,255,.38) !important;
+  border-radius: 15px !important;
+  background: rgba(7,9,14,.86) !important;
+  box-shadow: 0 24px 80px rgba(0,0,0,.48) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+body #SettingDiag .dialog-head {
+  height: 58px !important;
+  min-height: 58px !important;
+  border-bottom: 4px solid rgba(255,255,255,.9) !important;
+  background: rgba(7,9,14,.84) !important;
+}
+body #SettingDiag .dialog-title {
+  height: 58px !important;
+  padding: 0 18px !important;
+}
+body #SettingDiag .closeBtn {
+  top: 9px !important;
+  right: 9px !important;
+  background: rgba(0,0,0,.72) !important;
+}
+body #SettingDiag .dialog-body {
+  max-height: calc(100dvh - 82px) !important;
+  background: rgba(13,15,20,.48) !important;
+}
+body #SettingDiag .settings-panel {
+  gap: 14px !important;
+  padding: 22px 16px 10px !important;
+}
+body #SettingDiag .settings-intro,
+body #SettingDiag .settings-section {
+  border-color: rgba(255,255,255,.24) !important;
+  background: rgba(29,29,32,.72) !important;
+  color: #fff !important;
+}
+body #SettingDiag .settings-intro p,
+body #SettingDiag .settings-section-title p,
+body #SettingDiag .settings-audio-label span {
+  color: rgba(255,255,255,.78) !important;
+}
+body #SettingDiag .settings-intro-icon,
+body #SettingDiag .settings-section-icon {
+  background: rgba(255,255,255,.13) !important;
+  color: #fff !important;
+}
+body #SettingDiag .settings-audio-row {
+  border-color: rgba(255,255,255,.12) !important;
+}
+body #SettingDiag .settings-select,
+body #SettingDiag .settings-check,
+body #SettingDiag .settings-mute label {
+  border-color: rgba(255,255,255,.28) !important;
+  background: rgba(6,7,10,.72) !important;
+  color: #fff !important;
+}
+body #SettingDiag .settings-actions {
+  position: sticky;
+  bottom: 0;
+  padding: 8px 0 0 !important;
+  background: linear-gradient(180deg,transparent,rgba(7,9,14,.96) 34%);
+}
+
+@media (min-width: 801px) {
+  html body[data-game-view="for-lobby"] .RoomListBox {
+    inset: 8px !important;
+    width: auto !important;
+    height: auto !important;
+    border: 1px solid rgba(255,255,255,.42) !important;
+    border-radius: 17px !important;
+    background: rgba(8,10,15,.77) !important;
+    box-shadow: 0 26px 90px rgba(0,0,0,.5) !important;
+    backdrop-filter: blur(17px) !important;
+    -webkit-backdrop-filter: blur(17px) !important;
+    z-index: 1080 !important;
+  }
+  html body[data-game-view="for-lobby"] .RoomListBox .product-title {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    padding: 0 18px !important;
+    border-bottom: 4px solid #fff !important;
+    background: rgba(9,11,16,.8) !important;
+  }
+  html body[data-game-view="for-lobby"] .RoomListBox .product-title small {
+    color: rgba(255,255,255,.7) !important;
+    font-size: 13px !important;
+  }
+  html body[data-game-view="for-lobby"] .RoomListBox #RoomBrowseTools {
+    min-height: 49px !important;
+    padding: 5px 14px !important;
+    border-bottom: 1px solid rgba(255,255,255,.36) !important;
+    background: rgba(19,21,25,.62) !important;
+    box-sizing: border-box !important;
+  }
+  html body[data-game-view="for-lobby"] .RoomListBox .product-body {
+    height: calc(100% - 97px) !important;
+    grid-auto-rows: 112px !important;
+    padding: 10px !important;
+    gap: 10px !important;
+    background: transparent !important;
+  }
+  html body[data-game-view="for-lobby"] .RoomListBox .rooms-item {
+    height: 112px !important;
+    border-color: rgba(255,255,255,.32) !important;
+    background: rgba(255,255,255,.92) !important;
+  }
+  html body[data-game-view="for-lobby"] .RoomListBox .rooms-create {
+    background: rgba(255,255,255,.94) !important;
+    color: #111 !important;
+  }
+}
+
+html body[data-game-view="for-gaming"] .branded-room-head .room-head-brand {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: clamp(230px,26vw,410px) !important;
+  height: 48px !important;
+  padding: 2px 10px !important;
+  background: none !important;
+  color: #fff !important;
+  -webkit-text-fill-color: initial !important;
+}
+html body[data-game-view="for-gaming"] .branded-room-head .room-head-brand img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+.wordbook-delete-button {
+  background: #fa686d !important;
+}
+
+body.room-browser-open #LobbySocialDock {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+html body[data-game-view="for-lobby"].room-browser-open #LobbySocialDock > .UserListBox,
+html body[data-game-view="for-lobby"].room-browser-open #LobbySocialDock > #ChatPanel {
+  display: none !important;
+}
+
+body .RoomListBox .product-title > small {
+  display: none !important;
+}

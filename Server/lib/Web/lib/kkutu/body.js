@@ -1071,6 +1071,7 @@ function updateUI(myRoom, refresh){
 		}
 		if(!$data.muteBGM && (!$data.bgm || ($data.bgm.audio && $data.bgm.audio.paused))) playBGM('lobby');
 	}else if(only == "for-master" || only == "for-normal"){
+		$('body').removeClass('room-browser-open');
 		$(".team-chosen").removeClass("team-chosen");
 		if($data.users[$data.id].game.ready || $data.users[$data.id].game.form == "S"){
 			$stage.menu.ready.addClass("toggled");
@@ -1340,7 +1341,7 @@ function updateRoomList(refresh){
 			len++;
 		}
 	}
-	$stage.lobby.roomListTitle.html("<i class='fa fa-bars'></i> 방 목록 [" + len + (L['GAE'] || '개') + "]");
+	$stage.lobby.roomListTitle.html("<span class='panel-brand-title'><img src='/img/custom/chat-brand-white.png' alt='끄투'><i></i><b>방목록</b></span><small>" + len + (L['GAE'] || '개') + "</small>");
 	
 	if(len){
 		$(".rooms-gaming").css('display', $data.opts.ow ? "none" : "");
@@ -3193,7 +3194,7 @@ function setRoomHead($obj, room){
 	$obj.addClass('branded-room-head');
 	$obj.children('.room-head-number, .room-head-title').wrapAll('<div class="room-head-identity"></div>');
 	$obj.children('h5').wrapAll('<div class="room-head-details"></div>');
-	$obj.append($('<span>').addClass('room-head-brand').text('끄투게임즈코리아'));
+	$obj.append($('<span>').addClass('room-head-brand').append($('<img>').attr({src:'/img/custom/game-brand-white.png?v=20260927-1',alt:'끄투게임즈코리아'})));
  if($obj.closest('.RoomBox').length)$obj.prepend($('<div class="room-lobby-heading">').append($('<img>').attr({src:'/img/custom/chat-brand-white.png',alt:'끄투'})).append($('<strong>').text(badWords(room.title))));
 		
 	if(rule.opts.indexOf("ijp") != -1){
