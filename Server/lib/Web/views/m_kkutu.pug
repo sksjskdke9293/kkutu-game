@@ -38,18 +38,19 @@ mixin SettingOption(id, text, st)
 		label(for=id)= text
 
 block Subject
-	title 끄투게임
+	title= locals.lang === 'en_US' ? 'kkutugameskorea' : '끄투게임즈코리아'
 	
 block JS
-	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260917-guest-name-1')
+	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260927-social-36')
+	script(src='/js/game-language.js?v=20260920-kp-full', defer)
 	script(src='https://www.google.com/recaptcha/api.js')
 	
 block CSS
 	link(rel='stylesheet', href='/css/in_game_kkutu_shop.css?v=20260914-inventory-layout-5')
 	link(rel='stylesheet', href='/css/play-shell.css?v=20260906-ui-audit-4')
-	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260917-no-level-icon-1')
+	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260927-social-36')
 	link(rel='stylesheet', href='/css/settings-ui.css?v=20260910-lobby-music-1')
-	link(rel='stylesheet', href='/css/autumn-theme.css?v=20260913-15')
+	link(rel='stylesheet', href='/css/autumn-theme.css?v=20260927-social-34')
 	
 block Jungle
 	span#PUBLIC= PUBLIC ? "true" : undefined
@@ -64,7 +65,7 @@ block Jungle
 			setTimeout(function(){ if(window.__kkutuConnect) window.__kkutuConnect(); }, 1200);
 		});
 	div#Yell
-	div#Loading= L('LOADING')
+	div#Loading(style='display:none')= L('LOADING')
 	-
 		LANG['explInjeong'] = `<h5>${L('explInjeong')}</h5>\
 			<h5 style='margin-top: 2px; border-top: 1px dashed #444444; padding-top: 2px; color: #BBBBBB;'>${L('explInjeongListTitle')}</h5>\
@@ -73,74 +74,79 @@ block Jungle
 			<h5>${locals.EN_INJEONG.map(function(item){ return L('theme_' + item); })}</h5>`;
 	
 block Middle
+	- var IS_EN = locals.lang === 'en_US';
 	- var VERSION = L('version') + " (紐⑤컮??";
 	- var nick = SESSION.profile ? (SESSION.profile.title || SESSION.profile.name) : null;
 	div#Intro
-		img#intro(src='/img/custom/intro-mobile.png?v=20260913-intro-1')
+		img#intro(src='/img/custom/autumn-welcome-v2.png')
 		//- img#intro-start(src='/img/kkutu/intro_start.gif')
 		div#version= VERSION
 		div#intro-text= L('LOADING')
+	div.site-ad-slot.game-ad-slot.for-lobby(data-ad-placement='game', style='display: none;', aria-label=IS_EN ? 'Advertisement' : '광고')
 	div.kkutu-menu
 		button#HelpBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #BBBBBB;')!= L('help')
 		button#SettingBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #CCCCCC;')!= L('settings')
 		button#CommunityBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #DAA9FF;')!= L('community')
 		button#SpectateBtn.for-master.for-normal(style='display: none; background-color: #D19DFF;', aria-label='관전')
 			+FA('eye')
-			span.mobile-menu-label 관전
+			span.mobile-menu-label= IS_EN ? 'Spectate' : '관전'
 		button#SetRoomBtn.for-master(style='display: none; background-color: #B0D2F3;', aria-label='방 설정')
 			+FA('magic')
-			span.mobile-menu-label 방 설정
+			span.mobile-menu-label= IS_EN ? 'Room Settings' : '방 설정'
 		button#NewRoomBtn.for-lobby(style='display: none; background-color: #8EC0F3;', aria-label='방 만들기')
 			+FA('magic')
-			span.mobile-menu-label 방 만들기
+			span.mobile-menu-label= IS_EN ? 'Create Room' : '방 만들기'
 		button#QuickRoomBtn.for-lobby(style='display: none; background-color: #B0D2F3;', aria-label='빠른 시작')
 			+FA('bolt')
-			span.mobile-menu-label 빠른 시작
+			span.mobile-menu-label= IS_EN ? 'Quick Join' : '빠른 시작'
 		button#TutorialBtn.for-lobby(type='button', style='display: none; background-color: #F5D875;', aria-label='튜토리얼')
 			+FA('map')
-			span.mobile-menu-label 튜토리얼
+			span.mobile-menu-label= IS_EN ? 'Tutorial' : '튜토리얼'
 		button#DailyQuestBtn.for-lobby(type='button', style='display: none;', aria-label='일일 퀘스트')
 			+FA('check-square')
-			span.mobile-menu-label 일일 퀘스트
-		button#DailySpinBtn.for-lobby(type='button', style='display: none;', aria-label='일일 팽이 돌리기')
-			+FA('refresh')
-			span.mobile-menu-label 일일 팽이 돌리기
+			span.mobile-menu-label= IS_EN ? 'Daily Quests' : '일일 퀘스트'
 		button#ShopBtn.for-lobby(style='display: none; background-color: #B3E7B7;'): +FA('shopping-bag')
 		button#DictionaryBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #73D07A;', aria-label='사전')
 			+FA('book')
-			span.mobile-menu-label 사전
+			span.mobile-menu-label= IS_EN ? 'Dictionary' : '사전'
 		//- button#WordPlusBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #73D07A;')= L('wordPlus')
 		button#InviteBtn.for-master(style='display: none; background-color: #9FE669;', aria-label='초대')
 			+FA('envelope')
-			span.mobile-menu-label 초대
+			span.mobile-menu-label= IS_EN ? 'Invite' : '초대'
 		button#ReadyBtn.for-normal(style='display: none; background-color: #FFC67F;', aria-label='준비')
 			+FA('play')
-			span.mobile-menu-label 준비
+			span.mobile-menu-label= IS_EN ? 'Ready' : '준비'
 		button#StartBtn.for-master(style='display: none; background-color: #FFB576;', aria-label='시작')
 			+FA('play-circle')
-			span.mobile-menu-label 시작
+			span.mobile-menu-label= IS_EN ? 'Start' : '시작'
 		button#ExitBtn.for-master.for-normal.for-gaming(style='display: none; background-color: #FFADAD;', aria-label='나가기')
 			+FA('times')
-			span.mobile-menu-label 나가기
+			span.mobile-menu-label= IS_EN ? 'Leave' : '나가기'
 		button#ReplayBtn.for-lobby(style='display: none; background-color: #D9FF82;', aria-label='다시 보기')
 			+FA('video-camera')
-			span.mobile-menu-label 다시 보기
+			span.mobile-menu-label= IS_EN ? 'Replay' : '다시 보기'
 		button#LeaderboardBtn.for-lobby(style='display: none; background-color: #FFADD3;', aria-label='순위전')
 			+FA('trophy')
-			span.mobile-menu-label 순위전
-	button#GameExitControl(type='button', style='display: none;') 게임 나가기
+			span.mobile-menu-label= IS_EN ? 'Ranked' : '순위전'
+	button#GameExitControl(type='button', style='display: none;')= IS_EN ? 'Leave Game' : '게임 나가기'
 	div#LobbyHero.for-lobby(style='display: none;')
 		div#LobbyHeroImage.moremi
 			img.moremies.moremi-body(src='/img/custom/moremi-yellow.png?v=20260907-face-4', data-moremi-base='/img/custom/moremi-yellow.png?v=20260907-face-4', alt='모레미')
 		h3#LobbyHeroName= L('guest')
-		div#LobbyHeroSub 끄투게임
+		div#LobbyHeroSub 끄투게임즈코리아
 
 	form#GuestNameEntry.for-lobby(style='display: none;', autocomplete='off')
-		label(for='GuestNameInput') 손님 이름
-		input#GuestNameInput(type='text', maxlength='12', placeholder='2~12자', aria-label='손님 이름')
-		button#GuestNameSave(type='submit') 적용
+		label(for='GuestNameInput')= IS_EN ? 'Guest name' : '손님 이름'
+		input#GuestNameInput(type='text', maxlength='12', placeholder=IS_EN ? '2–12 characters' : '2~12자', aria-label=IS_EN ? 'Guest name' : '손님 이름')
+		label#GuestPrivacyConsentLabel
+			input#GuestPrivacyConsent(type='checkbox')
+			span
+				| 개인정보 수집·이용 및
+				a(href='/privacy.html', target='_blank', rel='noopener') 개인정보처리방침
+				| 에 동의합니다.
+		button#GuestNameSave(type='submit')= IS_EN ? 'Apply' : '적용'
 		span#GuestNameHint
-	+Dialog('SettingDiag', 560, 610, '환경설정')
+	+Dialog('SettingDiag', 560, 610, IS_EN ? 'Settings' : '환경설정')
 		div.settings-panel
 			div.settings-intro
 				div.settings-intro-icon(aria-hidden='true')
@@ -264,8 +270,8 @@ block Middle
 					img(src='/img/custom/ranks/rank-nature.png', alt='자연')
 					span 자연
 				div
-					img(src='/img/custom/ranks/rank-kkutugame.png', alt='끄투게임 랭크')
-					span 끄투게임
+					img(src='/img/custom/ranks/rank-kkutugame.png', alt='끄투게임즈코리아 랭크')
+					span 끄투게임즈코리아
 			p.ranked-rules 2인 자동 매칭 · 한국어 끝말잇기 · 표준 낱말집 · 3라운드
 			button#RankQueueBtn(type='button') 순위전 시작
 	+Dialog('QuickDiag', 300, 230, L('quickRoom'))
@@ -318,6 +324,7 @@ block Middle
 		div.dialog-bar
 			h4= L('roundTime')
 			select#room-time
+				option(value=5, style='color: #FF4444')
 				option(value=10, style='color: #FF4444')
 				option(value=30)
 				option(value=60, selected)
@@ -497,9 +504,9 @@ block Middle
 		div#shop-shelf
 			div.shop-welcome 상점에 오신걸 환영합니다
 			div.shop-font-card
-				div.shop-font-preview 끄투게임
+				div.shop-font-preview 끄투
 				div.shop-font-info
-					h3 둥근모 글꼴
+					h3 끄투 글꼴
 					p 게임내에서 써지는 글씨의 폰트를 바꿔줍니다.
 					strong 200핑
 					button#DungGeunMoBuy(type='button') 구매

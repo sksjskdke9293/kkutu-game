@@ -17,46 +17,50 @@
 extends layout
 
 block Subject
-	title 끄투게임
+	title= locals.lang === 'en_US' ? 'kkutugameskorea' : '끄투게임즈코리아'
 
 block CSS
-	link(rel='stylesheet', href='/css/in_portal.css?v=20260917-motion-1')
-	link(rel='stylesheet', href='/css/server-select.css?v=20260917-motion-1')
+	link(rel='stylesheet', href='/css/in_portal.css?v=20260927-welcome-2')
+	link(rel='stylesheet', href='/css/server-select.css?v=20260926-launch-choice-1')
+
+block JS
+	script(src='/js/site-switch.js?v=20260922-play-route-1', defer)
 
 block Middle
+	- var IS_EN = locals.lang === 'en_US';
 	- var MAINTENANCE = !!locals.MAINTENANCE && !locals.ADMIN;
 	- var UNAVAILABLE = !!locals.ACCESS_BLOCKED;
 	- var MAINTENANCE_SERVERS = locals.MAINTENANCE_SERVERS || [false, false];
 	- var PLAY_DISABLED = MAINTENANCE || UNAVAILABLE;
-	- var PLAY_LABEL = UNAVAILABLE ? '사용불가 계정' : (MAINTENANCE ? '점검중' : '게임 시작');
-	- var ENTRY_NAME = SESSION.profile ? (SESSION.profile.title || SESSION.profile.name || '비회원') : '비회원';
+	- var PLAY_LABEL = UNAVAILABLE ? (IS_EN ? 'Unavailable' : '사용불가 계정') : (MAINTENANCE ? (IS_EN ? 'Maintenance' : '점검중') : (IS_EN ? 'Play' : '게임 시작'));
+	- var ENTRY_NAME = SESSION.profile ? (SESSION.profile.title || SESSION.profile.name || (IS_EN ? 'Guest' : '비회원')) : (IS_EN ? 'Guest' : '비회원');
 	- var ENTRY_GUEST = !SESSION.profile;
 	main.portal-home
 		header.portal-nav
-			a.portal-brand(href='/', aria-label='끄투게임 홈')
-				img(src='/img/custom/site-logo.png?v=20260910', alt='끄투게임')
+			a.portal-brand(href='/', aria-label='끄투게임즈코리아 홈')
+				img(src=IS_EN ? '/img/custom/site-logo-en.png?v=20260920b' : '/img/custom/site-logo-ko.png?v=20260920', alt=IS_EN ? 'kkutugameskorea' : '끄투게임즈코리아')
 			nav
-				a.is-active(href='/') 홈
-				a(href='/notices.html') 공지사항
-				a(href='/event') 추석 이벤트
-				a(href='#servers') 채널
-				a(href='https://discord.gg/exfaWJDjU', target='_blank', rel='noopener noreferrer') 디스코드
-				a(href='https://naver.me/5ulax0y9', target='_blank', rel='noopener noreferrer') 네이버 카페
-				a(href='https://www.youtube.com/@kkutugame', target='_blank', rel='noopener noreferrer') 유튜브
+				a.is-active(href='/')= IS_EN ? 'Home' : '홈'
+				a(href='/notices.html')= IS_EN ? 'Notices' : '공지사항'
+				a(href='/event')= IS_EN ? 'Event' : '추석 이벤트'
+				a(href='#servers')= IS_EN ? 'Servers' : '채널'
+				a(href='https://discord.gg/exfaWJDjU', target='_blank', rel='noopener noreferrer')= IS_EN ? 'Discord' : '디스코드'
+				a(href='https://naver.me/5ulax0y9', target='_blank', rel='noopener noreferrer')= IS_EN ? 'Naver Cafe' : '네이버 카페'
+				a(href='https://www.youtube.com/@kkutugame', target='_blank', rel='noopener noreferrer')= IS_EN ? 'YouTube' : '유튜브'
 			div.portal-account
-				button#game-start.maintenance-button(type='button', disabled=PLAY_DISABLED, data-maintenance=MAINTENANCE ? 'true' : 'false', data-unavailable=UNAVAILABLE ? 'true' : 'false', data-server-maintenance=JSON.stringify(MAINTENANCE_SERVERS), data-disabled-label=PLAY_LABEL)= PLAY_LABEL
+				button#language-switch.portal-language(type='button', aria-label=IS_EN ? 'Choose language' : '언어 선택', title=IS_EN ? 'Choose language' : '언어 선택') 文
 				if SESSION.profile
-					button#portal-logout.portal-login(type='button', onclick="location.href='/logout'") 로그아웃
+					button#portal-logout.portal-login(type='button', onclick="location.href='/logout'")= IS_EN ? 'Logout' : '로그아웃'
 				else
-					a.portal-login(href='/?account=login') 로그인
+					a.portal-login(href='/login?account=login')= IS_EN ? 'Login' : '로그인'
 		div#ServerSelectOverlay(hidden, role='dialog', aria-modal='true', aria-labelledby='ServerSelectTitle')
 			section.server-select-card
 				button#ServerSelectClose.server-select-close(type='button', aria-label='닫기') ×
 				header.server-select-head
-					img(src='/img/custom/server-select-logo.png?v=20260912', alt='끄투게임')
+					img(src=IS_EN ? '/img/custom/site-logo-en.png?v=20260920b' : '/img/custom/site-logo-ko.png?v=20260920', alt=IS_EN ? 'kkutugameskorea' : '끄투게임즈코리아')
 					div.server-select-heading
-						span 함께 놀 서버
-						h2#ServerSelectTitle 게임 서버 고르기
+						span= IS_EN ? 'Choose a server' : '함께 놀 서버'
+						h2#ServerSelectTitle= IS_EN ? 'Game Servers' : '게임 서버 고르기'
 				div#ServerSelectList.server-select-list
 					- var chooserList = locals.SERVER_LIST || [0, 0];
 					- var chooserLimits = locals.SERVER_LIMITS || [100, 100];
@@ -64,37 +68,37 @@ block Middle
 						- var chooserLimit = chooserLimits[chooserIndex] || chooserLimits[0] || 100;
 						article.server-choice(data-server=chooserIndex, data-maintenance=MAINTENANCE_SERVERS[chooserIndex] ? 'true' : 'false', style='--server-load: '+Math.min(100, chooserCount / chooserLimit * 100)+'%')
 							div.server-choice-copy
-								div.server-choice-name= chooserIndex === 0 ? '나무' : (chooserIndex === 1 ? '유리' : '개발자 서버')
-								div.server-choice-count= chooserCount + ' / ' + chooserLimit + '명 접속 중'
-							span.server-choice-state= MAINTENANCE_SERVERS[chooserIndex] ? '점검중' : (chooserCount / chooserLimit >= .75 ? '보통' : '쾌적')
-							button(type='button', disabled=MAINTENANCE_SERVERS[chooserIndex], aria-label=(chooserIndex === 0 ? '나무' : '유리') + ' 접속')= MAINTENANCE_SERVERS[chooserIndex] ? '점검중' : '입장'
+								div.server-choice-name= chooserIndex === 0 ? (IS_EN ? 'Tree' : '나무') : (chooserIndex === 1 ? (IS_EN ? 'Glass' : '유리') : (IS_EN ? 'Developer' : '개발자 서버'))
+								div.server-choice-count= chooserCount + ' / ' + chooserLimit + (IS_EN ? ' online' : '명 접속 중')
+							span.server-choice-state= MAINTENANCE_SERVERS[chooserIndex] ? (IS_EN ? 'Maintenance' : '점검중') : (chooserCount / chooserLimit >= .75 ? (IS_EN ? 'Busy' : '보통') : (IS_EN ? 'Good' : '쾌적'))
+							button(type='button', disabled=MAINTENANCE_SERVERS[chooserIndex])= MAINTENANCE_SERVERS[chooserIndex] ? (IS_EN ? 'Maintenance' : '점검중') : (IS_EN ? 'Enter' : '입장')
 		section.portal-hero#play
 			div.portal-slides
 				section.portal-entry-card(data-guest=ENTRY_GUEST ? 'true' : 'false', style='--entry-progress:'+(ENTRY_GUEST ? '100%' : '0%'))
 					div.portal-entry-welcome
-						img(src='/img/custom/site-favicon.png?v=20260912', alt='')
+						img(src='/img/custom/server-select-logo.png?v=20260922', alt='끄투게임즈코리아')
 						span
 							strong= ENTRY_NAME
-							| 님 환영합니다.
+							= IS_EN ? ', welcome!' : '님 환영합니다.'
 					div.portal-entry-main
 						div.portal-entry-profile
 							b= ENTRY_NAME
 							div.portal-entry-level
 								span#portal-entry-level= ENTRY_GUEST ? 'Lv.∞' : 'Lv. 불러오는 중'
-						button.portal-main-start.maintenance-button(type='button', disabled=PLAY_DISABLED, onclick="document.getElementById('game-start').click()")= PLAY_LABEL
+						button.portal-main-start.maintenance-button(type='button', disabled=PLAY_DISABLED)= PLAY_LABEL
 		section.portal-content
 			section.portal-notice#notice
 				div.notice-heading
-					h2 공지사항
-					span 끄투게임의 새로운 소식
+					h2= IS_EN ? 'Notices' : '공지사항'
+					span= IS_EN ? 'Latest KKuTuGame news' : '끄투게임즈코리아의 새로운 소식'
 				a.portal-featured-notice#portal-latest-notice(href='/notices.html')
-					span 최신 공지를 불러오는 중입니다.
+					span= IS_EN ? 'Loading the latest notice.' : '최신 공지를 불러오는 중입니다.'
 			aside.portal-side#servers
 				div.server-list-box
 					h3.server-list-title
-						img(src='/img/custom/site-favicon.png?v=20260912', alt='')
-						span 서버 목록
-						span#server-total= '총 ' + (locals.SERVER_LIST || []).reduce(function(sum, count){ return sum + count; }, 0) + '명'
+						img(src='/img/custom/server-select-logo.png?v=20260922', alt='끄투게임즈코리아')
+						span= IS_EN ? 'Server list' : '서버 목록'
+						span#server-total= IS_EN ? ((locals.SERVER_LIST || []).reduce(function(sum, count){ return sum + count; }, 0) + ' online') : ('총 ' + (locals.SERVER_LIST || []).reduce(function(sum, count){ return sum + count; }, 0) + '명')
 						a#server-refresh(title='새로고침')
 							+FA('refresh')
 					div#server-list
@@ -105,23 +109,24 @@ block Middle
 							- var load = Math.min(100, Math.max(0, Number(count || 0) / limit * 100));
 							div.server(id='server-'+index, class=MAINTENANCE_SERVERS[index] ? 'is-maintenance' : (load >= 75 ? 'is-high' : (load >= 50 ? 'is-medium' : 'is-normal')), data-server=index, data-maintenance=MAINTENANCE_SERVERS[index] ? 'true' : 'false')
 								div.server-status(class=MAINTENANCE_SERVERS[index] ? 'ss-x' : 'ss-o')
-								div.server-name= index === 0 ? '나무' : (index === 1 ? '유리' : '개발자 서버')
+								div.server-name= index === 0 ? (IS_EN ? 'Tree' : '나무') : (index === 1 ? (IS_EN ? 'Glass' : '유리') : (IS_EN ? 'Developer' : '개발자 서버'))
 								div.server-people.graph
 									div.graph-bar(style='width: '+(MAINTENANCE_SERVERS[index] ? 100 : load)+'%')
-									label= MAINTENANCE_SERVERS[index] ? '점검중' : (count + ' / ' + limit)
-								div.server-enter= MAINTENANCE_SERVERS[index] ? '점검중' : '접속'
+									label= MAINTENANCE_SERVERS[index] ? (IS_EN ? 'Maintenance' : '점검중') : (count + ' / ' + limit)
+								div.server-enter= MAINTENANCE_SERVERS[index] ? (IS_EN ? 'Maintenance' : '점검중') : (IS_EN ? 'Enter' : '접속')
+				div.site-ad-slot.portal-ad-slot(data-ad-placement='portal', aria-label=IS_EN ? 'Advertisement' : '광고')
 				div.portal-link-grid
 					a(href='https://discord.gg/exfaWJDjU', target='_blank', rel='noopener noreferrer')
-						strong 공식 디스코드
-						span 함께 이야기해요
+						strong= IS_EN ? 'Official Discord' : '공식 디스코드'
+						span= IS_EN ? 'Join the community' : '함께 이야기해요'
 		script.
 			(function(){
-				function open(){ if(document.getElementById('game-start').disabled)return; var overlay=document.getElementById('ServerSelectOverlay'); if(overlay) overlay.hidden=false; }
-				function close(){ var overlay=document.getElementById('ServerSelectOverlay'); if(overlay) overlay.hidden=true; }
-				function enter(node){ if(document.getElementById('game-start').disabled || node.getAttribute('data-maintenance')==='true')return; location.href='/?server='+node.getAttribute('data-server'); }
-				document.getElementById('game-start').addEventListener('click', open);
-				document.querySelectorAll('.portal-main-start').forEach(function(node){ node.addEventListener('click',open); });
-				document.getElementById('ServerSelectClose').addEventListener('click',close);
+				function show(id){var overlay=document.getElementById(id);if(overlay)overlay.hidden=false;}
+				function hide(id){var overlay=document.getElementById(id);if(overlay)overlay.hidden=true;}
+				function open(){var start=document.querySelector('.portal-main-start');if(start&&start.disabled)return;show('ServerSelectOverlay');}
+				function enter(node){ var start=document.querySelector('.portal-main-start'); if((start&&start.disabled) || node.getAttribute('data-maintenance')==='true')return; var locale=(new URLSearchParams(location.search).get('locale')||(document.cookie.match(/(?:^|;\s*)lc=([^;]+)/)||[])[1]||'ko_KR'); location.href='/play'+(Number(node.getAttribute('data-server'))+1)+'#'+locale; }
+				document.querySelectorAll('.portal-main-start').forEach(function(node){node.addEventListener('click',open);});
+				document.getElementById('ServerSelectClose').addEventListener('click',function(){hide('ServerSelectOverlay');});
 				document.querySelectorAll('#server-list .server, #ServerSelectList .server-choice').forEach(function(node){ node.addEventListener('click',function(){enter(node);}); });
 			})();
 

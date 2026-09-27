@@ -20,6 +20,7 @@ var Web		 = require("request");
 var MainDB	 = require("../db");
 var JLog	 = require("../../sub/jjlog");
 var Const	 = require("../../const");
+var AccountProgress = require("../account-progress");
 
 function obtain($user, key, value, term, addValue){
 	var now = (new Date()).getTime();
@@ -84,10 +85,34 @@ Server.get("/ranking", function(req, res){
 		});
 	}
 });
+Server.get('/api/level-ranking', function(req, res){
+	res.set('Cache-Control', 'no-store');
+	var sql = `WITH latest_access AS (
+		SELECT DISTINCT ON ("userId") "userId", "displayName" FROM access_log
+		WHERE guest=false AND "userId" IS NOT NULL ORDER BY "userId", "connectedAt" DESC
+	)
+	SELECT u._id,
+		COALESCE(la.nickname, nickname_override.nickname, latest_access."displayName", u._id) AS nickname,
+		CASE WHEN COALESCE(u.kkutu->>'score', '') ~ '^\\d+$' THEN (u.kkutu->>'score')::numeric ELSE 0 END AS score
+	FROM users u
+	LEFT JOIN local_accounts la ON la.user_id=u._id
+	LEFT JOIN account_nickname_overrides nickname_override ON nickname_override.user_id=u._id
+	LEFT JOIN latest_access ON latest_access."userId"=u._id
+	WHERE u._id NOT LIKE 'guest%'
+	ORDER BY score DESC, u._id ASC
+	LIMIT 100`;
+	MainDB.users.direct(sql, function(error, result){
+		if(error){ JLog.warn('[RANKING] level list failed: ' + error.toString()); return res.status(500).send({error:'랭킹을 불러오지 못했습니다.'}); }
+		var list=(result&&result.rows||[]).map(function(row,index){var score=Number(row.score)||0;return {rank:index+1,nickname:row.nickname||'이름 없음',score:score,level:AccountProgress.level(score)};});
+		res.send({list:list});
+	});
+});
+Server.get('/injeong', function(req,res){ res.json({error:400,message:'신청할 단어를 입력해 주세요.'}); });
 Server.get("/injeong/:word", function(req, res){
 	if(!req.session.profile) return res.send({ error: 402 });
-	var word = req.params.word;
-	var theme = req.query.theme;
+	var word = String(req.params.word || '').trim();
+	var theme = String(req.query.theme || '').trim();
+	if(!word || word.length > 100 || !theme) return res.json({error:400,message:'단어와 주제를 확인해 주세요.'});
 	var now = Date.now();
 	
 	if(now - req.session.injBefore < 2000) return res.send({ error: 429 });

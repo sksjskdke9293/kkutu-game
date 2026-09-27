@@ -38,18 +38,19 @@ mixin SettingOption(id, text, st)
 		label(for=id)= text
 
 block Subject
-	title 끄투게임
+	title= locals.lang === 'en_US' ? 'kkutugameskorea' : '끄투게임즈코리아'
 
 block JS
-	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260917-guest-name-1')
+	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260927-social-36')
+	script(src='/js/game-language.js?v=20260920-kp-full', defer)
 	script(src='https://www.google.com/recaptcha/api.js')
 
 block CSS
 	link(rel='stylesheet', href='/css/in_game_kkutu_shop.css?v=20260914-inventory-layout-5')
 	link(rel='stylesheet', href='/css/play-shell.css?v=20260906-ui-audit-4')
-	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260917-no-level-icon-1')
+	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260927-social-36')
 	link(rel='stylesheet', href='/css/settings-ui.css?v=20260910-lobby-music-1')
-	link(rel='stylesheet', href='/css/autumn-theme.css?v=20260913-15')
+	link(rel='stylesheet', href='/css/autumn-theme.css?v=20260927-social-34')
 	
 block Jungle
 	span#PUBLIC= PUBLIC ? "true" : undefined
@@ -65,7 +66,7 @@ block Jungle
 			setTimeout(function(){ if(window.__kkutuConnect) window.__kkutuConnect(); }, 1200);
 		});
 	div#Yell
-	div#Loading= L('LOADING')
+	div#Loading(style='display:none')= L('LOADING')
 	div#Balloons(style='position: absolute;')
 	-
 		LANG['explInjeong'] = `<h5>${L('explInjeong')}</h5>\
@@ -75,13 +76,15 @@ block Jungle
 			<h5>${locals.EN_INJEONG.map(function(item){ return L('theme_' + item); })}</h5>`;
 
 block Middle
+	- var IS_EN = locals.lang === 'en_US';
 	- var VERSION = L('version');
 	- var nick = SESSION.profile ? (SESSION.profile.title || SESSION.profile.name) : null;
 	div#Intro
-		img#intro(src='/img/custom/intro-desktop.png?v=20260913-intro-2')
+		img#intro(src='/img/custom/autumn-welcome-v2.png')
 		// img#intro-start(src='/img/kkutu/intro_start.gif')
 		div#version= VERSION
 		div#intro-text= L('LOADING')
+	div.site-ad-slot.game-ad-slot.for-lobby(data-ad-placement='game', style='display: none;', aria-label=IS_EN ? 'Advertisement' : '광고')
 	div.kkutu-menu
 		button#HelpBtn.tiny-menu.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #BBBBBB;')!= L('help')
 		button#SettingBtn.tiny-menu.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #CCCCCC;')!= L('settings')
@@ -90,9 +93,8 @@ block Middle
 		button#SetRoomBtn.for-master(style='display: none; background-color: #B0D2F3;')= L('setRoom')
 		button#NewRoomBtn.for-lobby(style='display: none; background-color: #8EC0F3;')= L('newRoom')
 		button#QuickRoomBtn.for-lobby(style='display: none; background-color: #B0D2F3;')= L('quickRoom')
-		button#TutorialBtn.for-lobby(type='button', style='display: none; background-color: #F5D875;') 튜토리얼
-		button#DailyQuestBtn.for-lobby(type='button', style='display: none;') 일일 퀘스트
-		button#DailySpinBtn.for-lobby(type='button', style='display: none;') 일일 팽이 돌리기
+		button#TutorialBtn.for-lobby(type='button', style='display: none; background-color: #F5D875;')= IS_EN ? 'Tutorial' : '튜토리얼'
+		button#DailyQuestBtn.for-lobby(type='button', style='display: none;')= IS_EN ? 'Daily Quests' : '일일 퀘스트'
 		button#ShopBtn.for-lobby(style='display: none; background-color: #B3E7B7;')= L('shop')
 		button#DictionaryBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #73D07A;')= L('dict')
 		// button#WordPlusBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #73D07A;')= L('wordPlus')
@@ -101,21 +103,27 @@ block Middle
 		button#StartBtn.for-master(style='display: none; background-color: #FFB576;')= L('start')
 		button#ExitBtn.for-master.for-normal.for-gaming(style='display: none; background-color: #FFADAD;')= L('exit')
 		button#ReplayBtn.for-lobby(style='display: none; background-color: #D9FF82;')= L('replay')
-		button#LeaderboardBtn.for-lobby(style='display: none; background-color: #FFADD3;') 순위전
+		button#LeaderboardBtn.for-lobby(style='display: none; background-color: #FFADD3;')= IS_EN ? 'Ranked' : '순위전'
 		div#facebook-menu.fb-like.for-lobby.for-master.for-normal.for-gaming(data-href='http://kkutu.kr', data-width='300', data-layout='button_count', data-action='like', data-show-faces='true', data-share='true')
-	button#GameExitControl(type='button', style='display: none;') 게임 나가기
+	button#GameExitControl(type='button', style='display: none;')= IS_EN ? 'Leave Game' : '게임 나가기'
 	div#LobbyHero.for-lobby(style='display: none;')
 		div#LobbyHeroImage.moremi
 			img.moremies.moremi-body(src='/img/custom/moremi-yellow.png?v=20260907-face-4', data-moremi-base='/img/custom/moremi-yellow.png?v=20260907-face-4', alt='모레미')
 		h3#LobbyHeroName= L('guest')
-		div#LobbyHeroSub 끄투게임
+		div#LobbyHeroSub 끄투게임즈코리아
 
 	form#GuestNameEntry.for-lobby(style='display: none;', autocomplete='off')
-		label(for='GuestNameInput') 손님 이름
-		input#GuestNameInput(type='text', maxlength='12', placeholder='2~12자', aria-label='손님 이름')
-		button#GuestNameSave(type='submit') 적용
+		label(for='GuestNameInput')= IS_EN ? 'Guest name' : '손님 이름'
+		input#GuestNameInput(type='text', maxlength='12', placeholder=IS_EN ? '2–12 characters' : '2~12자', aria-label=IS_EN ? 'Guest name' : '손님 이름')
+		label#GuestPrivacyConsentLabel
+			input#GuestPrivacyConsent(type='checkbox')
+			span
+				| 개인정보 수집·이용 및
+				a(href='/privacy.html', target='_blank', rel='noopener') 개인정보처리방침
+				| 에 동의합니다.
+		button#GuestNameSave(type='submit')= IS_EN ? 'Apply' : '적용'
 		span#GuestNameHint
-	+Dialog('SettingDiag', 560, 610, '환경설정')
+	+Dialog('SettingDiag', 560, 610, IS_EN ? 'Settings' : '환경설정')
 		div.settings-panel
 			div.settings-intro
 				div.settings-intro-icon(aria-hidden='true')
@@ -239,8 +247,8 @@ block Middle
 					img(src='/img/custom/ranks/rank-nature.png', alt='자연')
 					span 자연
 				div
-					img(src='/img/custom/ranks/rank-kkutugame.png', alt='끄투게임 랭크')
-					span 끄투게임
+					img(src='/img/custom/ranks/rank-kkutugame.png', alt='끄투게임즈코리아 랭크')
+					span 끄투게임즈코리아
 			p.ranked-rules 2인 자동 매칭 · 한국어 끝말잇기 · 표준 낱말집 · 3라운드
 			button#RankQueueBtn(type='button') 순위전 시작
 	+Dialog('QuickDiag', 300, 230, L('quickRoom'))
@@ -275,6 +283,7 @@ block Middle
 				optgroup(label=L('mcKorean'))
 					option(value=3)= L('modeKSH')
 					option(value=14)= L('modeKAW')
+					option(value=16)= L('modeKAL')
 					option(value=15)= L('modeYUT')
 					option(value=2)= L('modeKKT')
 					option(value=8)= L('modeKAP')
@@ -312,6 +321,7 @@ block Middle
 		div.dialog-bar
 			h4= L('roundTime')
 			select#room-time
+				option(value=5, style='color: #FF4444')
 				option(value=10, style='color: #FF4444')
 				option(value=30)
 				option(value=60, selected)
@@ -522,9 +532,9 @@ block Middle
 		div#shop-shelf
 			div.shop-welcome 상점에 오신걸 환영합니다
 			div.shop-font-card
-				div.shop-font-preview 끄투게임
+				div.shop-font-preview 끄투
 				div.shop-font-info
-					h3 둥근모 글꼴
+					h3 끄투 글꼴
 					p 게임내에서 써지는 글씨의 폰트를 바꿔줍니다.
 					strong 200핑
 					button#DungGeunMoBuy(type='button') 구매

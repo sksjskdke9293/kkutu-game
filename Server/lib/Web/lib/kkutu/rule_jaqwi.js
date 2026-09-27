@@ -50,8 +50,8 @@ $lib.Jaqwi.turnGoing = function(){
 	var bRate;
 	var tt;
 	
-	if(!$data.room) clearInterval($data._tTime);
-	$data._roundTime -= TICK;
+	if(!$data.room) return clearInterval($data._tTime);
+	$data._roundTime = Math.max(0, $data._roundTime - TICK);
 	
 	tt = $data._spectate ? L['stat_spectate'] : ($data._roundTime*0.001).toFixed(1) + L['SECOND'];
 	$rtb
@@ -59,10 +59,7 @@ $lib.Jaqwi.turnGoing = function(){
 		.html(tt);
 		
 	if(!$rtb.hasClass("round-extreme")) if($data._roundTime <= $data._fastTime){
-		bRate = $data.bgm.currentTime / $data.bgm.duration;
-		if($data.bgm.paused) stopBGM();
-		else playBGM('jaqwiF');
-		$data.bgm.currentTime = $data.bgm.duration * bRate;
+		if(!$data.muteBGM) playBGM('jaqwiF');
 		$rtb.addClass("round-extreme");
 	}
 };

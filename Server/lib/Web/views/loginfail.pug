@@ -1,35 +1,24 @@
-//-
-	Rule the words! KKuTu Online
-	Copyright (C) 2017 JJoriping(op@jjo.kr)
-	
-	This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-	
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-	
-	You should have received a copy of the GNU General Public License
-	along with this program. If not, see <http://www.gnu.org/licenses/>.
-//-
-	볕뉘 수정사항:
-	* Login 실패 페이지 제작을 위한 파일 생성
-
 include module
 
-doctype html
-html
+docType html
+html(lang='ko')
 	head
-		link(rel='icon', type='image/x-icon', href='/favicon.ico?v=20260913-1')
-		title= L('title')
-		+PageHead()
-	body
-		span#locale= JSON.stringify(LANG)
-		div.middle
-			p= L('description')
-			br
-			a(href="/login")
-				button.login= L('login')
+		meta(charset='utf-8')
+		meta(name='viewport', content='width=device-width, initial-scale=1')
+		meta(name='theme-color', content='#ffffff')
+		link(rel='icon', type='image/png', href='/img/custom/site-favicon.png?v=20260926')
+		link(rel='stylesheet', href='/css/login-fail.css?v=20260926-1')
+		title 로그인 실패 | 끄투게임즈코리아
+	body.login-fail-page
+		main.login-fail-shell
+			a.login-fail-brand(href='/', aria-label='끄투게임즈코리아 홈')
+				img(src='/img/custom/site-logo-ko.png?v=20260920', alt='끄투게임즈코리아')
+			section.login-fail-card(aria-labelledby='login-fail-title')
+				span.login-fail-icon(aria-hidden='true') !
+				p.login-fail-eyebrow LOGIN ERROR
+				h1#login-fail-title 로그인에 실패했습니다
+				p.login-fail-description 소셜 로그인 정보를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.
+				div.login-fail-actions
+					a.login-fail-primary(href='/login') 다시 로그인
+					a.login-fail-secondary(href='/') 홈으로 이동
+				p.login-fail-help 문제가 계속되면 공식 Discord 서버를 통해 문의해 주세요.

@@ -99,7 +99,7 @@
 				var loadClass=inMaintenance?'is-maintenance':(limp>=75?'is-high':(limp>=50?'is-medium':'is-normal'));
 				$stage.list.append($e = $("<div>").addClass("server "+loadClass).attr('id', "server-" + i).attr('data-maintenance',inMaintenance?'true':'false')
 					.append($("<div>").addClass("server-status ss-" + status))
-					.append($("<div>").addClass("server-name").text(L['server_' + i] || (i === 0 ? '끄투서버' : '끄투게임' + (i + 1))))
+					.append($("<div>").addClass("server-name").text(L['server_' + i] || (i === 0 ? '나무' : '끄투게임즈코리아' + (i + 1))))
 					.append($("<div>").addClass("server-people graph")
 						.append($("<div>").addClass("graph-bar").width(limp + "%"))
 						.append($("<label>").html(people))
@@ -107,7 +107,8 @@
 					.append($("<div>").addClass("server-enter").text(L['serverEnter'] || '접속'))
 				);
 				if(status != "x" && !maintenance && !unavailable) $e.on('click', function (e) {
-					if(window.KkutuAccount) window.KkutuAccount.start("/?server=" + i);
+					var locale=(new URLSearchParams(location.search).get('locale')||(document.cookie.match(/(?:^|;\s*)lc=([^;]+)/)||[])[1]||'ko_KR');
+					if(window.KkutuAccount) window.KkutuAccount.start('/play'+(i+1)+'#'+locale);
 					else location.href = '/?account=login';
 				}); else $e.children(".server-enter").html(inMaintenance ? '점검중' : (maintenance ? disabledLabel : "-"));
 			});
@@ -136,14 +137,14 @@
 		var $list=$('#ServerSelectList').empty();
 		(LIST||[]).forEach(function(count,i){
 			var inMaintenance=!!serverMaintenance[i], online=count!==null && !inMaintenance, limit=LIMITS[i]||LIMITS[0];
-			var serverName=i===0?'끄투서버':(L['server_'+i]||('끄투서버 '+(i+1)));
+			var serverName=L['server_'+i]||(i===0?'나무':('끄투서버 '+(i+1)));
 			var comfort=online?(count>=limit?'혼잡':(count/limit>=.75?'보통':'쾌적')):'점검';
 			var gauge=online?Math.max(0,Math.min(100,count/limit*100)):0;
 			var $card=$('<article>').addClass('server-choice'+(online?'':' is-offline')).css('--server-load',gauge+'%')
 				.append($('<div>').addClass('server-choice-copy').append($('<div>').addClass('server-choice-name').text(serverName)).append($('<div>').addClass('server-choice-count').text(online?(count+' / '+limit+'명 접속 중'):(inMaintenance?'점검중':'서버 점검 중'))))
 				.append($('<span>').addClass('server-choice-state').text(comfort))
 				.append($('<button type="button" aria-label="'+serverName+' 접속">').prop('disabled', !online).text(online?'입장':'점검중'));
-			if(online && !maintenance && !unavailable)$card.on('click',function(){ if(window.KkutuAccount)window.KkutuAccount.start('/?server='+i);else location.href='/?server='+i; });
+			if(online && !maintenance && !unavailable)$card.on('click',function(){ var locale=(new URLSearchParams(location.search).get('locale')||(document.cookie.match(/(?:^|;\s*)lc=([^;]+)/)||[])[1]||'ko_KR'); var url='/play'+(i+1)+'#'+locale; if(window.KkutuAccount)window.KkutuAccount.start(url);else location.href=url; });
 			$list.append($card);
 		});
 		if(!$list.children().length)$list.append($('<p>').addClass('server-select-empty').text('서버 정보를 불러오는 중입니다.'));

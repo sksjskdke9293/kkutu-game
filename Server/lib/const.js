@@ -42,7 +42,8 @@ exports.OPTIONS = {
 	'str': { name: "Strict" },
 	'k32': { name: "Sami" },
 	'no2': { name: "No2" },
-	'lat': { name: "LateJoin" }
+	'lat': { name: "LateJoin" },
+	'rev': { name: "Reverse" }
 };
 exports.MOREMI_PART = [ 'back', 'eye', 'mouth', 'shoes', 'clothes', 'head', 'lhand', 'rhand', 'front' ];
 exports.CATEGORIES = [ "all", "spec", "skin", "badge", "head", "eye", "mouth", "clothes", "hs", "back" ];
@@ -98,7 +99,7 @@ exports.RULE = {
 	},
 	'KSH': { lang: "ko",
 		rule: "Classic",
-		opts: [ "man", "ext", "mis", "loa", "str" ],
+		opts: [ "man", "ext", "mis", "loa", "str", "rev" ],
 		time: 1,
 		ai: true,
 		big: false,
@@ -193,6 +194,17 @@ exports.RULE = {
 		ai: true,
 		big: true,
 		ewq: false
+	},
+	'KAL': { lang: "ko",
+		rule: "Classic",
+		opts: [],
+		time: 1,
+		ai: true,
+		big: false,
+		freeform: true,
+		dictionaryOnly: true,
+		allDictionary: true,
+		ewq: true
 	}
 };
 Object.keys(exports.RULE).forEach(function(key){
@@ -202,7 +214,7 @@ exports.getPreScore = function(text, chain, tr){
 	return 2 * (Math.pow(5 + 7 * (text || "").length, 0.74) + 0.88 * (chain || []).length) * ( 0.5 + 0.5 * tr );
 };
 exports.getPenalty = function(chain, score){
-	return -1 * Math.round(Math.min(10 + (chain || []).length * 2.1 + score * 0.15, score));
+	return -1 * Math.round(10 + (chain || []).length * 2.1 + Math.max(0, Number(score) || 0) * 0.15);
 };
 exports.GAME_TYPE = Object.keys(exports.RULE);
 exports.EXAMPLE_TITLE = {

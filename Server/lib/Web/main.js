@@ -56,7 +56,9 @@ var fs		 = require('fs');
 
 var Language = {
 	'ko_KR': require("./lang/ko_KR.json"),
-	'en_US': require("./lang/en_US.json")
+	'en_US': require("./lang/en_US.json"),
+	'zh_CN': require("./lang/zh_CN.json"),
+	'ko_KP': require("./lang/ko_KP.json")
 };
 Server.get('/site-notice-post/:id', function(req,res){
 	var file=require('path').join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','notice-post-'+String(req.params.id).replace(/[^0-9]/g,''));
@@ -110,6 +112,7 @@ Server.use(Exession({
 	saveUninitialized: true
 }));
 LocalAuth.routes(Server);
+require('./friend-chat').routes(Server);
 Server.get('/api/site-notices', function(req,res){
 	LocalAuth.getSiteNotices().then(function(notices){ res.set('Cache-Control','no-store'); res.json(notices); })
 		.catch(function(){ res.status(503).json({}); });
@@ -124,6 +127,30 @@ Server.get('/api/notices', function(req,res){
 Server.get('/site-notice-image', function(req,res){
 	var file=require('path').join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','game-notice-image');
 	fs.stat(file,function(error){ if(error) return res.sendStatus(404); fs.readFile(file+'.type','utf8',function(_,type){ res.type(type||'image/png').sendFile(file); }); });
+});
+Server.get('/site-notice-image-en', function(req,res){
+	var file=require('path').join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','game-notice-image-en');
+	fs.stat(file,function(error){if(error)return res.sendStatus(404);fs.readFile(file+'.type','utf8',function(_,type){res.type(type||'image/png').sendFile(file);});});
+});
+Server.get('/site-notice-image-kp', function(req,res){
+	var file=require('path').join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','game-notice-image-kp');
+	fs.stat(file,function(error){ if(error)return res.sendStatus(404); fs.readFile(file+'.type','utf8',function(_,type){res.type(type||'image/png').sendFile(file);});});
+});
+Server.get('/site-notice-post-kp/:id', function(req,res){
+	var file=require('path').join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','notice-post-kp-'+String(req.params.id).replace(/[^0-9]/g,''));
+	fs.stat(file,function(error){ if(error)return res.sendStatus(404); fs.readFile(file+'.type','utf8',function(_,type){res.type(type||'image/png').sendFile(file);});});
+});
+Server.get('/site-notice-image-zh', function(req,res){
+	var file=require('path').join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','game-notice-image-zh');
+	fs.stat(file,function(error){ if(error)return res.sendStatus(404); fs.readFile(file+'.type','utf8',function(_,type){res.type(type||'image/png').sendFile(file);});});
+});
+Server.get('/site-notice-post-zh/:id', function(req,res){
+	var file=require('path').join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','notice-post-zh-'+String(req.params.id).replace(/[^0-9]/g,''));
+	fs.stat(file,function(error){ if(error)return res.sendStatus(404); fs.readFile(file+'.type','utf8',function(_,type){res.type(type||'image/png').sendFile(file);});});
+});
+Server.get('/site-notice-post-en/:id', function(req,res){
+	var file=require('path').join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','notice-post-en-'+String(req.params.id).replace(/[^0-9]/g,''));
+	fs.stat(file,function(error){if(error)return res.sendStatus(404);fs.readFile(file+'.type','utf8',function(_,type){res.type(type||'image/png').sendFile(file);});});
 });
 Server.get('/site-notice-post/:id', function(req,res){
 	var file=require('path').join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','notice-post-'+String(req.params.id).replace(/[^0-9]/g,''));
@@ -218,6 +245,7 @@ Const.MAIN_PORTS.forEach(function(v, i){
 	}
 	gameServers[i] = new GameClient(KEY, `${protocol}://${(GLOBAL.GAME_SERVER_HOSTS || [])[i] || GLOBAL.GAME_SERVER_HOST}:${v}/${KEY}`);
 });
+Server.locals.gameServers = gameServers;
 function GameClient(id, url){
 	var my = this;
 
@@ -272,8 +300,13 @@ function GameClient(id, url){
 ROUTES.forEach(function(v){
 	require(`./routes/${v}`).run(Server, WebInit.page);
 });
+Server.use(function(req, res, next){
+	var playMatch = String(req.path || '').match(/^\/play([1-3])$/);
+	if(playMatch){ req._playServer = Number(playMatch[1]) - 1; req.url = '/?server=' + req._playServer; }
+	next();
+});
 Server.get("/", function(req, res){
-	var server = req.query.server;
+	var server = req._playServer !== undefined ? req._playServer : req.query.server;
 	
 	Server.get('/site-notice-post/:id', function(req,res){
 	var file=require('path').join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','notice-post-'+String(req.params.id).replace(/[^0-9]/g,''));
@@ -311,7 +344,7 @@ Server.get("/", function(req, res){
 			var serverAllowed=access[0],developerServerVisible=isAdmin||access[1];
 			if((maintenance || (Number(server) === 2 && !serverAllowed)) && !isAdmin && Const.MAIN_PORTS[server]) return page(req, res, 'maintenance', {
 				'_page':'kkutu', 'MAINTENANCE':true,
-				'canonical':'https://kkutugame.kro.kr/'
+				'canonical':'https://kkutugame.kr/'
 			});
 		page(req, res, Const.MAIN_PORTS[server] ? "kkutu" : "portal", {
 			'_page': "kkutu",
@@ -342,11 +375,11 @@ Server.get("/", function(req, res){
 			'KO_THEME': Const.KO_THEME,
 			'EN_THEME': Const.EN_THEME,
 			'IJP_EXCEPT': Const.IJP_EXCEPT,
-			'canonical': "https://kkutugame.kro.kr/",
-			'ogImage': "https://kkutugame.kro.kr/img/custom/site-logo.png?v=20260912",
-			'ogURL': "https://kkutugame.kro.kr/",
-			'ogTitle': "끄투게임",
-			'ogDescription': "끝말잇기가 이렇게 박진감 넘치는 게임이었다니!"
+			'canonical': "https://kkutugame.kr/",
+			'ogImage': "https://kkutugame.kr/img/custom/social-preview.png?v=20260922",
+			'ogURL': "https://kkutugame.kr/",
+			'ogTitle': "끄투게임즈코리아",
+			'ogDescription': "끄투게임즈코리아에서 신나는 끝말잇기 배틀로 승부를 가려보세요!"
 		});
 			});
 			}

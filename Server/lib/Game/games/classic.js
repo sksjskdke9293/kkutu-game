@@ -40,6 +40,12 @@ function getDictionaryQuery(opts){
  var base = [getDictionaryColumn(opts), true];
  return opts && opts.injeong ? ['$or', [base, ['injeong_extra', true], ['flag', {'$not': {'$nand': Const.KOR_FLAG.INJEONG}}]]] : base;
 }
+function getWordQuery(room, word){
+	var query = [[ '_id', word ]];
+	if(room.rule.lang === 'ko' && !room.rule.allDictionary) query.push(getDictionaryQuery(room.opts));
+	else if(room.rule.lang !== 'ko') query.push([ '_id', Const.ENG_ID ]);
+	return query;
+}
 function getDictionaryColumn(opts){
 	return MORAE_DICTIONARY_COLUMNS[opts && opts.dictionary] || MORAE_DICTIONARY_COLUMNS.standard;
 }
@@ -65,6 +71,7 @@ exports.getTitle = function(){
 	}
 	EXAMPLE = Const.EXAMPLE_TITLE[l.lang];
 	my.game.dic = {};
+	if(my.rule.dictionaryOnly){ R.go("<전체>"); return R; }
 	if(my.rule.freeform){ R.go("아무말잇기"); return R; }
 	
 	switch(Const.GAME_TYPE[my.mode]){
@@ -89,7 +96,9 @@ exports.getTitle = function(){
 			return;
 		}
 		var titleQuery = [
-			[ '_id', new RegExp(eng + ".{" + Math.max(1, my.round - 1) + "}$") ]
+			[ '_id', new RegExp(Const.GAME_TYPE[my.mode] === "KAP"
+                ? "^.{" + Math.max(1, my.round - 1) + "}" + eng
+                : eng + ".{" + Math.max(1, my.round - 1) + "}$") ]
 		];
 		if(l.lang == "ko") titleQuery.push(getDictionaryQuery(my.opts));
 		else titleQuery.push([ '_id', Const.ENG_ID ]);
@@ -269,8 +278,7 @@ function validateDraft(client, word, kind, accepted){
 	if(client._draftCheckAt && Date.now() - client._draftCheckAt < 500) return;
 	client._draftCheckAt = Date.now();
 	word = word.trim();
-	var query = [['_id', word]];
-	if(my.rule.lang === 'ko') query.push(getDictionaryQuery(my.opts));
+	var query = getWordQuery(my, word);
 	DB.kkutu[my.rule.lang].findOne.apply(DB.kkutu[my.rule.lang], query).on(function(doc){
 		if(!my.gaming || my.game.turnAt !== at) return;
 		var valid = !!doc;
@@ -288,12 +296,56 @@ exports.usePlayerHint = function(client, data){
 	if(!Number.isInteger(data.index) || data.index < 0 || data.index >= my.game.playerHints.length) return;
 	exports.submit.call(my, client, my.game.playerHints[data.index], true);
 };
+exports.adminAutoWord = function(client){
+	var my = this;
+	var turnAt = my.game.turnAt;
+	if(!client || !my.gaming || my.game.late || my.game.loading) return;
+	if(!my.game.seq || my.game.seq[my.game.turn] !== client.id) return;
+	getAuto.call(my, my.game.char, my.game.subChar, 2).then(function(list){
+		if(!my.gaming || my.game.late || my.game.turnAt !== turnAt || my.game.seq[my.game.turn] !== client.id) return;
+		list = (list || []).filter(function(word){
+			return word && word._id && my.game.chain.indexOf(word._id) < 0;
+		}).sort(function(a, b){
+			return b._id.length - a._id.length || (Number(b.hit) || 0) - (Number(a.hit) || 0);
+		});
+		if(!list.length){
+			client.send('adminAutoWord', {ok:false, message:'입력 가능한 사전 단어가 없습니다.'});
+			return;
+		}
+		var fallback = list[0];
+		var shield = my.opts.shield == null ? 15 : Number(my.opts.shield);
+		var attackMode = !my.opts.manner && my.game.chain.length >= Math.max(0, shield);
+		if(!attackMode) return submit(fallback);
+
+		// Once the shield is gone, inspect the longest candidates first and
+		// prefer a word that leaves the opponent with no legal continuation.
+		var candidates = list.slice(0, 30);
+		(function findAttack(index){
+			if(index >= candidates.length) return submit(fallback);
+			var word = candidates[index];
+			var nextChar = getChar.call(my, word._id);
+			var nextSubChar = getSubChar.call(my, nextChar);
+			getAuto.call(my, nextChar, nextSubChar, 1).then(function(exists){
+				if(!exists) submit(word);
+				else findAttack(index + 1);
+			});
+		})(0);
+
+		function submit(word){
+			if(!word || !my.gaming || my.game.late || my.game.loading || my.game.turnAt !== turnAt) return;
+			if(!my.game.seq || my.game.seq[my.game.turn] !== client.id || my.game.chain.indexOf(word._id) >= 0) return;
+			client.send('adminAutoWord', {ok:true, word:word._id});
+			my.submit(client, word._id);
+		}
+	});
+};
 exports.submit = function(client, text, hintUsed){
 	var score, l, t;
 	var my = this;
 	var tv = (new Date()).getTime();
 	var submittedAt = my.game.turnAt;
 	var mgt = my.game.seq[my.game.turn];
+	var nuclearRobot = !!(client && client.robot && Number(client.level) === 4);
 	
 	if(!mgt) return;
 	if(!mgt.robot) if(mgt != client.id) return;
@@ -308,7 +360,7 @@ exports.submit = function(client, text, hintUsed){
 	function onDB($doc){
 		if(!my.gaming || my.game.late || my.game.turnAt !== submittedAt) return;
 		if(!my.game.chain) return;
-		if(my.rule.freeform) $doc = { mean: "", theme: "", type: "", baby: false };
+		if((my.rule.freeform && !my.rule.dictionaryOnly) || nuclearRobot) $doc = $doc || { mean: "핵끄투봇이 만든 단어", theme: "", type: "", baby: false, hit: 0 };
 		var preChar = my.rule.freeform ? "" : getChar.call(my, text);
 		var preSubChar = my.rule.freeform ? "" : getSubChar.call(my, preChar);
 		var firstMove = my.game.chain.length < 1;
@@ -340,7 +392,7 @@ exports.submit = function(client, text, hintUsed){
 					wc: $doc.type,
 					font: client.equip && client.equip.font_dunggeunmo ? 'dunggeunmo' : undefined,
 					score: score,
-					bonus: (my.game.mission === true) ? score - Math.floor(my.getScore(text, t, true) * (hintUsed === true ? 0.5 : 1)) : 0,
+					bonus: (my.game.mission === true && !my.opts.reverse) ? score - Math.floor(my.getScore(text, t, true) * (hintUsed === true ? 0.5 : 1)) : 0,
 					hintUsed: hintUsed === true,
                     hintIndex: hintUsed ? my.game.playerHints.indexOf(text) : -1,
 					baby: $doc.baby
@@ -354,7 +406,7 @@ exports.submit = function(client, text, hintUsed){
 					DB.kkutu[l].update([ '_id', text ]).set([ 'hit', $doc.hit + 1 ]).on();
 				}
 			}
-			if(my.rule.freeform) approved();
+			if(my.rule.freeform || nuclearRobot) approved();
 			// These endings have isolated entries in the standard word set, but
 			// still function as one-shot words in play. Respect an active shield.
 			else if(my.opts.dictionary === 'standard' &&
@@ -376,7 +428,7 @@ exports.submit = function(client, text, hintUsed){
 			my.game.loading = false;
 			client.publish('turnError', { code: code || 404, value: text }, true);
 		}
-		if($doc){
+		if($doc || nuclearRobot){
 			if(l == "ko") preApproved();
 			else if(!my.opts.injeong && ($doc.flag & Const.KOR_FLAG.INJEONG)) denied();
 			else if(my.opts.strict && (!$doc.type.match(Const.KOR_STRICT) || $doc.flag >= 4)) denied(406);
@@ -402,12 +454,9 @@ exports.submit = function(client, text, hintUsed){
 			default: return false;
 		}
 	}
-	if(my.rule.freeform){ onDB({ mean: "", theme: "", type: "", baby: false }); return; }
-	var wordQuery = [
-		[ '_id', text ]
-	];
-	if(l == "ko") wordQuery.push(getDictionaryQuery(my.opts));
-	else wordQuery.push([ '_id', Const.ENG_ID ]);
+	if(nuclearRobot){ onDB(null); return; }
+	if(my.rule.freeform && !my.rule.dictionaryOnly){ onDB({ mean: "", theme: "", type: "", baby: false }); return; }
+	var wordQuery = getWordQuery(my, text);
 	DB.kkutu[l].findOne.apply(DB.kkutu[l], wordQuery).on(onDB);
 };
 exports.getScore = function(text, delay, ignoreMission){
@@ -423,6 +472,7 @@ exports.getScore = function(text, delay, ignoreMission){
 		score += score * 0.5 * arr.length;
 		my.game.mission = true;
 	}
+	if(my.opts.reverse) return Math.max(1, Math.round(score * 4 / Math.pow(Math.max(2, text.length), 2)));
 	return Math.round(score);
 };
 exports.readyRobot = function(robot){
@@ -433,7 +483,22 @@ exports.readyRobot = function(robot){
 	var delay = ROBOT_START_DELAY[level];
 	var w, text;
 	var isRev = Const.GAME_TYPE[my.mode] == "KAP";
+ if(level === 4 && !my.rule.freeform) return nuclearWord();
 	
+	if(my.rule.dictionaryOnly){
+		DB.kkutu[my.rule.lang].find([ '_id', /^[가-힣]{2,}$/ ]).limit(123).on(function(words){
+			var available = (words || []).filter(function(word){
+				return word && word._id && my.game.chain.indexOf(word._id) === -1;
+			});
+			if(!available.length) return denied();
+			available.sort(function(a, b){
+				return level >= 3 ? b._id.length - a._id.length : (Number(b.hit) || 0) - (Number(a.hit) || 0);
+			});
+			text = available[0]._id;
+			after();
+		});
+		return;
+	}
 	if(my.rule.freeform){
 		var freeformWords = [
 			"안녕하세요", "좋은 하루예요", "재밌네요", "다음 단어는 이걸로", "생각보다 어렵네요",
@@ -462,29 +527,51 @@ exports.readyRobot = function(robot){
 			// Rank the fetched candidates locally. Per-ending lookahead queues dozens
 			// of full dictionary scans on the shared connection and stalls all turns.
 			list.sort(function(a, b){
+				if(my.opts.reverse) return a._id.length - b._id.length || (b.hit - a.hit);
 				return level >= 3 ? b._id.length - a._id.length : (b.hit - a.hit || a._id.length - b._id.length);
 			});
-			pickList(list);
-		}else denied();
+			pickPlayable(list.filter(function(item){
+				return item && item._id && item._id.length <= ROBOT_LENGTH_LIMIT[level] && !robot._done.includes(item._id);
+			}));
+		}else if(level === 4) nuclearWord();
+		else denied();
 	});
+	function nuclearWord(){
+		var seed = my.rule.lang === 'ko' ? ['가','나','다','라','마','바','사','아','자','차','카','타','파','하'] : ['a','e','i','o','u','r','s','t','n','l'];
+		var required = my.game.wordLength ? Math.max(0, my.game.wordLength - String(my.game.char || '').length) : 8;
+		var body = '';
+		for(var i = 0; i < required; i++) body += seed[(robot._done.length + i * 3 + Math.floor(Math.random() * seed.length)) % seed.length];
+		text = isRev ? body + my.game.char : my.game.char + body;
+		after();
+	}
 	function denied(){
 		text = isRev ? `T.T ...${my.game.char}` : `${my.game.char}... T.T`;
 		after();
 	}
-	function pickList(list){
-		if(list) do{
-			if(!(w = list.shift())) break;
-		}while(w._id.length > ROBOT_LENGTH_LIMIT[level] || robot._done.includes(w._id));
-		if(w){
-			text = w._id;
-			// Imported dictionary entries have no play history yet; keep thinking time bounded.
-			delay += 500 * ROBOT_THINK_COEF[level] * Math.random() / Math.log(2 + Math.max(0, Number(w.hit) || 0));
-			after();
-		}else denied();
+	function pickPlayable(list){
+		if(!list.length) return level === 4 ? nuclearWord() : denied();
+		var needsContinuation = my.game.chain.length < 1 || my.opts.manner || my.game.chain.length < (my.opts.shield == null ? 15 : my.opts.shield);
+		if(!needsContinuation) return choose(list[0]);
+		(function inspect(index){
+			if(index >= list.length) return level === 4 ? nuclearWord() : denied();
+			var candidate = list[index];
+			var nextChar = getChar.call(my, candidate._id);
+			getAuto.call(my, nextChar, getSubChar.call(my, nextChar), 1).then(function(exists){
+				if(exists) choose(candidate);
+				else inspect(index + 1);
+			});
+		})(0);
+	}
+	function choose(word){
+		w = word;
+		text = w._id;
+		// Imported dictionary entries have no play history yet; keep thinking time bounded.
+		delay += 500 * ROBOT_THINK_COEF[level] * Math.random() / Math.log(2 + Math.max(0, Number(w.hit) || 0));
+		after();
 	}
 	function after(){
 		if(!my.gaming || my.game.late || my.game.turnAt !== turnAt) return;
-		delay += text.length * ROBOT_TYPE_COEF[level];
+		delay = level === 4 ? 0 : delay + text.length * ROBOT_TYPE_COEF[level];
 		robot._done.push(text);
 		clearTimeout(my.game.robotTimer);
 		my.game.robotTimer = setTimeout(function(){

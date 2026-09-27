@@ -1,38 +1,42 @@
 /* Runtime theme selected from the operator panel. */
-html[data-site-theme='chuseok'] body[data-game-view],
-html[data-site-theme='chuseok'] body.ranked-match[data-game-view='for-gaming'],
-body[data-site-theme='chuseok'][data-game-view] {
- background-color:#07152f !important;
- background-image:url('/img/custom/chuseok-lobby-desktop.png?v=20260914-1') !important;
- background-position:center !important;
- background-size:cover !important;
- background-repeat:no-repeat !important;
- background-attachment:fixed !important;
+html[data-site-theme="chuseok"] body[data-game-view],
+html[data-site-theme="chuseok"] body.ranked-match[data-game-view="for-gaming"],
+body[data-site-theme="chuseok"][data-game-view] {
+  background-color: #07152f !important;
+  background-image: url('/img/custom/chuseok-lobby-desktop.png?v=20260914-1') !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
 }
-html[data-site-theme='chuseok'] body[data-game-view] #Loading.game-data-loading,
-html[data-site-theme='chuseok'] body[data-game-view] #Loading,
-body[data-site-theme='chuseok'][data-game-view] #Loading.game-data-loading,
-body[data-site-theme='chuseok'][data-game-view] #Loading {
- background-color:#07152f !important;
- background-image:url('/img/custom/chuseok-intro-desktop.png?v=20260914-1') !important;
- background-position:center !important;
- background-size:cover !important;
+html[data-site-theme="chuseok"] body[data-game-view] #Loading.game-data-loading,
+html[data-site-theme="chuseok"] body[data-game-view] #Loading,
+body[data-site-theme="chuseok"][data-game-view] #Loading.game-data-loading,
+body[data-site-theme="chuseok"][data-game-view] #Loading {
+  background-color: #07152f !important;
+  background-image: url('/img/custom/chuseok-intro-desktop.png?v=20260914-1') !important;
+  background-position: center !important;
+  background-size: cover !important;
 }
-html[data-site-theme='chuseok'] #Intro { background:#07152f !important; }
-html[data-site-theme='chuseok'] #Intro #intro {
- content:url('/img/custom/chuseok-intro-desktop.png?v=20260914-1') !important;
+html[data-site-theme="chuseok"] #Intro {
+  background: #07152f !important;
 }
-@media(max-width:800px){
- html[data-site-theme='chuseok'] body[data-game-view],
- html[data-site-theme='chuseok'] body.ranked-match[data-game-view='for-gaming'],
- body[data-site-theme='chuseok'][data-game-view] {
-  background-image:url('/img/custom/chuseok-lobby-mobile.png?v=20260914-1') !important;
- }
- html[data-site-theme='chuseok'] body[data-game-view] #Loading,
- html[data-site-theme='chuseok'] body[data-game-view] #Loading.game-data-loading,
- body[data-site-theme='chuseok'][data-game-view] #Loading,
- body[data-site-theme='chuseok'][data-game-view] #Loading.game-data-loading {
-  background-image:url('/img/custom/chuseok-intro-mobile.png?v=20260914-1') !important;
- }
- html[data-site-theme='chuseok'] #Intro #intro { content:url('/img/custom/chuseok-intro-mobile.png?v=20260914-1') !important; }
+html[data-site-theme="chuseok"] #Intro #intro {
+  content: url('/img/custom/chuseok-intro-desktop.png?v=20260914-1') !important;
+}
+@media (max-width: 800px) {
+  html[data-site-theme="chuseok"] body[data-game-view],
+  html[data-site-theme="chuseok"] body.ranked-match[data-game-view="for-gaming"],
+  body[data-site-theme="chuseok"][data-game-view] {
+    background-image: url('/img/custom/chuseok-lobby-mobile.png?v=20260914-1') !important;
+  }
+  html[data-site-theme="chuseok"] body[data-game-view] #Loading,
+  html[data-site-theme="chuseok"] body[data-game-view] #Loading.game-data-loading,
+  body[data-site-theme="chuseok"][data-game-view] #Loading,
+  body[data-site-theme="chuseok"][data-game-view] #Loading.game-data-loading {
+    background-image: url('/img/custom/chuseok-intro-mobile.png?v=20260914-1') !important;
+  }
+  html[data-site-theme="chuseok"] #Intro #intro {
+    content: url('/img/custom/chuseok-intro-mobile.png?v=20260914-1') !important;
+  }
 }

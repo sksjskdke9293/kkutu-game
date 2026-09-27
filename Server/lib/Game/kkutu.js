@@ -31,6 +31,7 @@ var Rule;
 var guestProfiles = [];
 var CHAN;
 var channel = process.env['CHANNEL'] || 0;
+var CHAT_REPORTS = new Map();
 
 const NUM_SLAVES = 4;
 const GUEST_IMAGE = "/img/kkutu/guest.png";
@@ -115,12 +116,46 @@ exports.publish = function(type, data, _room){
 		}
 	}
 };
+
+exports.getChatReport = function(id){
+	var item = CHAT_REPORTS.get(String(id || ''));
+	if(!item || Date.now() - item.timestamp > 10 * 60 * 1000){
+		if(item) CHAT_REPORTS.delete(String(id));
+		return null;
+	}
+	return item;
+};
+
+exports.moderateChat = function(client, value, callback){
+	var matched = require('./profanity').match(value);
+	if(!matched) return callback(null);
+	if(client._profanityPending) return callback({pending:true, matched:matched});
+	DB.profanity_warning.findOne(['_id', client.remoteAddress]).on(function(row){
+		var count = Math.max(0, Number(row && row.count) || 0) + 1;
+		DB.profanity_warning.upsert(['_id', client.remoteAddress]).set(['count', count], ['updatedAt', Date.now()]).on(function(){
+			if(count < 2){
+				client._profanityPending = true;
+				client.send('profanityWarning', {count:count});
+				return callback({warning:true, count:count, matched:matched});
+			}
+			var reason = '욕설 누적 2회 자동 IP 밴';
+			DB.ip_block.upsert(['_id', client.remoteAddress]).set(['reasonBlocked', reason], ['ipBlockedUntil', 0]).on(function(){
+				client.send('profanityBanned', {count:count});
+				setTimeout(function(){
+					for(var id in DIC) if(DIC[id] && DIC[id].remoteAddress === client.remoteAddress && !DIC[id].admin) DIC[id].disconnect();
+				}, 800);
+				callback({blocked:true, count:count, matched:matched, reason:reason, ip:client.remoteAddress});
+			});
+		});
+	});
+};
 exports.Robot = function(target, place, level){
 	var my = this;
+	var robotNames = ["초보끄투봇", "일반끄투봇", "고수끄투봇", "고인물끄투봇", "핵끄투봇"];
 	
 	my.id = target + place + Math.floor(Math.random() * 1000000000);
 	my.robot = true;
-	my.profile = { title: "끄투 봇" };
+	my.profile = { title: robotNames[level] || robotNames[0] };
 	my.game = {};
 	my.data = {};
 	my.place = place;
@@ -131,6 +166,7 @@ exports.Robot = function(target, place, level){
 		return {
 			id: my.id,
 			robot: true,
+			profile: my.profile,
 			game: my.game,
 			data: my.data,
 			place: my.place,
@@ -141,8 +177,9 @@ exports.Robot = function(target, place, level){
 		};
 	};
 	my.setLevel = function(level){
-		my.level = level;
-		my.data.score = Math.pow(10, level + 2);
+		my.level = Math.max(0, Math.min(4, Number(level) || 0));
+		my.profile.title = robotNames[my.level];
+		my.data.score = Math.pow(10, my.level + 2);
 	};
 	my.setTeam = function(team){
 		my.game.team = team;
@@ -213,6 +250,16 @@ exports.WebServer = function(socket){
 				break;
 			case 'narrate-friend':
 				exports.narrate(msg.list, 'friend', { id: msg.id, s: msg.s, stat: msg.stat });
+				break;
+			case 'account-progress':
+				var score = Number(msg.score);
+				if(!Number.isSafeInteger(score) || score < 0) break;
+				if(DIC[msg.id]){
+					DIC[msg.id].data.score = score;
+					DIC[msg.id].send('user', DIC[msg.id].getData());
+					DIC[msg.id].publish('user', DIC[msg.id].getData());
+				}
+				if(CHAN) for(var worker in CHAN) CHAN[worker].send({ type: 'account-progress', target: msg.id, score: score });
 				break;
 			default:
 		}
@@ -392,6 +439,19 @@ exports.Client = function(socket, profile, sid, guestName){
 			my.updateDailyQuests('word', { word: String(data.value) });
 		}
 		data.profile = my.profile;
+		if(type == 'chat' && !data.notice && typeof data.value == 'string'){
+			data.reportId = require('crypto').randomBytes(12).toString('hex');
+			data.authorId = my.id;
+			var chatTimestamp = Date.now();
+			CHAT_REPORTS.set(data.reportId, { id: my.id, guest: !!my.guest, ip: my.remoteAddress,
+				name: my.profile.title || my.profile.name || '손님', value: data.value,
+				scope: data.scope || (my.place ? 'room' : 'main'), room: my.place || 0,
+				timestamp: chatTimestamp });
+			if(CHAT_REPORTS.size > 1000){
+				var cutoff = Date.now() - 10 * 60 * 1000;
+				CHAT_REPORTS.forEach(function(entry, key){ if(entry.timestamp < cutoff) CHAT_REPORTS.delete(key); });
+			}
+		}
 		if(my.subPlace && type != 'chat') my.send(type, data);
 		else for(i in DIC){
 			if((type === "chat" && data.scope === "main") || DIC[i].place == my.place) DIC[i].send(type, data);
@@ -645,7 +705,7 @@ exports.Client = function(socket, profile, sid, guestName){
 			}
 			if(Cluster.isMaster){
 				my.send('preRoom', { id: $room.id, pw: room.password, channel: $room.channel });
-				CHAN[$room.channel].send({ type: "room-reserve", target: my.id, session: sid, room: room, spec: spec, pass: pass, lateJoin: lateJoin });
+				CHAN[$room.channel].send({ type: "room-reserve", target: my.id, session: sid, guestName: my.guest && my.guestNamed ? my.profile.title.replace(/\(손님\)$/, "") : null, room: room, spec: spec, pass: pass, lateJoin: lateJoin });
 				
 				$room = undefined;
 			}else{
@@ -653,7 +713,7 @@ exports.Client = function(socket, profile, sid, guestName){
 					if($room.kicked.indexOf(my.id) != -1){
 						return my.sendError(406);
 					}
-					if($room.password != room.password && $room.password){
+					if(!my.admin && $room.password != room.password && $room.password){
 						$room = undefined;
 						return my.sendError(403);
 					}
@@ -676,7 +736,7 @@ exports.Client = function(socket, profile, sid, guestName){
 				room.id = _rid;
 				room._create = true;
 				my.send('preRoom', { id: _rid, channel: av });
-				CHAN[av].send({ type: "room-reserve", target: my.id, create: true, session: sid, room: room });
+				CHAN[av].send({ type: "room-reserve", target: my.id, create: true, session: sid, guestName: my.guest && my.guestNamed ? my.profile.title.replace(/\(손님\)$/, "") : null, room: room });
 				
 				do{
 					if(++_rid > 999) _rid = 100;
@@ -983,7 +1043,7 @@ exports.Room = function(room, channel){
 		if(!my.rule.ai){
 			return caller.sendError(415);
 		}
-		var robot = new exports.Robot(null, my.id, 4);
+		var robot = new exports.Robot(null, my.id, 1);
 		my.players.push(robot);
 		robot.chat(["안녕하세요!", "같이 즐겁게 놀아요!", "좋은 승부가 되겠네요!", "단어를 이어볼게요!", "반가워요!"][Math.floor(Math.random() * 5)]);
 		my.export();

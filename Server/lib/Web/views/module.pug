@@ -115,7 +115,7 @@ mixin PageHead(min)
 	if block
 		block
 	- var pageAsset = locals.page.replace("/", "_");
-	- var assetVersion = (pageAsset === 'portal' || pageAsset === 'm_portal') ? '?v=20260917-server-gauge-2' : '';
+	- var assetVersion = (pageAsset === 'portal' || pageAsset === 'm_portal') ? '?v=20260920-locale-3' : '';
 	link(rel='stylesheet', href='/css/in_'+pageAsset+'.css'+assetVersion)
 	// The KKuTu game pages load their combined client bundle in the page view.
 	// There is no standalone in_kkutu/minified asset, so avoid a permanent 404

@@ -129,7 +129,7 @@ services:
     command: ["node", "/app/Server/lib/Web/cluster.js", "1"]
     environment:
       NODE_OPTIONS: --max-old-space-size=256
-      PUBLIC_GAME_HOST: kkutugame.kro.kr
+      PUBLIC_GAME_HOST: kkutugame.kr
       PUBLIC_GAME_PROTOCOL: wss
     expose:
       - "80"

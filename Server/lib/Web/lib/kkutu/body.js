@@ -76,6 +76,18 @@ function showDialog($d, noToggle){
 		return true;
 	}
 }
+function showProfanityWarning(){
+	$('#ProfanityWarning').remove();
+	var $box=$('<div id="ProfanityWarning"><section><h2>⚠️ 채팅 이용 경고</h2><p>저희 끄투게임즈코리아는 욕설을 금지하고 있습니다.</p><p class="profanity-rule">현재 경고 1회가 누적되었습니다. 욕설이 한 번 더 감지되면 IP가 차단됩니다.</p><label><input type="checkbox"> <b>이해하였습니다.</b></label><button type="button" disabled>확인</button></section></div>').appendTo('body');
+	var $check=$box.find('input'),$button=$box.find('button');
+	$check.on('change',function(){ $button.prop('disabled',!this.checked); });
+	$button.on('click',function(){
+		if(!$check.is(':checked')) return;
+		send('profanityAcknowledge',{},true);
+		if(rws) send('profanityAcknowledge',{},false);
+		$box.remove();
+	});
+}
 function defaultSettingsOptions(){
 	return {
 		mb: false,
@@ -236,8 +248,8 @@ function route(func, a0, a1, a2, a3, a4){
 	if(!$data.room) return;
 	var r = RULE[MODE[$data.room.mode]];
 	
-	if(!r) return null;
-	$lib[r.rule][func].call(this, a0, a1, a2, a3, a4);
+	if(!r || !$lib[r.rule] || typeof $lib[r.rule][func] !== 'function') return null;
+	return $lib[r.rule][func].call(this, a0, a1, a2, a3, a4);
 }
 function connectToRoom(chan, rid){
 	/* Keep room workers on the public HTTPS origin.  This avoids blocked
@@ -253,6 +265,7 @@ function connectToRoom(chan, rid){
 	
 	if(rws) return;
 	rws = new _WebSocket(url);
+ var roomSocket = rws;
 	
 	loading(L['connectToRoom'] + "\n<center><button id='ctr-close'>" + L['ctrCancel'] + "</button></center>");
 	$("#ctr-close").on('click', function(){
@@ -262,10 +275,15 @@ function connectToRoom(chan, rid){
 	rws.onopen = function(e){
 		console.log("room-conn", chan, rid);
 	};
-	rws.onmessage = _onMessage;
+	rws.onmessage = function(e){
+  if(rws !== roomSocket) return;
+  var message = JSON.parse(e.data);
+  if(/^(roundReady|turnStart|turnEnd|turnHint|turnError|roundEnd|playerHints|draftChecked|yut)/.test(message.type) && (!$data.room || String($data.room.id) !== String(rid))) return;
+  onMessage(message);
+ };
 	rws.onclose = function(e){
 		console.log("room-disc", chan, rid);
-		rws = undefined;
+		if(rws === roomSocket) rws = undefined;
 	};
 	rws.onerror = function(e){
 		console.warn(L['error'], e);
@@ -383,7 +401,7 @@ function onMessage(data){
 				var savedRoomId = getRefreshRoom();
 				if(savedRoomId !== undefined && $data.rooms[savedRoomId]){
 					addTimeout(function(){ tryJoin(savedRoomId); }, 350);
-				}else if(location.hash[1]) tryJoin(location.hash.slice(1));
+				}else if(location.hash[1] && !/^(?:ko_KR|en_US|zh_CN|ko_KP)$/.test(location.hash.slice(1))) tryJoin(location.hash.slice(1));
 			}
 			/* The welcome transition must not be held hostage by a secondary
 			 * lobby widget.  Show the playable shell first, then refresh lists. */
@@ -445,6 +463,7 @@ function onMessage(data){
 		case 'discordChat':
 			// Treat Discord text as plain text, with no profile actions or HTML links.
 			stackChat();
+			if(window.markChatUnread) markChatUnread('main');
 			$("#Chat,#chat-log-board").append($("<div>").addClass("chat-item").attr("data-chat-scope", "main")
 				.append($("<div>").addClass("chat-body").text('디스코드:' + data.name + ':' + data.value))
 				.append($("<div>").addClass("chat-stamp").text(new Date(data.timestamp || Date.now()).toLocaleTimeString())));
@@ -454,8 +473,18 @@ function onMessage(data){
 			if(data.notice){
 				notice(L['error_' + data.code]);
 			}else{
-				chat(data.profile || { title: '끄투 봇' }, data.value, data.from, data.timestamp, data.scope);
+				chat(data.profile || { title: '끄투 봇' }, data.value, data.from, data.timestamp, data.scope, data.reportId, data.authorId);
 			}
+			break;
+		case 'chatReportResult':
+			notice(data.message || (data.ok ? '신고가 접수되었습니다.' : '신고하지 못했습니다.'));
+			break;
+		case 'profanityWarning':
+			showProfanityWarning();
+			break;
+		case 'profanityBanned':
+			alert('욕설 경고가 2회 누적되어 IP 차단되었습니다. 운영자에게 문의해 주세요.');
+			location.replace('/');
 			break;
 		case 'roomStuck':
 			rws.close();
@@ -561,8 +590,9 @@ function onMessage(data){
 			$data._dailyQuest = data;
 			if(window.renderDailyQuests) window.renderDailyQuests(data);
 			break;
-		case 'dailySpin':
-			if(window.renderDailySpin)window.renderDailySpin(data);
+		case 'adminAutoWord':
+			if(data.ok && data.word) notice('테스트 자동 입력: ' + data.word);
+			else if(data.message) notice(data.message);
 			break;
 		case 'yutWin':
 			route("yutWin", data);
@@ -705,27 +735,27 @@ function onMessage(data){
 				i = data.message;
 				if(i.indexOf("생년월일") != -1){
 					alert("생년월일이 올바르게 입력되지 않아 게임 이용이 제한되었습니다. 잠시 후 다시 시도해 주세요.");
-					break;
+					return location.replace('/');
 				}
 			/* Enhanced User Block System [S] */
-				if(!data.blockedUntil) break;
+				if(!data.blockedUntil){ alert("[#444] " + L['error_444'] + i); return location.replace('/'); }
 				
 				var blockedUntil = new Date(parseInt(data.blockedUntil));
 				var block = "\n제한 시점: " + blockedUntil.getFullYear() + "년 " + blockedUntil.getMonth() + 1 + "월 " +
 				blockedUntil.getDate() + "일 " + blockedUntil.getHours() + "시 " + blockedUntil.getMinutes() + "분까지";
 				
 				alert("[#444] " + L['error_444'] + i + block);
-				break;
+				return location.replace('/');
 			}else if(data.code == 446){
 				i = data.reasonBlocked;
-				if(!data.ipBlockedUntil) break;
+				if(!data.ipBlockedUntil){ alert("[#446] " + L['error_446'] + i); return location.replace('/'); }
 				
 				var blockedUntil = new Date(parseInt(data.ipBlockedUntil));
 				var block = "\n제한 시점: " + blockedUntil.getFullYear() + "년 " + blockedUntil.getMonth() + 1 + "월 " +
 				blockedUntil.getDate() + "일 " + blockedUntil.getHours() + "시 " + blockedUntil.getMinutes() + "분까지";
 				
 				alert("[#446] " + L['error_446'] + i + block);
-				break;
+				return location.replace('/');
 			/* Enhanced User Block System [E] */
 			} else if (data.code === 447) {
 				alert("자동화 봇 방지를 위한 캡챠 인증에 실패했습니다. 메인 화면에서 다시 시도해 주세요.");
@@ -897,7 +927,7 @@ function processRoom(data){
 				$data.practicing = false;
 				$data._gaming = false;
 				$stage.box.room.height(360);
-				playBGM('lobby');
+				// updateUI starts lobby music after the old room state is cleared.
 			}
 			$data.users[$data.id].game.ready = false;
 			$data.users[$data.id].game.team = 0;
@@ -985,6 +1015,7 @@ function processRoom(data){
 			$data.setRoom(data.room.id, data.room);
 			for(i in data.room.readies){
 				if(!$data.users[i]) continue;
+				$data.users[i].game.form = data.room.readies[i].f;
 				$data.users[i].game.ready = data.room.readies[i].r;
 				$data.users[i].game.team = data.room.readies[i].t;
 			}
@@ -1074,13 +1105,14 @@ function updateUI(myRoom, refresh){
 	}
 	$data._only = only;
 	$('body').attr('data-game-view', only);
+ if(window.syncChatGeometry) window.syncChatGeometry();
 	if(only !== 'for-gaming' && !$data.muteBGM) playBGM('lobby');
 	$('body').toggleClass('modern-classic', only === 'for-gaming' && $data.room && String(RULE[MODE[$data.room.mode]].rule).toLowerCase() === 'classic');
 	$('body').toggleClass('ranked-match', only === 'for-gaming' && $data.room && $data.room.ranked === true);
 	$('body').toggleClass('waiting-room', only === 'for-master' || only === 'for-normal');
 	syncGameStageScale();
 	if(only !== 'for-gaming') $data._wordInputMode = null;
-	$('#RoomAddBot').toggle(only === 'for-master');
+
 	$('#RoomSpectateAction').toggle(only === 'for-master' || only === 'for-normal');
 	$('#RoomSettingsAction').toggle(only === 'for-master');
 	$('#RoomInviteAction, #RoomBotAction').toggle(only === 'for-master');
@@ -1088,6 +1120,7 @@ function updateUI(myRoom, refresh){
 	$('#RoomReadyAction').toggle(only === 'for-normal');
 	setLocation($data.place);
  if(window.syncChatTabs) syncChatTabs();
+ if(window.syncLobbySocialDock) syncLobbySocialDock();
  if(only === 'for-lobby' && $data.pendingInvite){var invite=$data.pendingInvite;delete $data.pendingInvite;send('inviteRes',{from:invite,res:true},true);}
 	$(".kkutu-menu ."+only).show();
 	$('#QuickRoomBtn.'+only+', .detached-menu.'+only).show();
@@ -1221,10 +1254,10 @@ function updateUserList(refresh){
 	}
 	var serverName = L['server_' + $data.server] || ($data.server == 1 ? '유리' : '나무');
 	var userListLabel = L['UserList'] || '접속자 목록';
-	$stage.lobby.userListTitle.html("<i class='fa fa-users'></i>"
-		+ "&lt;<b>" + serverName + "</b>&gt; "
-		+ userListLabel.replace("FA{users}", "")
-		+ " [" + len + (L['MN'] || '명') + "]");
+	$stage.lobby.userListTitle.empty().append($('<span class="visitor-brand">').append($('<img>').attr({src:'/img/custom/chat-brand-white.png',alt:'끄투',draggable:'false'}))).append($('<span class="visitor-heading">').text('방문자목록'));
+ var $visitorCount=$stage.box.userList.children('.visitor-count');
+ if(!$visitorCount.length)$visitorCount=$('<div class="visitor-count">').insertAfter($stage.lobby.userListTitle);
+ $visitorCount.text('방문자수: '+len+'명');
 	
 	if(refresh){
 		$stage.lobby.userList.empty();
@@ -1237,13 +1270,14 @@ function updateUserList(refresh){
 			if(o.place == 0) $stage.dialog.inviteList.append(userListBar(o, true));
 		}
 	}
+ if(window.fitVisitorNames) window.fitVisitorNames();
 }
 function userListBar(o, forInvite){
 	var $R;
 	
 	if(forInvite){
 		$R = $("<div>").attr('id', "invite-item-"+o.id).addClass("invite-item users-item")
-		.append($("<div>").addClass("jt-image users-image").css('background-image', "url('"+o.profile.image+"')"))
+		.append($("<div>").addClass("jt-image users-image").css('background-image', safeImageBackground(o.profile.image)))
 		.append(getLevelImage(o.data.score).addClass("users-level"))
 		// .append($("<div>").addClass("jt-image users-from").css('background-image', "url('/img/kkutu/"+o.profile.type+".png')"))
 		.append($("<div>").addClass("users-name").html(o.profile.title || o.profile.name))
@@ -1252,7 +1286,7 @@ function userListBar(o, forInvite){
 		});
 	}else{
 		$R = $("<div>").attr('id', "users-item-"+o.id).addClass("users-item")
-		.append($("<div>").addClass("jt-image users-image").css('background-image', "url('"+o.profile.image+"')"))
+		.append($("<div>").addClass("jt-image users-image").css('background-image', safeImageBackground(o.profile.image)))
 		.append(getLevelImage(o.data.score).addClass("users-level"))
 		// .append($("<div>").addClass("jt-image users-from").css('background-image', "url('/img/kkutu/"+o.profile.type+".png')"))
 		.append($("<div>").addClass("users-name ellipse").html(o.profile.title || o.profile.name))
@@ -1260,8 +1294,13 @@ function userListBar(o, forInvite){
 			requestProfile($(e.currentTarget).attr('id').slice(11));
 		});
 	}
+	if(!forInvite){
+  $R.find('.users-image').text(o.profile.image ? '' : '?');
+  $R.append($('<span class="visitor-level">').text('Lv.'+getLevel(o.data.score)));
+  var name=String(o.profile.title || o.profile.name || '손님');
+  $R.find('.users-name').text(name).attr('title',name).get(0).style.setProperty('font-size',Math.max(12,22-Math.max(0,name.length-7)*.75)+'px','important');
+ }
 	addonNickname($R, o);
-	
 	return $R;
 }
 function addonNickname($R, o){
@@ -1273,7 +1312,17 @@ function addonNickname($R, o){
 function addDeveloperBadge($name, profile){
 	if(!profile) return;
 	$name.each(function(){
-		var src = profile.adminBadge || '';
+		var $label=$(this);
+		var developerName = String(profile.title || profile.name || '');
+		var isDeveloperName = profile.developer === true || /^\[GM\]/.test(developerName);
+        if(isDeveloperName){
+            if(!$label.children('.developer-name-text').length){
+                var $text=$('<span class="developer-name-text">').text(developerName);
+                $label.contents().filter(function(){return this.nodeType===3;}).remove();
+                $label.prepend($text);
+            }else $label.children('.developer-name-text').text(developerName);
+        }else $label.children('.developer-name-text').each(function(){$(this).replaceWith(document.createTextNode($(this).text()));});
+        var src = profile.adminBadge || '';
 		if(src && !$(this).children('.moremi-developer-badge').length) $(this).append($('<img>').attr({src:src,alt:'사용자 배지',title:'배지'}).addClass('moremi-developer-badge'));
 	});
 }
@@ -1365,8 +1414,9 @@ function miniGameUserBar(o){
 	return $R;
 }
 function getAIProfile(level){
+	var names = ['초보끄투봇', '일반끄투봇', '고수끄투봇', '고인물끄투봇', '핵끄투봇'];
 	return {
-		title: '끄투 봇',
+		title: names[Math.max(0, Math.min(4, Number(level) || 0))],
 		image: "/img/kkutu/robot.png?v=20260906-mascot-2"
 	};
 }
@@ -1451,7 +1501,7 @@ function updateRoom(gaming){
 		rendered = {};
 		entries = [];
 		if($data.room.game && $data.room.game.seq) entries = entries.concat($data.room.game.seq);
-		if($data.room.players) entries = entries.concat($data.room.players);
+		if(!entries.length && $data.room.players) entries = entries.concat($data.room.players);
 		for(i in entries){
 			if($data._replay){
 				o = $rec.users[participantKey(entries[i])] || entries[i];
@@ -1460,9 +1510,8 @@ function updateRoom(gaming){
 			}
 			appendGameParticipant($r, o, renderer, rendered);
 		}
-		/* Always retain the local player card while room snapshots catch up.
-		 * This is required for both normal games and practice games. */
-		if($data.users[$data.id]) appendGameParticipant($r, $data.users[$data.id], renderer, rendered);
+		/* Keep the local card only when the local user is a participant. */
+		if(entries.some(function(entry){ return participantKey(entry) === $data.id; }) && $data.users[$data.id]) appendGameParticipant($r, $data.users[$data.id], renderer, rendered);
 		clearTimeout($data._jamsu);
 		delete $data._jamsu;
 	}else{
@@ -1589,7 +1638,7 @@ function animateScore(o){
 	drawScore(o.$obj, Math.round(o.now));
 }
 function drawScore($obj, score){
-	var i, sc = (score > 99999) ? (zeroPadding(Math.round(score * 0.001), 4) + 'k') : zeroPadding(score, 5);
+	var i, sc = score < 0 ? ('-' + Math.abs(Math.round(score))) : ((score > 99999) ? (zeroPadding(Math.round(score * 0.001), 4) + 'k') : zeroPadding(score, 5));
 	
 	$obj.empty();
 	for(i=0; i<sc.length; i++){
@@ -1697,8 +1746,8 @@ function drawMyGoods(avGroup){
 		var equippedFont = !!equip.font_dunggeunmo;
 		var $fontItem = $("<div>").addClass("dress-item font-dunggeunmo-item" + (equippedFont ? " dress-equipped" : ""));
 		var $fontExpl = $("<div>").addClass("dress-expl");
-		$fontItem.append($("<div>").addClass("dress-item-image font-dunggeunmo-preview").text("끄투게임").append($("<span>").addClass("inventory-qty").text("x" + Number($data.box.font_dunggeunmo || 0))));
-		$fontExpl.append($("<div>").addClass("dress-item-title").text("둥근모 글꼴" + (equippedFont ? " (장착됨)" : "")));
+		$fontItem.append($("<div>").addClass("dress-item-image font-dunggeunmo-preview").text("끄투게임즈코리아").append($("<span>").addClass("inventory-qty").text("x" + Number($data.box.font_dunggeunmo || 0))));
+		$fontExpl.append($("<div>").addClass("dress-item-title").text("끄투 글꼴" + (equippedFont ? " (장착됨)" : "")));
 		$fontExpl.append($("<div>").addClass("dress-item-group").text("글꼴"));
 		$fontExpl.append($("<div>").addClass("dress-item-expl").text("게임에서 써지는 글씨의 폰트를 바꿔줍니다."));
 		$fontItem.append($fontExpl).on('click', function(){
@@ -1708,7 +1757,7 @@ function drawMyGoods(avGroup){
 					if(res.equipped) equip.font_dunggeunmo = true;
 					else delete equip.font_dunggeunmo;
 					$('body').toggleClass('dunggeunmo-font', !!res.equipped);
-					notice(res.equipped ? '둥근모 글꼴을 장착했습니다.' : '둥근모 글꼴을 해제했습니다.');
+					notice(res.equipped ? '끄투 글꼴을 장착했습니다.' : '끄투 글꼴을 해제했습니다.');
 					drawMyDress($data._avGroup);
 					send('refresh');
 			});
@@ -1778,7 +1827,7 @@ function drawCharFactory(){
 			word += item.slice(4);
 			level += LEVEL[item.slice(1, 4)];
 			$tray.append($("<div>").addClass("jt-image")
-				.css('background-image', "url(" + gd.image + ")")
+				.css('background-image', safeImageBackground(gd.image))
 				.attr('id', "cf-tray-" + item)
 				.on('click', onTrayClick)
 			);
@@ -1814,7 +1863,7 @@ function drawCharFactory(){
 				
 				$rew.append($("<div>").addClass("cf-rew-item")
 					.append($("<div>").addClass("jt-image cf-rew-image")
-						.css('background-image', "url(" + bd.image + ")")
+						.css('background-image', safeImageBackground(bd.image))
 					)
 					.append($("<div>").width(100)
 						.append($("<div>").width(100).html(bd.name))
@@ -1967,15 +2016,19 @@ function requestProfile(id){
 			.append($("<div>").addClass("expl").css({ 'white-space': "normal", 'width': 300, 'font-size': "11px" }).text(o.exordial))
 		);
 	if(o.robot){
-		$stage.dialog.profileLevel.show();
-		$stage.dialog.profileLevel.prop('disabled', $data.id != $data.room.master);
+		o.profile = getAIProfile(o.level || 0);
+		$stage.dialog.profileLevel.text('난이도 설정');
+		$stage.dialog.profileLevel.toggle(!!$data.room && $data.id == $data.room.master);
+		$stage.dialog.profileLevel.prop('disabled', false);
+		$('#robot-level').val(String(Math.max(0, Math.min(4, Number(o.level) || 0))));
+		$('#robot-team').val(String(o.game && Number(o.game.team) || 0));
 		$("#profile-place").html($data.room.id + L['roomNumber']);
 	}else{
 		$stage.dialog.profileLevel.hide();
 		$("#profile-place").html(o.place ? (o.place + L['roomNumber']) : L['lobby']);
 		for(i in (o.data.record || {})){
 			var r = o.data.record[i] || [], modeKey = MODE[i] || i;
-			var modeNames = {EKT:'영어 끄투',ESH:'영어 끝말잇기',KKT:'한국어 쿵쿵따',KSH:'한국어 끝말잇기',KAW:'아무말잇기',CSQ:'자음퀴즈',KCW:'한국어 십자말풀이',KTY:'한국어 타자 대결',ETY:'영어 타자 대결',KAP:'한국어 앞말잇기',HUN:'훈민정음',KDA:'한국어 단어 대결',EDA:'영어 단어 대결',KSS:'한국어 솎솎',ESS:'영어 솎솎'};
+			var modeNames = {EKT:'영어 끄투',ESH:'영어 끝말잇기',KKT:'한국어 쿵쿵따',KSH:'한국어 끝말잇기',KAW:'아무말잇기',KAL:'전체',CSQ:'자음퀴즈',KCW:'한국어 십자말풀이',KTY:'한국어 타자 대결',ETY:'영어 타자 대결',KAP:'한국어 앞말잇기',HUN:'훈민정음',KDA:'한국어 단어 대결',EDA:'영어 단어 대결',KSS:'한국어 솎솎',ESS:'영어 솎솎'};
 			var modeLabel = modeNames[modeKey] || (L && L['mode' + modeKey]) || modeKey || '게임';
 			$rec.append($("<div>").addClass("profile-record-field")
 				.append($("<div>").addClass("profile-field-name").text(modeLabel))
@@ -2002,7 +2055,7 @@ function requestProfile(id){
 	if($data.room){
 		if($data.id != id && $data.id == $data.room.master){
 			$stage.dialog.profileKick.show();
-			$stage.dialog.profileHandover.show();
+			if(!o.robot) $stage.dialog.profileHandover.show();
 		}
 	}
 	showDialog($stage.dialog.profile);
@@ -2025,11 +2078,13 @@ function checkFailCombo(id){
 		if($data.failCombo > 1){
 			send('leave');
 			fail(437);
+            return true;
 		}
 	}else{
 		$data.failCombo = 0;
 	}
 	$data.lastFail = id;
+ return false;
 }
 function clearGame(){
 	if($data._spaced) $lib.Typing.spaceOff();
@@ -2372,6 +2427,71 @@ function drawObtainedScore($uc, $sc){
 function turnEnd(id, data){
 	route("turnEnd", id, data);
 }
+function restoreResultAd(){
+ var $home = $('#ResultAdHome');
+ if($home.length){
+  $('#ResultAdHolder .site-ad-slot').insertBefore($home);
+  $home.remove();
+ }
+}
+function setupResultFooter(){
+ restoreResultAd();
+ var $dialog=$('#ResultDiag'), $footer=$('#ResultFooter');
+ if(!$footer.length){
+  $footer=$('<div>').attr('id','ResultFooter').appendTo($dialog.children('.dialog-body'));
+  $dialog.find('.result-me').appendTo($footer);
+  $dialog.find('.dialog-bar.tail-button').appendTo($footer);
+  $('<div>').attr('id','ResultAdHolder').attr('aria-label','광고').appendTo($footer);
+  $('<img>').addClass('result-brand').attr({src:'/img/custom/site-logo-ko.png',alt:'끄투게임즈코리아'}).prependTo($footer.find('.result-me'));
+ }
+ $dialog.toggleClass('result-guest',!!$data.guest);
+ $dialog.find('#result-ok').text('계속');
+ $dialog.find('.result-me-level-head').text('Lv.');
+ if($data.guest){
+  var $ad=$('.site-ad-slot[data-ad-placement="game"]').first();
+  if($ad.length){
+   $('<span>').attr('id','ResultAdHome').hide().insertBefore($ad);
+   $ad.appendTo('#ResultAdHolder');
+  }
+ }
+}
+function renderMatchResultScene(result, data){
+ var $dialog = $('#ResultDiag').addClass('match-result-screen');
+ $dialog.children('.dialog-head').find('.dialog-title').text('결과');
+ $dialog.find('.match-result-scene').remove();
+ var rows = result.map(function(r){
+  var u = ($data._replay ? $rec.users[r.id] : $data.users[r.id]) || $data.robots[r.id] || NULL_USER;
+  return {id:r.id, score:Number(r.score)||0, user:u};
+ });
+ // Robots are not included in the server's reward list, but belong on the podium.
+ var seq = ($data.room && $data.room.game && $data.room.game.seq) || [];
+ seq.forEach(function(entry){
+  var id = typeof entry === 'object' ? entry.id : entry;
+  var u = $data.robots[id];
+  if(u && !rows.some(function(r){return r.id === id;})) rows.push({id:id,score:Number(u.game && u.game.score)||0,user:u});
+ });
+ rows.sort(function(a,b){return b.score-a.score;});
+ var $scene = $('<div>').addClass('match-result-scene').prependTo($dialog.children('.dialog-body'));
+ $('<div>').addClass('match-result-meta').text($data.room && $data.room.ranked ? '순위전' : '친선전').appendTo($scene);
+ var $table = $('<div>').addClass('match-result-table').attr('role','table').appendTo($scene);
+ $('<div>').addClass('match-result-row match-result-labels').append($('<span>').text('#'),$('<span>').text('플레이어'),$('<span>').text('점수')).appendTo($table);
+ var rank = 0;
+ rows.forEach(function(r,i){
+  if(i === 0 || rows[i-1].score !== r.score) rank = i;
+  var profile = r.user.profile || {};
+  var name = profile.title || profile.name || r.user.name || '끄투 봇';
+  var equip = $.extend({},r.user.equip || {},{robot:!!r.user.robot});
+  var $row = $('<div>').addClass('match-result-row').toggleClass('is-me',r.id===$data.id).appendTo($table);
+  $('<strong>').addClass('match-result-rank').toggleClass('is-winner',rank===0).text(rank===0?'승':(rows.length===2?'패':String(rank+1))).appendTo($row);
+  var $player = $('<div>').addClass('match-result-player').appendTo($row);
+  var $face = $('<div>').addClass('moremi result-avatar').appendTo($player); renderMoremi($face,equip);
+  $('<strong>').text(name).appendTo($player);
+  $('<b>').text(String(r.score)).appendTo($row);
+
+ });
+ setupResultFooter();
+}
+
 function roundEnd(result, data){
 	if(!data) data = {};
 	var i, o, r;
@@ -2455,8 +2575,9 @@ function roundEnd(result, data){
 		notice(L['scoreGain'] + ": " + commify($data._result.reward.score) + ", " + L['moneyGain'] + ": " + commify($data._result.reward.money));
 		$(".result-me").css('opacity', 1);
 		$(".result-me-score").html(L['scoreGain']+" +"+commify($data._result.reward.score)+addit);
-		$(".result-me-money").html(L['moneyGain']+" +"+commify($data._result.reward.money)+addp);
+		$(".result-me-money").text("핑: " + commify(($data.users[$data.id] || {}).money || 0));
 	}
+	renderMatchResultScene(result, data);
 	renderRankResultSummary();
 	function renderRankResultSummary(){
 		var summary = $data._rankResultSummary;
@@ -2500,7 +2621,10 @@ function roundEnd(result, data){
 		draw('bonus', Math.max(0, going - $data._result._boing), 0, $data._result.goal - $data._result.before);
 		
 		$(".result-me-level-body").html($data._result.level);
-		$(".result-me-score-text").html(commify(Math.round($data._result.exp)) + " / " + commify($data._result.goal));
+		var progress = Math.max(0, Math.round($data._result.exp - $data._result.before));
+        var needed = Math.max(1, $data._result.goal - $data._result.before);
+        $(".result-me-score-text").text(commify(progress) + " / " + commify(needed));
+        $(".result-me-gauge").attr({role:'progressbar', 'aria-label':'다음 레벨까지 경험치', 'aria-valuemin':0, 'aria-valuemax':needed, 'aria-valuenow':Math.min(progress,needed)});
 	}
 	function draw(phase, val, before, goal){
 		$(".result-me-" + phase + "-bar").width((val - before) / (goal - before) * 100 + "%");
@@ -2547,6 +2671,7 @@ function roundEnd(result, data){
 	stopRecord();
 }
 function drawRanking(ranks){
+ $('#ResultDiag').removeClass('match-result-screen').find('.match-result-scene').remove();
 	var $b = $(".result-board").empty();
 	var $o, $v;
 	var me;
@@ -2736,7 +2861,7 @@ function getWordMeaningText(mean){
 }
 function updateWordMeaning(text, mean, theme){
 	var $panel = $("#WordMeaning");
-	var definition = getWordMeaningText(mean);
+	var definition = maskDefinitionProfanity(getWordMeaningText(mean));
 	var requestId;
 
 	if(!$panel.length) return;
@@ -2755,7 +2880,7 @@ function updateWordMeaning(text, mean, theme){
 	tryDict(String(text), function(res){
 		var fetched;
 		if($data._wordMeaningRequest !== requestId) return;
-		fetched = res && !res.error ? getWordMeaningText(res.mean) : "";
+		fetched = res && !res.error ? maskDefinitionProfanity(getWordMeaningText(res.mean)) : "";
 		$panel.find(".word-meaning-definition").text(fetched || "등록된 낱말 뜻이 없습니다.");
 		$panel.toggleClass("is-empty", !fetched);
 	});
@@ -2794,6 +2919,8 @@ function alignClosedEyes(){
 	place('.jjoEyeR', '.jjoEyeClosedR');
 }
 function pushDisplay(text, mean, theme, wc, font){
+ if(!$data.room) return;
+ text = maskDefinitionProfanity(text);
 	var len;
 	var mode = MODE[$data.room.mode];
 	var isKKT = mode == "KKT";
@@ -2936,10 +3063,14 @@ function pushHistory(text, mean, theme, wc){
 		);
 	global.expl($v);
 }
+function maskDefinitionProfanity(text){
+	return String(text || "").replace(BAD, function(match){ return new Array(match.length + 1).join("#"); });
+}
 function processNormal(word, mean){
-	return $("<label>").addClass("word").html(mean);
+	return $("<label>").addClass("word").text(maskDefinitionProfanity(mean));
 }
 function processWord(word, _mean, _theme, _wcs){
+	_mean = maskDefinitionProfanity(_mean);
 	if(!_mean || _mean.indexOf("＂") == -1) return processNormal(word, _mean);
 	var $R = $("<label>").addClass("word");
 	var means = _mean.split(/＂[0-9]+＂/).slice(1).map(function(m1){
@@ -3034,11 +3165,11 @@ function getLevelImage(score){
 	});
 }
 function getImage(url){
-	return $("<div>").addClass("jt-image").css('background-image', "url('"+url+"')");
+	return $("<div>").addClass("jt-image").css('background-image', safeImageBackground(url));
 }
 function getOptions(mode, opts, hash){
 	var modeKey = MODE[mode] || mode || '';
-	var modeNames = {EKT:'영어 끄투',ESH:'영어 끝말잇기',KKT:'한국어 쿵쿵따',KSH:'한국어 끝말잇기',KAW:'아무말잇기',CSQ:'자음퀴즈',KCW:'한국어 십자말풀이',KTY:'한국어 타자 대결',ETY:'영어 타자 대결',KAP:'한국어 앞말잇기',HUN:'훈민정음',KDA:'한국어 단어 대결',EDA:'영어 단어 대결',KSS:'한국어 솎솎',ESS:'영어 솎솎'};
+	var modeNames = {EKT:'영어 끄투',ESH:'영어 끝말잇기',KKT:'한국어 쿵쿵따',KSH:'한국어 끝말잇기',KAW:'아무말잇기',KAL:'전체',CSQ:'자음퀴즈',KCW:'한국어 십자말풀이',KTY:'한국어 타자 대결',ETY:'영어 타자 대결',KAP:'한국어 앞말잇기',HUN:'훈민정음',KDA:'한국어 단어 대결',EDA:'영어 단어 대결',KSS:'한국어 솎솎',ESS:'영어 솎솎'};
 	var R = [modeNames[modeKey] || (L && L['mode' + modeKey]) || '게임'];
 	var i, k; opts = opts || {};
 	var dictionaryLabels = {basic:'기본 낱말집',standard:'표준 낱말집',complex:'확장 낱말집'};
@@ -3062,7 +3193,8 @@ function setRoomHead($obj, room){
 	$obj.addClass('branded-room-head');
 	$obj.children('.room-head-number, .room-head-title').wrapAll('<div class="room-head-identity"></div>');
 	$obj.children('h5').wrapAll('<div class="room-head-details"></div>');
-	$obj.append($('<span>').addClass('room-head-brand').text('끄투게임 kkutugame.kro.kr'));
+	$obj.append($('<span>').addClass('room-head-brand').text('끄투게임즈코리아'));
+ if($obj.closest('.RoomBox').length)$obj.prepend($('<div class="room-lobby-heading">').append($('<img>').attr({src:'/img/custom/chat-brand-white.png',alt:'끄투'})).append($('<strong>').text(badWords(room.title))));
 		
 	if(rule.opts.indexOf("ijp") != -1){
 		$rm.append($("<div>").addClass("expl").html("<h5>" + room.opts.injpick.map(function(item){
@@ -3217,10 +3349,19 @@ function playSound(key, loop){
 	return src;
 }
 function stopAllSounds(){
-	stopBGM();
-	var i;
-	
-	for(i in $_sound) $_sound[i].stop();
+    // Full teardown must also clear a theme BGM retained by stopBGM().
+    // Otherwise playBGM mistakes the stopped Web Audio source for a live loop.
+    var sounds = [], key;
+    if($data.bgm) sounds.push($data.bgm);
+    delete $data.bgm;
+    delete $data._pendingBGM;
+    for(key in $_sound){
+        if($_sound[key] && sounds.indexOf($_sound[key]) === -1) sounds.push($_sound[key]);
+        delete $_sound[key];
+    }
+    sounds.forEach(function(sound){
+        try{ if(sound.stop) sound.stop(); }catch(_){ /* An ended source is already silent. */ }
+    });
 }
 function tryJoin(id){
 	var pw;
@@ -3286,7 +3427,7 @@ function chatBalloon(text, id, flag){
 		$obj.animate({ 'opacity': 0 }, 500, function(){ $obj.remove(); });
 	}, 2500);
 }
-function chat(profile, msg, from, timestamp, scope){
+function chat(profile, msg, from, timestamp, scope, reportId, authorId){
 	var time = timestamp ? new Date(timestamp) : new Date();
 	var equip = $data.users[profile.id] ? $data.users[profile.id].equip : {};
 	var $bar, $msg, $item;
@@ -3304,17 +3445,29 @@ function chat(profile, msg, from, timestamp, scope){
 		$bar = ($data.room.gaming ? 2 : 0) + ($(".jjoriping").hasClass("cw") ? 1 : 0);
 		chatBalloon(msg, profile.id, $bar);
 	}
-	$stage.chat.append($item = $("<div>").addClass("chat-item").attr("data-chat-scope", scope || ($data.room ? "room" : "main"))
+	scope = scope || ($data.room ? "room" : "main");
+	if(window.markChatUnread) markChatUnread(scope);
+	if(!from && window.showMentionNotice) showMentionNotice(profile,msg,scope,authorId);
+	$stage.chat.append($item = $("<div>").addClass("chat-item").attr("data-chat-scope", scope)
 		.append($bar = $("<div>").addClass("chat-head ellipse").text(profile.title || profile.name))
 		.append($msg = $("<div>").addClass("chat-body").text(msg))
 		.append($("<div>").addClass("chat-stamp").text(time.toLocaleTimeString()))
 	);
+	authorId = authorId || profile.id;
+	if(reportId && authorId){
+		$item.append($("<button type='button'>").addClass('chat-report-button').text('신고').on('click',function(e){
+			e.stopPropagation();
+			if(!confirm('이 채팅을 운영자에게 신고하시겠습니까?')) return;
+			send('chatReport',{reportId:reportId},scope==='main');
+			$(this).prop('disabled',true).text('신고됨');
+		}));
+	}
 	addDeveloperBadge($bar, profile);
 	if(timestamp) $bar.prepend($("<i>").addClass("fa fa-video-camera"));
 	$bar.on('click', function(e){
 		requestProfile(profile.id);
 	});
-	$stage.chatLog.append($item = $item.clone());
+	$stage.chatLog.append($item = $item.clone(true));
 	$item.append($("<div>").addClass("expl").css('font-weight', "normal").html("#" + (profile.id || "").substr(0, 5)));
 	
 	if(link = msg.match(/https?:\/\/[\w\.\?\/&#%=-_\+]+/g)){
@@ -3383,6 +3536,10 @@ function iName(key){
 function iDesc(key){
 	if(key.charAt() == "$") return L[key.slice(0, 4)][1];
 	else return L[key][1];
+}
+function safeImageBackground(url){
+ if(typeof url !== 'string' || !url.trim() || /^(undefined|null)$/i.test(url)) return 'none';
+ return 'url(' + JSON.stringify(url) + ')';
 }
 function iImage(key, sObj){
 	if(key !== undefined && key !== null && key !== false) key = String(key);
@@ -3495,7 +3652,9 @@ function commify(val){
 	return val;
 }
 function setLocation(place){
-	if(place) location.hash = "#"+place;
+	var locale = (document.cookie.match(/(?:^|;\s*)lc=([^;]+)/) || [])[1] || 'ko_KR';
+	if(/^(?:ko_KR|en_US|zh_CN|ko_KP)$/.test(locale)) location.hash = "#" + locale;
+	else if(place) location.hash = "#"+place;
 	else location.hash = "";
 }
 function fail(code){

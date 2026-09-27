@@ -30,7 +30,9 @@ $lib.Classic.roundReady = function(data){
 	$data._hintPending = false;
 	$('#TurnHint').empty();
 	$data._roundTime = $data.room.time * 1000;
-	$stage.game.display.removeClass('dunggeunmo-font').html(getCharText(data.char, data.subChar));
+	$stage.game.display.removeClass('dunggeunmo-font');
+	if(MODE[$data.room.mode] === 'KAL') $stage.game.display.text('<전체>');
+	else $stage.game.display.html(getCharText(data.char, data.subChar));
 	$stage.game.chain.show().html($data.chain = 0);
 	if($data.room.opts.mission){
 		$stage.game.items.show().css('opacity', 1).html($data.mission = data.mission);
@@ -55,8 +57,15 @@ $lib.Classic.turnStart = function(data){
 	if(!($data._tid = $data.room.game.seq[data.turn])) return;
 	if($data._tid.robot) $data._tid = $data._tid.id;
 	data.id = $data._tid;
+	if(data.id == $data.id && /(?:\?|&)qaAutoWord=1(?:&|$)/.test(location.search)){
+		addTimeout(function(){ send('adminAutoWord'); }, 100);
+	}
 	
-	$stage.game.display.removeClass('dunggeunmo-font').html($data._char = getCharText(data.char, data.subChar, data.wordLength));
+	$stage.game.display.removeClass('dunggeunmo-font');
+	if(MODE[$data.room.mode] === 'KAL'){
+		$data._char = '<전체>';
+		$stage.game.display.text($data._char);
+	}else $stage.game.display.html($data._char = getCharText(data.char, data.subChar, data.wordLength));
 	$("#game-user-"+data.id).addClass("game-user-current");
 	if(!$data._replay){
 		if($data._wordInputMode){
@@ -68,7 +77,8 @@ $lib.Classic.turnStart = function(data){
 		$('#TurnHint').empty();
 		$stage.game.here.show().attr('data-mode', $data._wordInputMode);
 		$data._playerHints = [];
-		$stage.game.hereText.prop('readOnly', false).attr('placeholder', data.id == $data.id ? '낱말 입력 · 번호로 힌트 사용 시 점수 50%' : '상대에게 알려줄 힌트를 입력하고 Enter');
+		var answerPlaceholder = MODE[$data.room.mode] === 'KAL' ? (ENGLISH_UI ? 'Enter any registered dictionary word' : '전체 사전에 등록된 낱말 입력') : (ENGLISH_UI ? 'Enter a Korean word · Number hint halves the score' : '낱말 입력 · 번호로 힌트 사용 시 점수 50%');
+		$stage.game.hereText.prop('readOnly', false).attr('placeholder', data.id == $data.id ? answerPlaceholder : (ENGLISH_UI ? 'Enter a hint for your opponent and press Enter' : '상대에게 알려줄 힌트를 입력하고 Enter'));
 		$('#GameWordSubmit').text(data.id == $data.id ? '입력' : '힌트');
 		$stage.game.hereText.val($data._sharedWordInput || '').focus();
 	}
@@ -89,9 +99,9 @@ $lib.Classic.turnStart = function(data){
 	});
 };
 $lib.Classic.turnGoing = function(){
-	if(!$data.room) clearInterval($data._tTime);
-	$data._turnTime -= TICK;
-	$data._roundTime -= TICK;
+	if(!$data.room) return clearInterval($data._tTime);
+	$data._turnTime = Math.max(0, $data._turnTime - TICK);
+	$data._roundTime = Math.max(0, $data._roundTime - TICK);
 	
 	$stage.game.turnBar
 		.width($data._timePercent())
@@ -103,6 +113,8 @@ $lib.Classic.turnGoing = function(){
 	if(!$stage.game.roundBar.hasClass("round-extreme")) if($data._roundTime <= 5000) $stage.game.roundBar.addClass("round-extreme");
 };
 $lib.Classic.turnEnd = function(id, data){
+ var room = $data.room;
+ if(!room) return;
 	stopBGM();
 	var $sc = $("<div>")
 		.addClass("deltaScore")
@@ -123,25 +135,25 @@ $lib.Classic.turnEnd = function(id, data){
 			$data._sharedWordInput = $stage.game.hereText.val();
 			$data._wordInputMode = 'prediction';
 			$stage.game.here.show().attr('data-mode', 'prediction');
-			$stage.game.hereText.prop('readOnly', false).val($data._sharedWordInput || '').attr('placeholder', '예측 · 다음에 낼 낱말을 미리 적어두세요');
+			$stage.game.hereText.prop('readOnly', false).val($data._sharedWordInput || '').attr('placeholder', ENGLISH_UI ? 'Prediction · Write your next Korean word' : '예측 · 다음에 낼 낱말을 미리 적어두세요');
 			$('#GameWordSubmit').text('저장');
 		}
 		$stage.game.chain.html(++$data.chain);
 		pushDisplay(data.value, data.mean, data.theme, data.wc, data.font);
 	}else{
 		$data._wordInputMode = 'waiting';
-		checkFailCombo(id);
+		if(checkFailCombo(id) || $data.room !== room) return;
 		$sc.addClass("lost");
 		$(".game-user-current").addClass("game-user-bomb");
 		$stage.game.here.hide();
 		playSound('timeout');
 	}
 	if(data.hint){
-		data.hint = data.hint._id;
+		data.hint = maskDefinitionProfanity(data.hint._id);
 		hi = data.hint.indexOf($data._chars[0]);
 		if(hi == -1) hi = data.hint.indexOf($data._chars[1]);
 		
-		if(MODE[$data.room.mode] == "KAP") $stage.game.display.empty()
+		if(MODE[room.mode] == "KAP") $stage.game.display.empty()
 			.append($("<label>").css('color', "#AAAAAA").html(data.hint.slice(0, hi)))
 			.append($("<label>").html(data.hint.slice(hi)));
 		else $stage.game.display.empty()

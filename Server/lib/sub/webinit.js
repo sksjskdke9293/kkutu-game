@@ -18,9 +18,19 @@
 
 var GLOBAL	 = require("./global.json");
 var JLog	 = require("./jjlog");
+function loadLanguage(locale){
+	var base = require("../Web/lang/" + locale + ".json");
+	if(locale !== 'en_US') return base;
+	var overrides = require("../Web/lang/en_US.overrides.json");
+	base.GLOBAL = Object.assign({}, base.GLOBAL, overrides.GLOBAL || {});
+	base.kkutu = Object.assign({}, base.kkutu, overrides.kkutu || {});
+	return base;
+}
 var Language = {
-	'ko_KR': require("../Web/lang/ko_KR.json"),
-	'en_US': require("../Web/lang/en_US.json")
+	'ko_KR': loadLanguage('ko_KR'),
+	'en_US': loadLanguage('en_US'),
+	'zh_CN': loadLanguage('zh_CN'),
+	'ko_KP': loadLanguage('ko_KP')
 };
 
 function updateLanguage(){
@@ -30,7 +40,7 @@ function updateLanguage(){
 		src = `../Web/lang/${i}.json`;
 		
 		delete require.cache[require.resolve(src)];
-		Language[i] = require(src);
+		Language[i] = loadLanguage(i);
 	}
 }
 function getLanguage(locale, page, shop){
@@ -58,7 +68,12 @@ function page(req, res, file, data){
 	var sid = req.session.id || "";
 	
 	data.published = global.isPublic;
-	data.lang = req.query.locale || "ko_KR";
+	var cookieLocale = String((req.headers && req.headers.cookie) || "").split(';').reduce(function(found, item){
+		var pair = item.trim().split('=');
+		if(found || pair.shift() !== 'lc') return found;
+		try{ return decodeURIComponent(pair.join('=')); }catch(error){ return ''; }
+	}, '');
+	data.lang = req.query.locale || cookieLocale || "ko_KR";
 	if(!Language[data.lang]) data.lang = "ko_KR";
 	// URL ...?locale=en_US will show the page in English
 	

@@ -19,6 +19,7 @@
 // The locale script assigns window.L; keep a local binding for every browser.
 var L = window.L || { null: '', LOGIN: '로그인', GAE: '개', MN: '명' };
 window.L = L;
+var ENGLISH_UI = document.documentElement.lang === 'en';
 var MODE;
 var BEAT = [ null,
 	"10000000",
@@ -41,7 +42,7 @@ var OPTIONS;
 var MAX_LEVEL = 360;
 var TICK = 30;
 var EXP = [];
-var BAD = new RegExp([ "느으*[^가-힣]*금마?", "니[^가-힣]*(엄|앰|엠)", "(ㅄ|ㅅㅂ|ㅂㅅ)", "미친(년|놈)?", "(병|븅|빙)[^가-힣]*신", "보[^가-힣]*지", "(새|섀|쌔|썌)[^가-힣]*(기|끼)", "섹[^가-힣]*스", "(시|씨|쉬|쒸)이*입?[^가-힣]*(발|빨|벌|뻘|팔|펄)", "십[^가-힣]*새", "씹", "(애|에)[^가-힣]*미", "자[^가-힣]*지", "존[^가-힣]*나", "좆|죶", "지랄", "창[^가-힣]*(녀|년|놈)", "fuck", "sex" ].join('|'), "g");
+var BAD = new RegExp([ "느으*[^가-힣]*금마?", "니[^가-힣]*(엄|앰|엠)", "(ㅄ|ㅅㅂ|ㅂㅅ)", "미친(년|놈)?", "(병|븅|빙)[^가-힣]*신", "보[^가-힣]*지", "(새|섀|쌔|썌)[^가-힣]*(기|끼)", "섹[^가-힣]*스", "(시|씨|쉬|쒸)이*입?[^가-힣]*(발|빨|벌|뻘|팔|펄)", "십[^가-힣]*새", "씹", "(애|에)[^가-힣]*미", "자[^가-힣]*지", "존[^가-힣]*나", "좆|죶", "지랄", "창[^가-힣]*(녀|년|놈)", "fuck", "sex", "tlqkf", "qㅕㅇ신", "qudtls", "wlfkf", "whw", "tㅐㄱ스" ].join('|'), "gi");
 
 var ws, rws;
 var $stage;
@@ -102,7 +103,6 @@ $(document).ready(function(){
 		var query = $(this).val().toLowerCase();
 		$('.rooms-item').each(function(){ $(this).toggle($(this).text().toLowerCase().indexOf(query) >= 0); });
 	});
-	$('<button id="RoomAddBot" type="button">봇 추가</button>').appendTo('.team-selector').on('click', function(){ send('invite', {target:'AI'}); });
 	$('#QuickRoomBtn').appendTo('body').empty().append($('<span>').addClass('mobile-menu-label').text('빠른 시작'));
 	$('#HelpBtn, #SettingBtn, #CommunityBtn').appendTo('body').addClass('detached-menu');
 	$('.RoomListBox, .ShopBox').each(function(){
@@ -120,7 +120,9 @@ $(document).ready(function(){
 	$data.URL = $("#URL").html();
 	window.__kkutuConnect = function(){ connect(); };
 	$data.version = $("#version").html();
-	$data.server = location.href.match(/\?.*server=(\d+)/)[1];
+	var serverMatch = location.href.match(/[?&]server=(\d+)/);
+	var playMatch = location.pathname.match(/^\/play([1-3])$/);
+	$data.server = serverMatch ? serverMatch[1] : (playMatch ? String(Number(playMatch[1]) - 1) : '0');
 	$data.shop = {};
 	$data._okg = 0;
 	$data._playTime = 0;
@@ -159,7 +161,6 @@ $(document).ready(function(){
 			quickRoom: $("#QuickRoomBtn"),
 			tutorial: $("#TutorialBtn"),
 			dailyQuest: $("#DailyQuestBtn"),
-			dailySpin: $("#DailySpinBtn"),
 			spectate: $("#SpectateBtn"),
 			shop: $("#ShopBtn"),
 			dict: $("#DictionaryBtn"),
@@ -284,7 +285,7 @@ $(document).ready(function(){
 		try{ localStorage.setItem(getRankStorageKey(), JSON.stringify(profile)); }catch(ex){}
 	}
 	function getRankTier(rating){
-		if(rating >= 1500) return {name:'끄투게임 랭크', image:'/img/custom/ranks/rank-kkutugame.png'};
+		if(rating >= 1500) return {name:'끄투게임즈코리아 랭크', image:'/img/custom/ranks/rank-kkutugame.png'};
 		if(rating >= 1300) return {name:'자연', image:'/img/custom/ranks/rank-nature.png'};
 		if(rating >= 1150) return {name:'실버', image:'/img/custom/ranks/rank-silver.png'};
 		if(rating >= 850) return {name:'브론즈', image:'/img/custom/ranks/rank-bronze.png'};
@@ -330,40 +331,50 @@ $(document).ready(function(){
 		$('<div id="RankMatchOverlay"><section><img src="/img/custom/ranks/rank-bronze.png" alt="순위전"><h2>순위전 매칭</h2><p id="RankMatchStatus">상대방을 기다리는 중 · 1 / 2</p><p>표준 낱말집으로 2인 대결을 시작합니다.</p><button id="RankMatchCancel" type="button">매칭 취소</button></section></div>').appendTo('body');
 		$('#RankMatchCancel').on('click', function(){ send('rankCancel', {}, true); $('#RankMatchOverlay').remove(); });
 	}
-	function initChatResize(){
-		var node = $stage.box.chat.get(0);
-		var $grip;
-		var start;
-		var storageKey = 'kkutu-chat-size-v1';
-		if(!node || node.querySelector('.chat-resize-grip')) return;
-		try{
-			var saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
-			if(saved && saved.width >= 360 && saved.height >= 180){
-				node.style.setProperty('--kkutu-chat-width', saved.width + 'px');
-				node.style.setProperty('--kkutu-chat-height', saved.height + 'px');
-			}
-		}catch(ex){}
-		$grip = $('<button type="button" class="chat-resize-grip" aria-label="채팅창 크기 조절" title="드래그해서 채팅창 크기 조절">↖</button>');
-		$stage.box.chat.append($grip);
-		$grip.on('pointerdown', function(e){
-			if(e.pointerType == 'touch') return;
-			start = { x: e.clientX, y: e.clientY, width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height };
-			e.preventDefault();
-			$grip.get(0).setPointerCapture && $grip.get(0).setPointerCapture(e.pointerId);
-			$(window).on('pointermove.chatResize', function(move){
-				if(!start) return;
-				var width = Math.max(360, Math.min(window.innerWidth - 24, Math.round(start.width + start.x - move.clientX)));
-				var height = Math.max(180, Math.min(window.innerHeight - 92, Math.round(start.height + start.y - move.clientY)));
-				node.style.setProperty('--kkutu-chat-width', width + 'px');
-				node.style.setProperty('--kkutu-chat-height', height + 'px');
-			});
-			$(window).one('pointerup.chatResize pointercancel.chatResize', function(){
-				$(window).off('.chatResize');
-				if(start) try{ localStorage.setItem(storageKey, JSON.stringify({ width: Math.round(node.getBoundingClientRect().width), height: Math.round(node.getBoundingClientRect().height) })); }catch(ex){}
-				start = null;
-			});
-		});
-	}
+
+
+ var socialDock=$('<aside id="LobbySocialDock" aria-label="방문자목록과 메인채팅"><span class="social-dock-edge" title="왼쪽 가장자리를 드래그해 너비 조절"></span></aside>').hide().appendTo('body');
+ var chatHome=$('<span hidden>').insertBefore($stage.box.chat),usersHome=$('<span hidden>').insertBefore($stage.box.userList);
+ window.fitVisitorNames=function(){ document.documentElement.style.setProperty('--social-panel-width',Math.round(socialDock.get(0).getBoundingClientRect().width || 330)+'px'); $('#LobbySocialDock .users-name').each(function(){var el=this;el.style.setProperty('font-size','22px','important');var size=22;while(el.scrollWidth>el.clientWidth && el.clientWidth>0 && size>11){size--;el.style.setProperty('font-size',size+'px','important');}});};
+ if(window.ResizeObserver)new ResizeObserver(function(){window.fitVisitorNames();}).observe(socialDock.get(0));
+ window.syncLobbySocialDock=function(){
+  var lobby=getOnly()==='for-lobby';
+  if(lobby){$stage.box.userList.appendTo(socialDock);$stage.box.chat.appendTo(socialDock);socialDock.show();window.fitVisitorNames();}
+  else{$stage.box.userList.insertAfter(usersHome);$stage.box.chat.insertAfter(chatHome);socialDock.hide();}
+ };
+ try{var dockWidth=Number(localStorage.getItem('kkutu-social-width'));if(dockWidth>=290)socialDock.get(0).style.setProperty('--social-width',Math.min(dockWidth,innerWidth>800?innerWidth-460:innerWidth-24)+'px');}catch(e){}
+ socialDock.find('.social-dock-edge').on('pointerdown',function(ev){var e=ev.originalEvent||ev;e.preventDefault();var x=e.clientX,w=socialDock.get(0).getBoundingClientRect().width;this.setPointerCapture(e.pointerId);$(window).on('pointermove.socialDock',function(ev){var m=ev.originalEvent||ev;socialDock.get(0).style.setProperty('--social-width',Math.max(290,Math.min(innerWidth>800?innerWidth-460:innerWidth-24,w+x-m.clientX))+'px');}).one('pointerup.socialDock pointercancel.socialDock',function(){$(window).off('.socialDock');try{localStorage.setItem('kkutu-social-width',socialDock.get(0).getBoundingClientRect().width);}catch(e){}});});
+ $('<span class="social-mobile-height-edge" title="위아래로 드래그해 채팅창 높이 조절" aria-hidden="true"></span>').appendTo(socialDock).on('pointerdown',function(ev){
+  var e=ev.originalEvent||ev;if(innerWidth>800)return;e.preventDefault();var y=e.clientY,h=socialDock.get(0).getBoundingClientRect().height;this.setPointerCapture(e.pointerId);
+  $(window).on('pointermove.socialHeight',function(ev){var m=ev.originalEvent||ev;socialDock.get(0).style.setProperty('--mobile-chat-height',Math.max(180,Math.min(innerHeight-90,h+y-m.clientY))+'px');}).one('pointerup.socialHeight pointercancel.socialHeight',function(){$(window).off('.socialHeight');try{localStorage.setItem('kkutu-mobile-chat-height',socialDock.get(0).getBoundingClientRect().height);}catch(e){}});
+ });
+ try{var mobileHeight=Number(localStorage.getItem('kkutu-mobile-chat-height'));if(mobileHeight>=180)socialDock.get(0).style.setProperty('--mobile-chat-height',mobileHeight+'px');}catch(e){}
+ var mobileChatEdge=$('<span class="mobile-chat-height-edge" title="위아래로 드래그해 채팅창 높이 조절"></span>').appendTo($stage.box.chat);
+ try{var savedHeight=Number(localStorage.getItem('kkutu-mobile-room-chat-height'));if(savedHeight>=150)document.documentElement.style.setProperty('--mobile-room-chat-height',savedHeight+'px');}catch(e){}
+ mobileChatEdge.on('pointerdown',function(ev){var e=ev.originalEvent||ev;if(innerWidth>800)return;e.preventDefault();var y=e.clientY,h=$stage.box.chat[0].getBoundingClientRect().height;this.setPointerCapture(e.pointerId);$(window).on('pointermove.mobileChatHeight',function(ev){var m=ev.originalEvent||ev;document.documentElement.style.setProperty('--mobile-room-chat-height',Math.max(150,Math.min(innerHeight-200,h+y-m.clientY))+'px');}).one('pointerup.mobileChatHeight pointercancel.mobileChatHeight',function(){$(window).off('.mobileChatHeight');try{localStorage.setItem('kkutu-mobile-room-chat-height',$stage.box.chat[0].getBoundingClientRect().height);}catch(e){}});});
+ function initChatResize(){
+  var node=$stage.box.chat.get(0),start=null;
+  if(!node)return;
+  $(node).find('.chat-resize-grip,.chat-resize-edge').remove();
+  var stateKey='';
+  window.syncChatGeometry=function(){
+   var mode=document.body.getAttribute('data-game-view')||'for-lobby';
+   if(mode===stateKey)return;stateKey=mode;
+   ['left','top','width','height'].forEach(function(k){node.style.removeProperty('--chat-'+k);});
+   try{var saved=JSON.parse(localStorage.getItem('kkutu-chat-edges-v2-'+mode)||'null');if(saved){saved.width=Math.min(saved.width,innerWidth-24);saved.height=Math.min(saved.height,innerHeight-100);saved.left=Math.max(8,Math.min(saved.left,innerWidth-saved.width-8));saved.top=Math.max(8,Math.min(saved.top,innerHeight-saved.height-8));Object.keys(saved).forEach(function(k){node.style.setProperty('--chat-'+k,saved[k]+'px');});}}catch(e){}
+  };
+  ['n','s','e','w','ne','nw','se','sw'].forEach(function(edge){
+   var handle=$('<span>').addClass('chat-resize-edge edge-'+edge).attr({'aria-hidden':'true',title:'가장자리를 드래그해 채팅창 크기 조절'}).appendTo(node);
+   handle.on('pointerdown',function(ev){var e=ev.originalEvent||ev;if(innerWidth<=800)return;e.preventDefault();var r=node.getBoundingClientRect();start={x:e.clientX,y:e.clientY,left:r.left,top:r.top,width:r.width,height:r.height};handle.get(0).setPointerCapture(e.pointerId);
+    $(window).on('pointermove.chatEdges',function(ev){var m=ev.originalEvent||ev;if(!start)return;var dx=m.clientX-start.x,dy=m.clientY-start.y,l=start.left,t=start.top,r=l+start.width,b=t+start.height;
+     if(edge.indexOf('e')>=0)r=Math.min(innerWidth-8,Math.max(l+340,r+dx));if(edge.indexOf('w')>=0)l=Math.max(8,Math.min(r-340,l+dx));if(edge.indexOf('s')>=0)b=Math.min(innerHeight-8,Math.max(t+220,b+dy));if(edge.indexOf('n')>=0)t=Math.max(8,Math.min(b-220,t+dy));
+     node.style.setProperty('--chat-left',l+'px');node.style.setProperty('--chat-top',t+'px');node.style.setProperty('--chat-width',(r-l)+'px');node.style.setProperty('--chat-height',(b-t)+'px');
+    });
+    $(window).one('pointerup.chatEdges pointercancel.chatEdges',function(){ $(window).off('.chatEdges');var r=node.getBoundingClientRect();try{localStorage.setItem('kkutu-chat-edges-v2-'+stateKey,JSON.stringify({left:r.left,top:r.top,width:r.width,height:r.height}));}catch(e){}start=null; });
+   });
+  });window.syncChatGeometry();
+ }
+
 	if(_WebSocket == undefined){
 		$('#intro-text').text('브라우저 WebSocket을 사용할 수 없습니다.');
 		loading(L['websocketUnsupport']);
@@ -486,18 +497,39 @@ $(document).ready(function(){
 		stopDrag();
 	});
 	// addInterval(checkInput, 1);
-	var tabs = $('<div id="ChatTabs"><button type="button" data-scope="main">메인</button><button type="button" data-scope="room">방</button></div>').prependTo('.ChatBox');
+	$stage.box.chat.attr('id','ChatPanel');
+	$data.chatUnread = {main:0, room:0};
+	var tabs = $('<div id="ChatTabs"><button type="button" data-scope="main">메인채팅 <b class="chat-unread" data-unread="main"></b></button><button type="button" data-scope="room">방 채팅 <b class="chat-unread" data-unread="room"></b></button></div>').prependTo('.ChatBox > .product-body');
+ tabs.prepend('<span class="chat-brand-mark" aria-label="끄투"><img src="/img/custom/chat-brand-white.png" alt="끄투" draggable="false"></span>');
+ window.markChatUnread = function(scope){
+  scope=scope==='room'?'room':'main';
+  if($data.chatScope!==scope) $data.chatUnread[scope]=($data.chatUnread[scope]||0)+1;
+  var count=$data.chatUnread[scope]||0;
+  tabs.find('[data-unread="'+scope+'"]').text(count>99?'99+':count).toggle(count>0);
+ };
  window.syncChatTabs = function(){
-  var roomId=$data.room && $data.room.id;
-  if(roomId && roomId !== $data._chatRoomId) $data.chatScope='room';
+  var roomId=$data.room ? String($data.room.id) : '';
+  if(roomId !== $data._chatRoomId){
+   $('#Chat,#chat-log-board').find('[data-chat-scope="room"]').remove();
+   $data.chatUnread.room=0;tabs.find('[data-unread="room"]').empty().hide();
+   if(roomId)$data.chatScope='room';
+  }
   $data._chatRoomId=roomId;
   if(!$data.room) $data.chatScope='main';
   if(!$data.chatScope) $data.chatScope=$data.room ? 'room' : 'main';
   tabs.find('[data-scope="room"]').toggle(!!$data.room);
   tabs.find('button').each(function(){ $(this).attr('aria-selected',$(this).attr('data-scope') === $data.chatScope); });
+  $data.chatUnread[$data.chatScope]=0;
+  tabs.find('[data-unread="'+$data.chatScope+'"]').empty().hide();
   $('.ChatBox').attr('data-chat-tab',$data.chatScope);
  };
- tabs.on('click','button',function(){ $data.chatScope=$(this).attr('data-scope'); syncChatTabs(); });
+ tabs.on('click','button',function(e){ e.preventDefault(); e.stopPropagation(); $data._chatRoomId=$data.room ? String($data.room.id) : ''; $data.chatScope=$(this).attr('data-scope'); syncChatTabs(); $stage.chat.scrollTop(999999999); });
+ $stage.talk.attr('placeholder','채팅창');
+ function formatChatRows(){
+  $stage.chat.children('.chat-item').each(function(){var row=$(this);if(row.children('.chat-message-content').length)return;var text=row.children('.chat-head,.chat-body');if(text.length)text.wrapAll('<div class="chat-message-content"></div>');});
+ }
+ if(window.MutationObserver)new MutationObserver(formatChatRows).observe($stage.chat.get(0),{childList:true});
+ formatChatRows();
  syncChatTabs();
  $stage.chatBtn.on('click', function(e){
 		checkInput();
@@ -801,7 +833,7 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 	function beginQuickMatch(){
 		$stage.dialog.quick.hide();
 		$('#MatchOverlay').remove();
-		$('<div id="MatchOverlay"><section><h2>빠른 시작</h2><p id="MatchStatus">상대방을 기다리는 중 · 1 / 2</p><div id="MatchVotes"></div><p id="MatchHint"></p><button id="MatchCancel" type="button">매칭 취소</button></section></div>').appendTo('body');
+		$('<div id="MatchOverlay"><section><h2>'+(ENGLISH_UI?'Quick Join':'빠른 시작')+'</h2><p id="MatchStatus">'+(ENGLISH_UI?'Waiting for another player · 1 / 2':'상대방을 기다리는 중 · 1 / 2')+'</p><div id="MatchVotes"></div><p id="MatchHint"></p><button id="MatchCancel" type="button">'+(ENGLISH_UI?'Cancel match':'매칭 취소')+'</button></section></div>').appendTo('body');
 		$('#MatchCancel').on('click', function(){ send('matchCancel', {}, true); $('#MatchOverlay').remove(); });
 		send('matchJoin', {}, true);
 	}
@@ -883,7 +915,7 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 		$('#purchase-ping-before').html(commify(my.money) + L['ping']);
 		$('#purchase-ping-cost').html('200' + L['ping']);
 		$('#purchase-ping-after').html(commify(my.money - 200) + L['ping']);
-		$('#purchase-item-name').text('둥근모 글꼴');
+		$('#purchase-item-name').text('끄투 글꼴');
 		$('#purchase-item-desc').text('해당 상품은 환불이 불가한 상품입니다. 이에 이해 하셨습니까?');
 		$stage.dialog.purchaseOK.attr('disabled', my.money < 200).text('수락');
 		$stage.dialog.purchaseNO.text('거절');
@@ -1000,7 +1032,8 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 		$stage.dialog.room.hide();
 	});
 	$stage.dialog.resultOK.on('click', function(e){
-		if($data._resultPage == 1 && $data._resultRank){
+        restoreResultAd();
+		if(!$('#ResultDiag').hasClass('match-result-screen') && $data._resultPage == 1 && $data._resultRank){
 			drawRanking($data._resultRank[$data.id]);
 			return;
 		}
@@ -1043,21 +1076,21 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 		$a[0].click();
 	});
 	$stage.dialog.dictInjeong.on('click', function(e){
-		var $target = $(e.currentTarget);
-		
-		if($target.is(':disabled')) return;
-		if(!$("#dict-theme").val()) return;
-		$target.prop('disabled', true);
-		$("#dict-output").html(L['searching']);
-		$.get("/injeong/" + $("#dict-input").val() + "?theme=" + $("#dict-theme").val(), function(res){
-			addTimeout(function(){
-				$target.prop('disabled', false);
-			}, 2000);
-			if(res.error) return $("#dict-output").html(res.error + ": " + L['wpFail_' + res.error]);
-			
-			$("#dict-output").html(L['wpSuccess'] + "(" + res.message + ")");
-		});
-	});
+        var $target = $(e.currentTarget), word = String($('#dict-input').val() || '').trim();
+        var theme = $('#dict-theme').val();
+        if($target.is(':disabled')) return;
+        if(!word){ $('#dict-output').text('신청할 단어를 입력해 주세요.'); return; }
+        if(!theme){ $('#dict-output').text('주제를 선택해 주세요.'); return; }
+        $target.prop('disabled', true);
+        $('#dict-output').text(L['searching'] || '신청 중…');
+        $.ajax({url:'/injeong/' + encodeURIComponent(word),data:{theme:theme},dataType:'json',timeout:12000})
+        .done(function(res){
+            if(res.error) return $('#dict-output').text(res.message || (res.error + ': ' + (L['wpFail_' + res.error] || '신청하지 못했습니다.')));
+            $('#dict-output').text((L['wpSuccess'] || '신청했습니다.') + '(' + res.message + ')');
+        }).fail(function(){
+            $('#dict-output').text('서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+        }).always(function(){ addTimeout(function(){ $target.prop('disabled', false); }, 2000); });
+    });
 	$stage.dialog.dictSearch.on('click', function(e){
 		var $target = $(e.currentTarget);
 		
@@ -1418,40 +1451,9 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 		if($data._dailyQuest) window.renderDailyQuests($data._dailyQuest);
 		send('dailyQuestGet');
 	});
-	setInterval(function(){
+	_setInterval(function(){
 		if($('#DailyQuestOverlay').length) send('dailyQuestGet');
 	}, 60000);
-	var spinRewards=[5,10,15,20,25,30,40,50],spinBusy=false;
-	window.renderDailySpin=function(data){
-		var $panel=$('#DailySpinOverlay');if(!$panel.length)return;
-		var $button=$panel.find('.daily-spin-button'),$message=$panel.find('.daily-spin-message');
-		if(data.guest){$button.prop('disabled',true);$message.text('로그인한 계정만 하루에 한 번 돌릴 수 있어요.');return;}
-		if(data.already||(!spinBusy&&data.played)){$button.prop('disabled',true);$message.text('오늘은 이미 돌렸어요. 받은 보상: '+data.reward+'핑');return;}
-		if(data.played&&spinBusy){
-			spinBusy=false;$button.prop('disabled',true);
-			var index=spinRewards.indexOf(Number(data.reward));
-			if(index<0){$message.text('결과를 확인할 수 없습니다.');return;}
-			var degrees=2160-(index+.5)*45;
-			$panel.find('.daily-spin-wheel').css('transform','rotate('+degrees+'deg)');
-			$message.text('팽이가 도는 중…');
-			setTimeout(function(){if($panel.closest('body').length){$message.text(data.reward+'핑을 받았습니다!');if($data.users&&$data.users[$data.id])$data.users[$data.id].money=data.money;if(typeof updateMe==='function')updateMe();}},4700);
-			return;
-		}
-		$button.prop('disabled',false);$message.text('오늘의 한 번! 화살표가 가리킨 핑을 받아요.');
-	};
-	$(document).on('click','#DailySpinBtn',function(){
-		$('#DailySpinOverlay').remove();spinBusy=false;
-		var $overlay=$('<section id="DailySpinOverlay" role="dialog" aria-modal="true" aria-label="일일 팽이 돌리기">').appendTo('body');
-		var $card=$('<div class="daily-spin-card">').appendTo($overlay);
-		$('<button type="button" class="daily-spin-close" aria-label="닫기">×</button>').appendTo($card).on('click',function(){$overlay.remove();});
-		$card.append('<h2>일일 팽이 돌리기</h2><p>매일 자정에 한 번 다시 돌릴 수 있어요.</p>');
-		var $stage=$('<div class="daily-spin-stage"><div class="daily-spin-pointer">▼</div><div class="daily-spin-wheel"></div><div class="daily-spin-center">핑</div></div>').appendTo($card);
-		spinRewards.forEach(function(reward,index){var angle=(index+.5)*45;$('<b>').text(reward).css('transform','translate(-50%,-50%) rotate('+angle+'deg) translateY(-112px) rotate('+(-angle)+'deg)').appendTo($stage.find('.daily-spin-wheel'));});
-		$card.append('<div class="daily-spin-message">보상을 확인하는 중…</div>');
-		$('<button class="daily-spin-button" type="button" disabled>팽이 돌리기</button>').appendTo($card).on('click',function(){if(spinBusy)return;spinBusy=true;$(this).prop('disabled',true);send('dailySpinPlay');});
-		$overlay.on('click',function(e){if(e.target===this)$overlay.remove();});
-		send('dailySpinGet');
-	});
 
 	function connect(){
 		if(ws && (ws.readyState === 0 || ws.readyState === 1)) return;
@@ -1532,7 +1534,9 @@ $lib.Classic.roundReady = function(data){
 	$data._hintPending = false;
 	$('#TurnHint').empty();
 	$data._roundTime = $data.room.time * 1000;
-	$stage.game.display.removeClass('dunggeunmo-font').html(getCharText(data.char, data.subChar));
+	$stage.game.display.removeClass('dunggeunmo-font');
+	if(MODE[$data.room.mode] === 'KAL') $stage.game.display.text('<전체>');
+	else $stage.game.display.html(getCharText(data.char, data.subChar));
 	$stage.game.chain.show().html($data.chain = 0);
 	if($data.room.opts.mission){
 		$stage.game.items.show().css('opacity', 1).html($data.mission = data.mission);
@@ -1557,8 +1561,15 @@ $lib.Classic.turnStart = function(data){
 	if(!($data._tid = $data.room.game.seq[data.turn])) return;
 	if($data._tid.robot) $data._tid = $data._tid.id;
 	data.id = $data._tid;
+	if(data.id == $data.id && /(?:\?|&)qaAutoWord=1(?:&|$)/.test(location.search)){
+		addTimeout(function(){ send('adminAutoWord'); }, 100);
+	}
 	
-	$stage.game.display.removeClass('dunggeunmo-font').html($data._char = getCharText(data.char, data.subChar, data.wordLength));
+	$stage.game.display.removeClass('dunggeunmo-font');
+	if(MODE[$data.room.mode] === 'KAL'){
+		$data._char = '<전체>';
+		$stage.game.display.text($data._char);
+	}else $stage.game.display.html($data._char = getCharText(data.char, data.subChar, data.wordLength));
 	$("#game-user-"+data.id).addClass("game-user-current");
 	if(!$data._replay){
 		if($data._wordInputMode){
@@ -1570,7 +1581,8 @@ $lib.Classic.turnStart = function(data){
 		$('#TurnHint').empty();
 		$stage.game.here.show().attr('data-mode', $data._wordInputMode);
 		$data._playerHints = [];
-		$stage.game.hereText.prop('readOnly', false).attr('placeholder', data.id == $data.id ? '낱말 입력 · 번호로 힌트 사용 시 점수 50%' : '상대에게 알려줄 힌트를 입력하고 Enter');
+		var answerPlaceholder = MODE[$data.room.mode] === 'KAL' ? (ENGLISH_UI ? 'Enter any registered dictionary word' : '전체 사전에 등록된 낱말 입력') : (ENGLISH_UI ? 'Enter a Korean word · Number hint halves the score' : '낱말 입력 · 번호로 힌트 사용 시 점수 50%');
+		$stage.game.hereText.prop('readOnly', false).attr('placeholder', data.id == $data.id ? answerPlaceholder : (ENGLISH_UI ? 'Enter a hint for your opponent and press Enter' : '상대에게 알려줄 힌트를 입력하고 Enter'));
 		$('#GameWordSubmit').text(data.id == $data.id ? '입력' : '힌트');
 		$stage.game.hereText.val($data._sharedWordInput || '').focus();
 	}
@@ -1591,9 +1603,9 @@ $lib.Classic.turnStart = function(data){
 	});
 };
 $lib.Classic.turnGoing = function(){
-	if(!$data.room) clearInterval($data._tTime);
-	$data._turnTime -= TICK;
-	$data._roundTime -= TICK;
+	if(!$data.room) return clearInterval($data._tTime);
+	$data._turnTime = Math.max(0, $data._turnTime - TICK);
+	$data._roundTime = Math.max(0, $data._roundTime - TICK);
 	
 	$stage.game.turnBar
 		.width($data._timePercent())
@@ -1605,6 +1617,8 @@ $lib.Classic.turnGoing = function(){
 	if(!$stage.game.roundBar.hasClass("round-extreme")) if($data._roundTime <= 5000) $stage.game.roundBar.addClass("round-extreme");
 };
 $lib.Classic.turnEnd = function(id, data){
+ var room = $data.room;
+ if(!room) return;
 	stopBGM();
 	var $sc = $("<div>")
 		.addClass("deltaScore")
@@ -1625,25 +1639,25 @@ $lib.Classic.turnEnd = function(id, data){
 			$data._sharedWordInput = $stage.game.hereText.val();
 			$data._wordInputMode = 'prediction';
 			$stage.game.here.show().attr('data-mode', 'prediction');
-			$stage.game.hereText.prop('readOnly', false).val($data._sharedWordInput || '').attr('placeholder', '예측 · 다음에 낼 낱말을 미리 적어두세요');
+			$stage.game.hereText.prop('readOnly', false).val($data._sharedWordInput || '').attr('placeholder', ENGLISH_UI ? 'Prediction · Write your next Korean word' : '예측 · 다음에 낼 낱말을 미리 적어두세요');
 			$('#GameWordSubmit').text('저장');
 		}
 		$stage.game.chain.html(++$data.chain);
 		pushDisplay(data.value, data.mean, data.theme, data.wc, data.font);
 	}else{
 		$data._wordInputMode = 'waiting';
-		checkFailCombo(id);
+		if(checkFailCombo(id) || $data.room !== room) return;
 		$sc.addClass("lost");
 		$(".game-user-current").addClass("game-user-bomb");
 		$stage.game.here.hide();
 		playSound('timeout');
 	}
 	if(data.hint){
-		data.hint = data.hint._id;
+		data.hint = maskDefinitionProfanity(data.hint._id);
 		hi = data.hint.indexOf($data._chars[0]);
 		if(hi == -1) hi = data.hint.indexOf($data._chars[1]);
 		
-		if(MODE[$data.room.mode] == "KAP") $stage.game.display.empty()
+		if(MODE[room.mode] == "KAP") $stage.game.display.empty()
 			.append($("<label>").css('color', "#AAAAAA").html(data.hint.slice(0, hi)))
 			.append($("<label>").html(data.hint.slice(hi)));
 		else $stage.game.display.empty()
@@ -1715,8 +1729,8 @@ $lib.Jaqwi.turnGoing = function(){
 	var bRate;
 	var tt;
 	
-	if(!$data.room) clearInterval($data._tTime);
-	$data._roundTime -= TICK;
+	if(!$data.room) return clearInterval($data._tTime);
+	$data._roundTime = Math.max(0, $data._roundTime - TICK);
 	
 	tt = $data._spectate ? L['stat_spectate'] : ($data._roundTime*0.001).toFixed(1) + L['SECOND'];
 	$rtb
@@ -1724,10 +1738,7 @@ $lib.Jaqwi.turnGoing = function(){
 		.html(tt);
 		
 	if(!$rtb.hasClass("round-extreme")) if($data._roundTime <= $data._fastTime){
-		bRate = $data.bgm.currentTime / $data.bgm.duration;
-		if($data.bgm.paused) stopBGM();
-		else playBGM('jaqwiF');
-		$data.bgm.currentTime = $data.bgm.duration * bRate;
+		if(!$data.muteBGM) playBGM('jaqwiF');
 		$rtb.addClass("round-extreme");
 	}
 };
@@ -1942,7 +1953,10 @@ function onSpace(e){
 	}
 }
 function drawList(){
-	var wl = $data._list.slice($data.chain);
+	var list = $data._list || [];
+	if(!list.length){ $stage.game.display.text('낱말을 불러오는 중…'); return; }
+	var index = $data.chain % list.length;
+	var wl = list.slice(index).concat(list.slice(0, index));
 	var lv = $data.room.opts.proverb ? 1 : 5;
 	var pts = "";
 	var w0l = wl[0].length;
@@ -2117,10 +2131,10 @@ $lib.Hunmin.turnEnd = function(id, data){
 		playSound('timeout');
 	}
 	if(data.hint){
-		data.hint = data.hint._id;
+		data.hint = maskDefinitionProfanity(data.hint._id);
 		hi = data.hint.indexOf($data._chars[0]);
 		if(hi == -1) hi = data.hint.indexOf($data._chars[1]);
-		
+
 		$stage.game.display.empty()
 			.append($("<label>").html(data.hint.slice(0, hi + 1)))
 			.append($("<label>").css('color', "#AAAAAA").html(data.hint.slice(hi + 1)));
@@ -2225,7 +2239,7 @@ $lib.Daneo.turnEnd = function(id, data){
 		playSound('timeout');
 	}
 	if(data.hint){
-		data.hint = data.hint._id;
+		data.hint = maskDefinitionProfanity(data.hint._id);
 		hi = data.hint.indexOf($data._chars[0]);
 		if(hi == -1) hi = data.hint.indexOf($data._chars[1]);
 		
@@ -2363,9 +2377,9 @@ function yutCopy(state){return state?{positions:{1:(state.positions[1]||[]).slic
 function yutClearMotion(){yutMotion.forEach(clearTimeout);yutMotion=[];}
 function ensureYutBoard(){
 	var board=$('#YutBoard');if(board.length)return board;
-	board=$('<section id="YutBoard"><header><b>윷놀이</b><span id="YutRoll">끝말잇기에 성공하면 윷을 던집니다.</span></header><div class="yut-track"><svg class="yut-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M8 8H92V92H8Z M8 8L92 92 M92 8L8 92"/></svg><span class="yut-center-mark">●</span></div><div class="yut-score"><span class="team-one">분홍 팀 <b>0개 도착</b><i class="yut-finished" data-team="1"></i></span><span class="team-two">노랑 팀 <b>0개 도착</b><i class="yut-finished" data-team="2"></i></span></div></section>');
+	board=$('<section id="YutBoard"><header><b>'+(ENGLISH_UI?'Yut Nori':'윷놀이')+'</b><span id="YutRoll">'+(ENGLISH_UI?'Complete the Korean word chain to throw the yut.':'끝말잇기에 성공하면 윷을 던집니다.')+'</span></header><div class="yut-track"><svg class="yut-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M8 8H92V92H8Z M8 8L92 92 M92 8L8 92"/></svg><span class="yut-center-mark">●</span></div><div class="yut-score"><span class="team-one">'+(ENGLISH_UI?'Pink Team ':'분홍 팀 ')+'<b>'+(ENGLISH_UI?'0 finished':'0개 도착')+'</b><i class="yut-finished" data-team="1"></i></span><span class="team-two">'+(ENGLISH_UI?'Yellow Team ':'노랑 팀 ')+'<b>'+(ENGLISH_UI?'0 finished':'0개 도착')+'</b><i class="yut-finished" data-team="2"></i></span></div></section>');
 	if($data.admin){
-		var admin=$('<div class="yut-admin-roll"><button type="button" class="yut-admin-toggle">🔒 비밀 윷</button><div class="yut-admin-options"></div><small>다음 윷 결과: 무작위</small></div>');
+		var admin=$('<div class="yut-admin-roll"><button type="button" class="yut-admin-toggle">'+(ENGLISH_UI?'🔒 Secret Yut':'🔒 비밀 윷')+'</button><div class="yut-admin-options"></div><small>'+(ENGLISH_UI?'Next result: Random':'다음 윷 결과: 무작위')+'</small></div>');
 		[['빽도','backdo'],['도','do'],['개','gae'],['걸','geol'],['윷','yut'],['모','mo']].forEach(function(item){admin.find('.yut-admin-options').append($('<button type="button">').text(item[0]).attr('data-roll',item[1]).on('click',function(){send('yutForceRoll',{roll:item[1]});}));});
 		admin.find('.yut-admin-toggle').on('click',function(){admin.toggleClass('is-open');});board.append(admin);
 	}
@@ -2377,7 +2391,7 @@ function drawYut(state){
 	var board=ensureYutBoard(),positions=state.positions;board.find('.yut-stack').remove();board.find('.yut-finished').empty();
 	[1,2].forEach(function(team){var pieces=Array.isArray(positions[team])?positions[team]:[];var groups={};pieces.forEach(function(step){if(step>0&&step!==20)(groups[step]||(groups[step]=[])).push(step);});
 		Object.keys(groups).forEach(function(step){var cell=board.find('[data-step="'+step+'"]'),stack=$('<span class="yut-stack team-'+team+'" aria-label="'+(team===1?'분홍':'노랑')+' 말 '+groups[step].length+'개"></span>');groups[step].forEach(function(){stack.append('<em class="yut-token"></em>');});cell.append(stack);});
-		var finished=pieces.filter(function(step){return step===20;}).length;board.find('.team-'+(team===1?'one':'two')+' b').text(finished+'개 도착');for(var i=0;i<finished;i++)board.find('.yut-finished[data-team="'+team+'"]').append($('<em class="yut-token team-'+team+'"></em>'));
+		var finished=pieces.filter(function(step){return step===20;}).length;board.find('.team-'+(team===1?'one':'two')+' b').text(ENGLISH_UI?finished+' finished':finished+'개 도착');for(var i=0;i<finished;i++)board.find('.yut-finished[data-team="'+team+'"]').append($('<em class="yut-token team-'+team+'"></em>'));
 	});yutShownState=yutCopy(state);
 }
 function animateYut(data){
@@ -2387,27 +2401,26 @@ function animateYut(data){
 	yutMotion.push(setTimeout(function(){drawYut(result);},(path.length-1)*360+450));
 }
 $lib.Yut.roundReady=function(data){yutClearMotion();$lib.Classic.roundReady(data);$('body').addClass('yut-mode');drawYut(data.yut);};
-$lib.Yut.turnStart=function(data){yutClearMotion();$lib.Classic.turnStart(data);drawYut(data.yut);$('#YutRoll').text('「'+data.char+'」로 시작하는 낱말을 입력하세요.');};
+$lib.Yut.turnStart=function(data){yutClearMotion();$lib.Classic.turnStart(data);drawYut(data.yut);$('#YutRoll').text(ENGLISH_UI?'Enter a Korean word beginning with 「'+data.char+'」.':'「'+data.char+'」로 시작하는 낱말을 입력하세요.');};
 $lib.Yut.turnGoing=$lib.Classic.turnGoing;
 $lib.Yut.yutThrow=function(data){
 	clearInterval($data._tTime);
 	if($data._turnSound)$data._turnSound.stop();
 	$stage.game.hereText.prop('readOnly',true);
-	$('#YutBoard .yut-admin-roll [data-roll]').removeClass('is-selected');$('#YutBoard .yut-admin-roll small').text('다음 윷 결과: 무작위');
+	$('#YutBoard .yut-admin-roll [data-roll]').removeClass('is-selected');$('#YutBoard .yut-admin-roll small').text(ENGLISH_UI?'Next result: Random':'다음 윷 결과: 무작위');
 	var board=ensureYutBoard(),thrower=$('<div class="yut-throw" aria-label="윷 던지는 중"><div class="yut-sticks"><span></span><span></span><span></span><span></span></div><strong>'+data.roll+'!</strong></div>');
 	board.find('.yut-throw').remove();board.append(thrower);setTimeout(function(){thrower.addClass('show-result');},850);setTimeout(function(){thrower.remove();},1350);
-	$('#YutRoll').text((data.team===1?'분홍':'노랑')+' 팀이 윷을 던집니다!');
+	$('#YutRoll').text(ENGLISH_UI?(data.team===1?'Pink':'Yellow')+' Team throws the yut!':(data.team===1?'분홍':'노랑')+' 팀이 윷을 던집니다!');
 };
-$lib.Yut.turnEnd=function(id,data){$lib.Classic.turnEnd(id,data);animateYut(data);if(data.yut)$('#YutRoll').text(data.yut.noThrow?'시간 초과 · 윷을 던지지 못했습니다.':(data.yut.backDo?'빽도 · 출발 말은 19번 칸으로 이동':(data.yut.roll+' · '+data.yut.move+'칸 이동'))+(data.yut.captured?' · 상대 말 잡기!':'')+(data.yut.oneShot?' · 한방 단어, 다음 차례로 이동':(data.yut.extra?' · 한 번 더!':'')));};
-$lib.Yut.yutWin=function(data){$('#YutRoll').text((data.team===1?'분홍':'노랑')+' 팀 승리!');};
+$lib.Yut.turnEnd=function(id,data){$lib.Classic.turnEnd(id,data);animateYut(data);if(data.yut)$('#YutRoll').text(ENGLISH_UI?(data.yut.noThrow?'Time out · No yut throw':(data.yut.backDo?'Back-do · Starting piece moves to space 19':(data.yut.roll+' · Move '+data.yut.move+' spaces'))+(data.yut.captured?' · Captured an opponent!':'')+(data.yut.oneShot?' · One-shot word, next turn':(data.yut.extra?' · Throw again!':''))):(data.yut.noThrow?'시간 초과 · 윷을 던지지 못했습니다.':(data.yut.backDo?'빽도 · 출발 말은 19번 칸으로 이동':(data.yut.roll+' · '+data.yut.move+'칸 이동'))+(data.yut.captured?' · 상대 말 잡기!':'')+(data.yut.oneShot?' · 한방 단어, 다음 차례로 이동':(data.yut.extra?' · 한 번 더!':''))));};
+$lib.Yut.yutWin=function(data){$('#YutRoll').text(ENGLISH_UI?(data.team===1?'Pink':'Yellow')+' Team wins!':(data.team===1?'분홍':'노랑')+' 팀 승리!');};
 $lib.Yut.yutForceRoll=function(data){var box=$('#YutBoard .yut-admin-roll');box.addClass('is-open').find('[data-roll]').removeClass('is-selected').filter('[data-roll="'+data.roll+'"]').addClass('is-selected');box.find('small').text('다음 윷 결과: '+data.name);};
 $lib.Yut.yutChoice=function(data){
-	$('#YutChoice').remove();var moveText=data.move<0?'출발 전 말은 19번 칸으로 이동합니다.':data.move+'칸을 어떻게 이동할까요?';var box=$('<div id="YutChoice"><div class="yut-choice-card"><b>'+data.roll+'! '+moveText+'</b><p>9초 안에 이동할 말을 선택하세요.</p><div class="yut-choice-buttons"></div></div></div>');
+	$('#YutChoice').remove();var moveText=ENGLISH_UI?(data.move<0?'A starting piece moves to space 19.':'Choose how to move '+data.move+' spaces.'):(data.move<0?'출발 전 말은 19번 칸으로 이동합니다.':data.move+'칸을 어떻게 이동할까요?');var box=$('<div id="YutChoice"><div class="yut-choice-card"><b>'+data.roll+'! '+moveText+'</b><p>'+(ENGLISH_UI?'Choose a piece within 9 seconds.':'9초 안에 이동할 말을 선택하세요.')+'</p><div class="yut-choice-buttons"></div></div></div>');
 	var buttons=box.find('.yut-choice-buttons');function option(label,choice){buttons.append($('<button>').text(label).on('click',function(){send('yutMove',{choice:choice});box.remove();}));}
-	if(data.canAdd)option('＋ 새 말 추가','new');var seen={};(data.pieces||[]).forEach(function(piece){if(seen[piece.position])return;seen[piece.position]=true;var group=data.pieces.filter(function(other){return other.position===piece.position;}).length;option((piece.index+1)+'번 말'+(group>1?' '+group+'개 묶음':'')+' 이동 · 현재 '+piece.position+'칸',{piece:piece.index,shortcut:false});if(piece.position===5||piece.position===10)option('↗ '+(piece.index+1)+'번 말 지름길로 이동',{piece:piece.index,shortcut:true});});
+	if(data.canAdd)option(ENGLISH_UI?'＋ Add a new piece':'＋ 새 말 추가','new');var seen={};(data.pieces||[]).forEach(function(piece){if(seen[piece.position])return;seen[piece.position]=true;var group=data.pieces.filter(function(other){return other.position===piece.position;}).length;option(ENGLISH_UI?'Move piece '+(piece.index+1)+(group>1?' (stack of '+group+')':'')+' · space '+piece.position:(piece.index+1)+'번 말'+(group>1?' '+group+'개 묶음':'')+' 이동 · 현재 '+piece.position+'칸',{piece:piece.index,shortcut:false});if(piece.position===5||piece.position===10)option(ENGLISH_UI?'↗ Piece '+(piece.index+1)+' shortcut':'↗ '+(piece.index+1)+'번 말 지름길로 이동',{piece:piece.index,shortcut:true});});
 	$('body').append(box);
 };
-
 
 /**
  * Rule the words! KKuTu Online
@@ -2486,6 +2499,18 @@ function showDialog($d, noToggle){
 		});
 		return true;
 	}
+}
+function showProfanityWarning(){
+	$('#ProfanityWarning').remove();
+	var $box=$('<div id="ProfanityWarning"><section><h2>⚠️ 채팅 이용 경고</h2><p>저희 끄투게임즈코리아는 욕설을 금지하고 있습니다.</p><p class="profanity-rule">현재 경고 1회가 누적되었습니다. 욕설이 한 번 더 감지되면 IP가 차단됩니다.</p><label><input type="checkbox"> <b>이해하였습니다.</b></label><button type="button" disabled>확인</button></section></div>').appendTo('body');
+	var $check=$box.find('input'),$button=$box.find('button');
+	$check.on('change',function(){ $button.prop('disabled',!this.checked); });
+	$button.on('click',function(){
+		if(!$check.is(':checked')) return;
+		send('profanityAcknowledge',{},true);
+		if(rws) send('profanityAcknowledge',{},false);
+		$box.remove();
+	});
 }
 function defaultSettingsOptions(){
 	return {
@@ -2647,8 +2672,8 @@ function route(func, a0, a1, a2, a3, a4){
 	if(!$data.room) return;
 	var r = RULE[MODE[$data.room.mode]];
 	
-	if(!r) return null;
-	$lib[r.rule][func].call(this, a0, a1, a2, a3, a4);
+	if(!r || !$lib[r.rule] || typeof $lib[r.rule][func] !== 'function') return null;
+	return $lib[r.rule][func].call(this, a0, a1, a2, a3, a4);
 }
 function connectToRoom(chan, rid){
 	/* Keep room workers on the public HTTPS origin.  This avoids blocked
@@ -2664,6 +2689,7 @@ function connectToRoom(chan, rid){
 	
 	if(rws) return;
 	rws = new _WebSocket(url);
+ var roomSocket = rws;
 	
 	loading(L['connectToRoom'] + "\n<center><button id='ctr-close'>" + L['ctrCancel'] + "</button></center>");
 	$("#ctr-close").on('click', function(){
@@ -2673,10 +2699,15 @@ function connectToRoom(chan, rid){
 	rws.onopen = function(e){
 		console.log("room-conn", chan, rid);
 	};
-	rws.onmessage = _onMessage;
+	rws.onmessage = function(e){
+  if(rws !== roomSocket) return;
+  var message = JSON.parse(e.data);
+  if(/^(roundReady|turnStart|turnEnd|turnHint|turnError|roundEnd|playerHints|draftChecked|yut)/.test(message.type) && (!$data.room || String($data.room.id) !== String(rid))) return;
+  onMessage(message);
+ };
 	rws.onclose = function(e){
 		console.log("room-disc", chan, rid);
-		rws = undefined;
+		if(rws === roomSocket) rws = undefined;
 	};
 	rws.onerror = function(e){
 		console.warn(L['error'], e);
@@ -2794,7 +2825,7 @@ function onMessage(data){
 				var savedRoomId = getRefreshRoom();
 				if(savedRoomId !== undefined && $data.rooms[savedRoomId]){
 					addTimeout(function(){ tryJoin(savedRoomId); }, 350);
-				}else if(location.hash[1]) tryJoin(location.hash.slice(1));
+				}else if(location.hash[1] && !/^(?:ko_KR|en_US|zh_CN|ko_KP)$/.test(location.hash.slice(1))) tryJoin(location.hash.slice(1));
 			}
 			/* The welcome transition must not be held hostage by a secondary
 			 * lobby widget.  Show the playable shell first, then refresh lists. */
@@ -2856,6 +2887,7 @@ function onMessage(data){
 		case 'discordChat':
 			// Treat Discord text as plain text, with no profile actions or HTML links.
 			stackChat();
+			if(window.markChatUnread) markChatUnread('main');
 			$("#Chat,#chat-log-board").append($("<div>").addClass("chat-item").attr("data-chat-scope", "main")
 				.append($("<div>").addClass("chat-body").text('디스코드:' + data.name + ':' + data.value))
 				.append($("<div>").addClass("chat-stamp").text(new Date(data.timestamp || Date.now()).toLocaleTimeString())));
@@ -2865,8 +2897,18 @@ function onMessage(data){
 			if(data.notice){
 				notice(L['error_' + data.code]);
 			}else{
-				chat(data.profile || { title: '끄투 봇' }, data.value, data.from, data.timestamp, data.scope);
+				chat(data.profile || { title: '끄투 봇' }, data.value, data.from, data.timestamp, data.scope, data.reportId, data.authorId);
 			}
+			break;
+		case 'chatReportResult':
+			notice(data.message || (data.ok ? '신고가 접수되었습니다.' : '신고하지 못했습니다.'));
+			break;
+		case 'profanityWarning':
+			showProfanityWarning();
+			break;
+		case 'profanityBanned':
+			alert('욕설 경고가 2회 누적되어 IP 차단되었습니다. 운영자에게 문의해 주세요.');
+			location.replace('/');
 			break;
 		case 'roomStuck':
 			rws.close();
@@ -2972,8 +3014,9 @@ function onMessage(data){
 			$data._dailyQuest = data;
 			if(window.renderDailyQuests) window.renderDailyQuests(data);
 			break;
-		case 'dailySpin':
-			if(window.renderDailySpin)window.renderDailySpin(data);
+		case 'adminAutoWord':
+			if(data.ok && data.word) notice('테스트 자동 입력: ' + data.word);
+			else if(data.message) notice(data.message);
 			break;
 		case 'yutWin':
 			route("yutWin", data);
@@ -3116,27 +3159,27 @@ function onMessage(data){
 				i = data.message;
 				if(i.indexOf("생년월일") != -1){
 					alert("생년월일이 올바르게 입력되지 않아 게임 이용이 제한되었습니다. 잠시 후 다시 시도해 주세요.");
-					break;
+					return location.replace('/');
 				}
 			/* Enhanced User Block System [S] */
-				if(!data.blockedUntil) break;
+				if(!data.blockedUntil){ alert("[#444] " + L['error_444'] + i); return location.replace('/'); }
 				
 				var blockedUntil = new Date(parseInt(data.blockedUntil));
 				var block = "\n제한 시점: " + blockedUntil.getFullYear() + "년 " + blockedUntil.getMonth() + 1 + "월 " +
 				blockedUntil.getDate() + "일 " + blockedUntil.getHours() + "시 " + blockedUntil.getMinutes() + "분까지";
 				
 				alert("[#444] " + L['error_444'] + i + block);
-				break;
+				return location.replace('/');
 			}else if(data.code == 446){
 				i = data.reasonBlocked;
-				if(!data.ipBlockedUntil) break;
+				if(!data.ipBlockedUntil){ alert("[#446] " + L['error_446'] + i); return location.replace('/'); }
 				
 				var blockedUntil = new Date(parseInt(data.ipBlockedUntil));
 				var block = "\n제한 시점: " + blockedUntil.getFullYear() + "년 " + blockedUntil.getMonth() + 1 + "월 " +
 				blockedUntil.getDate() + "일 " + blockedUntil.getHours() + "시 " + blockedUntil.getMinutes() + "분까지";
 				
 				alert("[#446] " + L['error_446'] + i + block);
-				break;
+				return location.replace('/');
 			/* Enhanced User Block System [E] */
 			} else if (data.code === 447) {
 				alert("자동화 봇 방지를 위한 캡챠 인증에 실패했습니다. 메인 화면에서 다시 시도해 주세요.");
@@ -3308,7 +3351,7 @@ function processRoom(data){
 				$data.practicing = false;
 				$data._gaming = false;
 				$stage.box.room.height(360);
-				playBGM('lobby');
+				// updateUI starts lobby music after the old room state is cleared.
 			}
 			$data.users[$data.id].game.ready = false;
 			$data.users[$data.id].game.team = 0;
@@ -3396,6 +3439,7 @@ function processRoom(data){
 			$data.setRoom(data.room.id, data.room);
 			for(i in data.room.readies){
 				if(!$data.users[i]) continue;
+				$data.users[i].game.form = data.room.readies[i].f;
 				$data.users[i].game.ready = data.room.readies[i].r;
 				$data.users[i].game.team = data.room.readies[i].t;
 			}
@@ -3485,13 +3529,14 @@ function updateUI(myRoom, refresh){
 	}
 	$data._only = only;
 	$('body').attr('data-game-view', only);
+ if(window.syncChatGeometry) window.syncChatGeometry();
 	if(only !== 'for-gaming' && !$data.muteBGM) playBGM('lobby');
 	$('body').toggleClass('modern-classic', only === 'for-gaming' && $data.room && String(RULE[MODE[$data.room.mode]].rule).toLowerCase() === 'classic');
 	$('body').toggleClass('ranked-match', only === 'for-gaming' && $data.room && $data.room.ranked === true);
 	$('body').toggleClass('waiting-room', only === 'for-master' || only === 'for-normal');
 	syncGameStageScale();
 	if(only !== 'for-gaming') $data._wordInputMode = null;
-	$('#RoomAddBot').toggle(only === 'for-master');
+
 	$('#RoomSpectateAction').toggle(only === 'for-master' || only === 'for-normal');
 	$('#RoomSettingsAction').toggle(only === 'for-master');
 	$('#RoomInviteAction, #RoomBotAction').toggle(only === 'for-master');
@@ -3499,6 +3544,7 @@ function updateUI(myRoom, refresh){
 	$('#RoomReadyAction').toggle(only === 'for-normal');
 	setLocation($data.place);
  if(window.syncChatTabs) syncChatTabs();
+ if(window.syncLobbySocialDock) syncLobbySocialDock();
  if(only === 'for-lobby' && $data.pendingInvite){var invite=$data.pendingInvite;delete $data.pendingInvite;send('inviteRes',{from:invite,res:true},true);}
 	$(".kkutu-menu ."+only).show();
 	$('#QuickRoomBtn.'+only+', .detached-menu.'+only).show();
@@ -3632,10 +3678,10 @@ function updateUserList(refresh){
 	}
 	var serverName = L['server_' + $data.server] || ($data.server == 1 ? '유리' : '나무');
 	var userListLabel = L['UserList'] || '접속자 목록';
-	$stage.lobby.userListTitle.html("<i class='fa fa-users'></i>"
-		+ "&lt;<b>" + serverName + "</b>&gt; "
-		+ userListLabel.replace("FA{users}", "")
-		+ " [" + len + (L['MN'] || '명') + "]");
+	$stage.lobby.userListTitle.empty().append($('<span class="visitor-brand">').append($('<img>').attr({src:'/img/custom/chat-brand-white.png',alt:'끄투',draggable:'false'}))).append($('<span class="visitor-heading">').text('방문자목록'));
+ var $visitorCount=$stage.box.userList.children('.visitor-count');
+ if(!$visitorCount.length)$visitorCount=$('<div class="visitor-count">').insertAfter($stage.lobby.userListTitle);
+ $visitorCount.text('방문자수: '+len+'명');
 	
 	if(refresh){
 		$stage.lobby.userList.empty();
@@ -3648,13 +3694,14 @@ function updateUserList(refresh){
 			if(o.place == 0) $stage.dialog.inviteList.append(userListBar(o, true));
 		}
 	}
+ if(window.fitVisitorNames) window.fitVisitorNames();
 }
 function userListBar(o, forInvite){
 	var $R;
 	
 	if(forInvite){
 		$R = $("<div>").attr('id', "invite-item-"+o.id).addClass("invite-item users-item")
-		.append($("<div>").addClass("jt-image users-image").css('background-image', "url('"+o.profile.image+"')"))
+		.append($("<div>").addClass("jt-image users-image").css('background-image', safeImageBackground(o.profile.image)))
 		.append(getLevelImage(o.data.score).addClass("users-level"))
 		// .append($("<div>").addClass("jt-image users-from").css('background-image', "url('/img/kkutu/"+o.profile.type+".png')"))
 		.append($("<div>").addClass("users-name").html(o.profile.title || o.profile.name))
@@ -3663,7 +3710,7 @@ function userListBar(o, forInvite){
 		});
 	}else{
 		$R = $("<div>").attr('id', "users-item-"+o.id).addClass("users-item")
-		.append($("<div>").addClass("jt-image users-image").css('background-image', "url('"+o.profile.image+"')"))
+		.append($("<div>").addClass("jt-image users-image").css('background-image', safeImageBackground(o.profile.image)))
 		.append(getLevelImage(o.data.score).addClass("users-level"))
 		// .append($("<div>").addClass("jt-image users-from").css('background-image', "url('/img/kkutu/"+o.profile.type+".png')"))
 		.append($("<div>").addClass("users-name ellipse").html(o.profile.title || o.profile.name))
@@ -3671,8 +3718,13 @@ function userListBar(o, forInvite){
 			requestProfile($(e.currentTarget).attr('id').slice(11));
 		});
 	}
+	if(!forInvite){
+  $R.find('.users-image').text(o.profile.image ? '' : '?');
+  $R.append($('<span class="visitor-level">').text('Lv.'+getLevel(o.data.score)));
+  var name=String(o.profile.title || o.profile.name || '손님');
+  $R.find('.users-name').text(name).attr('title',name).get(0).style.setProperty('font-size',Math.max(12,22-Math.max(0,name.length-7)*.75)+'px','important');
+ }
 	addonNickname($R, o);
-	
 	return $R;
 }
 function addonNickname($R, o){
@@ -3684,7 +3736,17 @@ function addonNickname($R, o){
 function addDeveloperBadge($name, profile){
 	if(!profile) return;
 	$name.each(function(){
-		var src = profile.adminBadge || '';
+		var $label=$(this);
+		var developerName = String(profile.title || profile.name || '');
+		var isDeveloperName = profile.developer === true || /^\[GM\]/.test(developerName);
+        if(isDeveloperName){
+            if(!$label.children('.developer-name-text').length){
+                var $text=$('<span class="developer-name-text">').text(developerName);
+                $label.contents().filter(function(){return this.nodeType===3;}).remove();
+                $label.prepend($text);
+            }else $label.children('.developer-name-text').text(developerName);
+        }else $label.children('.developer-name-text').each(function(){$(this).replaceWith(document.createTextNode($(this).text()));});
+        var src = profile.adminBadge || '';
 		if(src && !$(this).children('.moremi-developer-badge').length) $(this).append($('<img>').attr({src:src,alt:'사용자 배지',title:'배지'}).addClass('moremi-developer-badge'));
 	});
 }
@@ -3776,8 +3838,9 @@ function miniGameUserBar(o){
 	return $R;
 }
 function getAIProfile(level){
+	var names = ['초보끄투봇', '일반끄투봇', '고수끄투봇', '고인물끄투봇', '핵끄투봇'];
 	return {
-		title: '끄투 봇',
+		title: names[Math.max(0, Math.min(4, Number(level) || 0))],
 		image: "/img/kkutu/robot.png?v=20260906-mascot-2"
 	};
 }
@@ -3862,7 +3925,7 @@ function updateRoom(gaming){
 		rendered = {};
 		entries = [];
 		if($data.room.game && $data.room.game.seq) entries = entries.concat($data.room.game.seq);
-		if($data.room.players) entries = entries.concat($data.room.players);
+		if(!entries.length && $data.room.players) entries = entries.concat($data.room.players);
 		for(i in entries){
 			if($data._replay){
 				o = $rec.users[participantKey(entries[i])] || entries[i];
@@ -3871,9 +3934,8 @@ function updateRoom(gaming){
 			}
 			appendGameParticipant($r, o, renderer, rendered);
 		}
-		/* Always retain the local player card while room snapshots catch up.
-		 * This is required for both normal games and practice games. */
-		if($data.users[$data.id]) appendGameParticipant($r, $data.users[$data.id], renderer, rendered);
+		/* Keep the local card only when the local user is a participant. */
+		if(entries.some(function(entry){ return participantKey(entry) === $data.id; }) && $data.users[$data.id]) appendGameParticipant($r, $data.users[$data.id], renderer, rendered);
 		clearTimeout($data._jamsu);
 		delete $data._jamsu;
 	}else{
@@ -4000,7 +4062,7 @@ function animateScore(o){
 	drawScore(o.$obj, Math.round(o.now));
 }
 function drawScore($obj, score){
-	var i, sc = (score > 99999) ? (zeroPadding(Math.round(score * 0.001), 4) + 'k') : zeroPadding(score, 5);
+	var i, sc = score < 0 ? ('-' + Math.abs(Math.round(score))) : ((score > 99999) ? (zeroPadding(Math.round(score * 0.001), 4) + 'k') : zeroPadding(score, 5));
 	
 	$obj.empty();
 	for(i=0; i<sc.length; i++){
@@ -4108,8 +4170,8 @@ function drawMyGoods(avGroup){
 		var equippedFont = !!equip.font_dunggeunmo;
 		var $fontItem = $("<div>").addClass("dress-item font-dunggeunmo-item" + (equippedFont ? " dress-equipped" : ""));
 		var $fontExpl = $("<div>").addClass("dress-expl");
-		$fontItem.append($("<div>").addClass("dress-item-image font-dunggeunmo-preview").text("끄투게임").append($("<span>").addClass("inventory-qty").text("x" + Number($data.box.font_dunggeunmo || 0))));
-		$fontExpl.append($("<div>").addClass("dress-item-title").text("둥근모 글꼴" + (equippedFont ? " (장착됨)" : "")));
+		$fontItem.append($("<div>").addClass("dress-item-image font-dunggeunmo-preview").text("끄투게임즈코리아").append($("<span>").addClass("inventory-qty").text("x" + Number($data.box.font_dunggeunmo || 0))));
+		$fontExpl.append($("<div>").addClass("dress-item-title").text("끄투 글꼴" + (equippedFont ? " (장착됨)" : "")));
 		$fontExpl.append($("<div>").addClass("dress-item-group").text("글꼴"));
 		$fontExpl.append($("<div>").addClass("dress-item-expl").text("게임에서 써지는 글씨의 폰트를 바꿔줍니다."));
 		$fontItem.append($fontExpl).on('click', function(){
@@ -4119,7 +4181,7 @@ function drawMyGoods(avGroup){
 					if(res.equipped) equip.font_dunggeunmo = true;
 					else delete equip.font_dunggeunmo;
 					$('body').toggleClass('dunggeunmo-font', !!res.equipped);
-					notice(res.equipped ? '둥근모 글꼴을 장착했습니다.' : '둥근모 글꼴을 해제했습니다.');
+					notice(res.equipped ? '끄투 글꼴을 장착했습니다.' : '끄투 글꼴을 해제했습니다.');
 					drawMyDress($data._avGroup);
 					send('refresh');
 			});
@@ -4189,7 +4251,7 @@ function drawCharFactory(){
 			word += item.slice(4);
 			level += LEVEL[item.slice(1, 4)];
 			$tray.append($("<div>").addClass("jt-image")
-				.css('background-image', "url(" + gd.image + ")")
+				.css('background-image', safeImageBackground(gd.image))
 				.attr('id', "cf-tray-" + item)
 				.on('click', onTrayClick)
 			);
@@ -4225,7 +4287,7 @@ function drawCharFactory(){
 				
 				$rew.append($("<div>").addClass("cf-rew-item")
 					.append($("<div>").addClass("jt-image cf-rew-image")
-						.css('background-image', "url(" + bd.image + ")")
+						.css('background-image', safeImageBackground(bd.image))
 					)
 					.append($("<div>").width(100)
 						.append($("<div>").width(100).html(bd.name))
@@ -4378,15 +4440,19 @@ function requestProfile(id){
 			.append($("<div>").addClass("expl").css({ 'white-space': "normal", 'width': 300, 'font-size': "11px" }).text(o.exordial))
 		);
 	if(o.robot){
-		$stage.dialog.profileLevel.show();
-		$stage.dialog.profileLevel.prop('disabled', $data.id != $data.room.master);
+		o.profile = getAIProfile(o.level || 0);
+		$stage.dialog.profileLevel.text('난이도 설정');
+		$stage.dialog.profileLevel.toggle(!!$data.room && $data.id == $data.room.master);
+		$stage.dialog.profileLevel.prop('disabled', false);
+		$('#robot-level').val(String(Math.max(0, Math.min(4, Number(o.level) || 0))));
+		$('#robot-team').val(String(o.game && Number(o.game.team) || 0));
 		$("#profile-place").html($data.room.id + L['roomNumber']);
 	}else{
 		$stage.dialog.profileLevel.hide();
 		$("#profile-place").html(o.place ? (o.place + L['roomNumber']) : L['lobby']);
 		for(i in (o.data.record || {})){
 			var r = o.data.record[i] || [], modeKey = MODE[i] || i;
-			var modeNames = {EKT:'영어 끄투',ESH:'영어 끝말잇기',KKT:'한국어 쿵쿵따',KSH:'한국어 끝말잇기',KAW:'아무말잇기',CSQ:'자음퀴즈',KCW:'한국어 십자말풀이',KTY:'한국어 타자 대결',ETY:'영어 타자 대결',KAP:'한국어 앞말잇기',HUN:'훈민정음',KDA:'한국어 단어 대결',EDA:'영어 단어 대결',KSS:'한국어 솎솎',ESS:'영어 솎솎'};
+			var modeNames = {EKT:'영어 끄투',ESH:'영어 끝말잇기',KKT:'한국어 쿵쿵따',KSH:'한국어 끝말잇기',KAW:'아무말잇기',KAL:'전체',CSQ:'자음퀴즈',KCW:'한국어 십자말풀이',KTY:'한국어 타자 대결',ETY:'영어 타자 대결',KAP:'한국어 앞말잇기',HUN:'훈민정음',KDA:'한국어 단어 대결',EDA:'영어 단어 대결',KSS:'한국어 솎솎',ESS:'영어 솎솎'};
 			var modeLabel = modeNames[modeKey] || (L && L['mode' + modeKey]) || modeKey || '게임';
 			$rec.append($("<div>").addClass("profile-record-field")
 				.append($("<div>").addClass("profile-field-name").text(modeLabel))
@@ -4413,7 +4479,7 @@ function requestProfile(id){
 	if($data.room){
 		if($data.id != id && $data.id == $data.room.master){
 			$stage.dialog.profileKick.show();
-			$stage.dialog.profileHandover.show();
+			if(!o.robot) $stage.dialog.profileHandover.show();
 		}
 	}
 	showDialog($stage.dialog.profile);
@@ -4436,11 +4502,13 @@ function checkFailCombo(id){
 		if($data.failCombo > 1){
 			send('leave');
 			fail(437);
+            return true;
 		}
 	}else{
 		$data.failCombo = 0;
 	}
 	$data.lastFail = id;
+ return false;
 }
 function clearGame(){
 	if($data._spaced) $lib.Typing.spaceOff();
@@ -4783,6 +4851,71 @@ function drawObtainedScore($uc, $sc){
 function turnEnd(id, data){
 	route("turnEnd", id, data);
 }
+function restoreResultAd(){
+ var $home = $('#ResultAdHome');
+ if($home.length){
+  $('#ResultAdHolder .site-ad-slot').insertBefore($home);
+  $home.remove();
+ }
+}
+function setupResultFooter(){
+ restoreResultAd();
+ var $dialog=$('#ResultDiag'), $footer=$('#ResultFooter');
+ if(!$footer.length){
+  $footer=$('<div>').attr('id','ResultFooter').appendTo($dialog.children('.dialog-body'));
+  $dialog.find('.result-me').appendTo($footer);
+  $dialog.find('.dialog-bar.tail-button').appendTo($footer);
+  $('<div>').attr('id','ResultAdHolder').attr('aria-label','광고').appendTo($footer);
+  $('<img>').addClass('result-brand').attr({src:'/img/custom/site-logo-ko.png',alt:'끄투게임즈코리아'}).prependTo($footer.find('.result-me'));
+ }
+ $dialog.toggleClass('result-guest',!!$data.guest);
+ $dialog.find('#result-ok').text('계속');
+ $dialog.find('.result-me-level-head').text('Lv.');
+ if($data.guest){
+  var $ad=$('.site-ad-slot[data-ad-placement="game"]').first();
+  if($ad.length){
+   $('<span>').attr('id','ResultAdHome').hide().insertBefore($ad);
+   $ad.appendTo('#ResultAdHolder');
+  }
+ }
+}
+function renderMatchResultScene(result, data){
+ var $dialog = $('#ResultDiag').addClass('match-result-screen');
+ $dialog.children('.dialog-head').find('.dialog-title').text('결과');
+ $dialog.find('.match-result-scene').remove();
+ var rows = result.map(function(r){
+  var u = ($data._replay ? $rec.users[r.id] : $data.users[r.id]) || $data.robots[r.id] || NULL_USER;
+  return {id:r.id, score:Number(r.score)||0, user:u};
+ });
+ // Robots are not included in the server's reward list, but belong on the podium.
+ var seq = ($data.room && $data.room.game && $data.room.game.seq) || [];
+ seq.forEach(function(entry){
+  var id = typeof entry === 'object' ? entry.id : entry;
+  var u = $data.robots[id];
+  if(u && !rows.some(function(r){return r.id === id;})) rows.push({id:id,score:Number(u.game && u.game.score)||0,user:u});
+ });
+ rows.sort(function(a,b){return b.score-a.score;});
+ var $scene = $('<div>').addClass('match-result-scene').prependTo($dialog.children('.dialog-body'));
+ $('<div>').addClass('match-result-meta').text($data.room && $data.room.ranked ? '순위전' : '친선전').appendTo($scene);
+ var $table = $('<div>').addClass('match-result-table').attr('role','table').appendTo($scene);
+ $('<div>').addClass('match-result-row match-result-labels').append($('<span>').text('#'),$('<span>').text('플레이어'),$('<span>').text('점수')).appendTo($table);
+ var rank = 0;
+ rows.forEach(function(r,i){
+  if(i === 0 || rows[i-1].score !== r.score) rank = i;
+  var profile = r.user.profile || {};
+  var name = profile.title || profile.name || r.user.name || '끄투 봇';
+  var equip = $.extend({},r.user.equip || {},{robot:!!r.user.robot});
+  var $row = $('<div>').addClass('match-result-row').toggleClass('is-me',r.id===$data.id).appendTo($table);
+  $('<strong>').addClass('match-result-rank').toggleClass('is-winner',rank===0).text(rank===0?'승':(rows.length===2?'패':String(rank+1))).appendTo($row);
+  var $player = $('<div>').addClass('match-result-player').appendTo($row);
+  var $face = $('<div>').addClass('moremi result-avatar').appendTo($player); renderMoremi($face,equip);
+  $('<strong>').text(name).appendTo($player);
+  $('<b>').text(String(r.score)).appendTo($row);
+
+ });
+ setupResultFooter();
+}
+
 function roundEnd(result, data){
 	if(!data) data = {};
 	var i, o, r;
@@ -4866,8 +4999,9 @@ function roundEnd(result, data){
 		notice(L['scoreGain'] + ": " + commify($data._result.reward.score) + ", " + L['moneyGain'] + ": " + commify($data._result.reward.money));
 		$(".result-me").css('opacity', 1);
 		$(".result-me-score").html(L['scoreGain']+" +"+commify($data._result.reward.score)+addit);
-		$(".result-me-money").html(L['moneyGain']+" +"+commify($data._result.reward.money)+addp);
+		$(".result-me-money").text("핑: " + commify(($data.users[$data.id] || {}).money || 0));
 	}
+	renderMatchResultScene(result, data);
 	renderRankResultSummary();
 	function renderRankResultSummary(){
 		var summary = $data._rankResultSummary;
@@ -4911,7 +5045,10 @@ function roundEnd(result, data){
 		draw('bonus', Math.max(0, going - $data._result._boing), 0, $data._result.goal - $data._result.before);
 		
 		$(".result-me-level-body").html($data._result.level);
-		$(".result-me-score-text").html(commify(Math.round($data._result.exp)) + " / " + commify($data._result.goal));
+		var progress = Math.max(0, Math.round($data._result.exp - $data._result.before));
+        var needed = Math.max(1, $data._result.goal - $data._result.before);
+        $(".result-me-score-text").text(commify(progress) + " / " + commify(needed));
+        $(".result-me-gauge").attr({role:'progressbar', 'aria-label':'다음 레벨까지 경험치', 'aria-valuemin':0, 'aria-valuemax':needed, 'aria-valuenow':Math.min(progress,needed)});
 	}
 	function draw(phase, val, before, goal){
 		$(".result-me-" + phase + "-bar").width((val - before) / (goal - before) * 100 + "%");
@@ -4958,6 +5095,7 @@ function roundEnd(result, data){
 	stopRecord();
 }
 function drawRanking(ranks){
+ $('#ResultDiag').removeClass('match-result-screen').find('.match-result-scene').remove();
 	var $b = $(".result-board").empty();
 	var $o, $v;
 	var me;
@@ -5147,7 +5285,7 @@ function getWordMeaningText(mean){
 }
 function updateWordMeaning(text, mean, theme){
 	var $panel = $("#WordMeaning");
-	var definition = getWordMeaningText(mean);
+	var definition = maskDefinitionProfanity(getWordMeaningText(mean));
 	var requestId;
 
 	if(!$panel.length) return;
@@ -5166,7 +5304,7 @@ function updateWordMeaning(text, mean, theme){
 	tryDict(String(text), function(res){
 		var fetched;
 		if($data._wordMeaningRequest !== requestId) return;
-		fetched = res && !res.error ? getWordMeaningText(res.mean) : "";
+		fetched = res && !res.error ? maskDefinitionProfanity(getWordMeaningText(res.mean)) : "";
 		$panel.find(".word-meaning-definition").text(fetched || "등록된 낱말 뜻이 없습니다.");
 		$panel.toggleClass("is-empty", !fetched);
 	});
@@ -5205,6 +5343,8 @@ function alignClosedEyes(){
 	place('.jjoEyeR', '.jjoEyeClosedR');
 }
 function pushDisplay(text, mean, theme, wc, font){
+ if(!$data.room) return;
+ text = maskDefinitionProfanity(text);
 	var len;
 	var mode = MODE[$data.room.mode];
 	var isKKT = mode == "KKT";
@@ -5347,10 +5487,14 @@ function pushHistory(text, mean, theme, wc){
 		);
 	global.expl($v);
 }
+function maskDefinitionProfanity(text){
+	return String(text || "").replace(BAD, function(match){ return new Array(match.length + 1).join("#"); });
+}
 function processNormal(word, mean){
-	return $("<label>").addClass("word").html(mean);
+	return $("<label>").addClass("word").text(maskDefinitionProfanity(mean));
 }
 function processWord(word, _mean, _theme, _wcs){
+	_mean = maskDefinitionProfanity(_mean);
 	if(!_mean || _mean.indexOf("＂") == -1) return processNormal(word, _mean);
 	var $R = $("<label>").addClass("word");
 	var means = _mean.split(/＂[0-9]+＂/).slice(1).map(function(m1){
@@ -5445,11 +5589,11 @@ function getLevelImage(score){
 	});
 }
 function getImage(url){
-	return $("<div>").addClass("jt-image").css('background-image', "url('"+url+"')");
+	return $("<div>").addClass("jt-image").css('background-image', safeImageBackground(url));
 }
 function getOptions(mode, opts, hash){
 	var modeKey = MODE[mode] || mode || '';
-	var modeNames = {EKT:'영어 끄투',ESH:'영어 끝말잇기',KKT:'한국어 쿵쿵따',KSH:'한국어 끝말잇기',KAW:'아무말잇기',CSQ:'자음퀴즈',KCW:'한국어 십자말풀이',KTY:'한국어 타자 대결',ETY:'영어 타자 대결',KAP:'한국어 앞말잇기',HUN:'훈민정음',KDA:'한국어 단어 대결',EDA:'영어 단어 대결',KSS:'한국어 솎솎',ESS:'영어 솎솎'};
+	var modeNames = {EKT:'영어 끄투',ESH:'영어 끝말잇기',KKT:'한국어 쿵쿵따',KSH:'한국어 끝말잇기',KAW:'아무말잇기',KAL:'전체',CSQ:'자음퀴즈',KCW:'한국어 십자말풀이',KTY:'한국어 타자 대결',ETY:'영어 타자 대결',KAP:'한국어 앞말잇기',HUN:'훈민정음',KDA:'한국어 단어 대결',EDA:'영어 단어 대결',KSS:'한국어 솎솎',ESS:'영어 솎솎'};
 	var R = [modeNames[modeKey] || (L && L['mode' + modeKey]) || '게임'];
 	var i, k; opts = opts || {};
 	var dictionaryLabels = {basic:'기본 낱말집',standard:'표준 낱말집',complex:'확장 낱말집'};
@@ -5473,7 +5617,8 @@ function setRoomHead($obj, room){
 	$obj.addClass('branded-room-head');
 	$obj.children('.room-head-number, .room-head-title').wrapAll('<div class="room-head-identity"></div>');
 	$obj.children('h5').wrapAll('<div class="room-head-details"></div>');
-	$obj.append($('<span>').addClass('room-head-brand').text('끄투게임 kkutugame.kro.kr'));
+	$obj.append($('<span>').addClass('room-head-brand').text('끄투게임즈코리아'));
+ if($obj.closest('.RoomBox').length)$obj.prepend($('<div class="room-lobby-heading">').append($('<img>').attr({src:'/img/custom/chat-brand-white.png',alt:'끄투'})).append($('<strong>').text(badWords(room.title))));
 		
 	if(rule.opts.indexOf("ijp") != -1){
 		$rm.append($("<div>").addClass("expl").html("<h5>" + room.opts.injpick.map(function(item){
@@ -5628,10 +5773,19 @@ function playSound(key, loop){
 	return src;
 }
 function stopAllSounds(){
-	stopBGM();
-	var i;
-	
-	for(i in $_sound) $_sound[i].stop();
+    // Full teardown must also clear a theme BGM retained by stopBGM().
+    // Otherwise playBGM mistakes the stopped Web Audio source for a live loop.
+    var sounds = [], key;
+    if($data.bgm) sounds.push($data.bgm);
+    delete $data.bgm;
+    delete $data._pendingBGM;
+    for(key in $_sound){
+        if($_sound[key] && sounds.indexOf($_sound[key]) === -1) sounds.push($_sound[key]);
+        delete $_sound[key];
+    }
+    sounds.forEach(function(sound){
+        try{ if(sound.stop) sound.stop(); }catch(_){ /* An ended source is already silent. */ }
+    });
 }
 function tryJoin(id){
 	var pw;
@@ -5697,7 +5851,7 @@ function chatBalloon(text, id, flag){
 		$obj.animate({ 'opacity': 0 }, 500, function(){ $obj.remove(); });
 	}, 2500);
 }
-function chat(profile, msg, from, timestamp, scope){
+function chat(profile, msg, from, timestamp, scope, reportId, authorId){
 	var time = timestamp ? new Date(timestamp) : new Date();
 	var equip = $data.users[profile.id] ? $data.users[profile.id].equip : {};
 	var $bar, $msg, $item;
@@ -5715,17 +5869,29 @@ function chat(profile, msg, from, timestamp, scope){
 		$bar = ($data.room.gaming ? 2 : 0) + ($(".jjoriping").hasClass("cw") ? 1 : 0);
 		chatBalloon(msg, profile.id, $bar);
 	}
-	$stage.chat.append($item = $("<div>").addClass("chat-item").attr("data-chat-scope", scope || ($data.room ? "room" : "main"))
+	scope = scope || ($data.room ? "room" : "main");
+	if(window.markChatUnread) markChatUnread(scope);
+	if(!from && window.showMentionNotice) showMentionNotice(profile,msg,scope,authorId);
+	$stage.chat.append($item = $("<div>").addClass("chat-item").attr("data-chat-scope", scope)
 		.append($bar = $("<div>").addClass("chat-head ellipse").text(profile.title || profile.name))
 		.append($msg = $("<div>").addClass("chat-body").text(msg))
 		.append($("<div>").addClass("chat-stamp").text(time.toLocaleTimeString()))
 	);
+	authorId = authorId || profile.id;
+	if(reportId && authorId){
+		$item.append($("<button type='button'>").addClass('chat-report-button').text('신고').on('click',function(e){
+			e.stopPropagation();
+			if(!confirm('이 채팅을 운영자에게 신고하시겠습니까?')) return;
+			send('chatReport',{reportId:reportId},scope==='main');
+			$(this).prop('disabled',true).text('신고됨');
+		}));
+	}
 	addDeveloperBadge($bar, profile);
 	if(timestamp) $bar.prepend($("<i>").addClass("fa fa-video-camera"));
 	$bar.on('click', function(e){
 		requestProfile(profile.id);
 	});
-	$stage.chatLog.append($item = $item.clone());
+	$stage.chatLog.append($item = $item.clone(true));
 	$item.append($("<div>").addClass("expl").css('font-weight', "normal").html("#" + (profile.id || "").substr(0, 5)));
 	
 	if(link = msg.match(/https?:\/\/[\w\.\?\/&#%=-_\+]+/g)){
@@ -5794,6 +5960,10 @@ function iName(key){
 function iDesc(key){
 	if(key.charAt() == "$") return L[key.slice(0, 4)][1];
 	else return L[key][1];
+}
+function safeImageBackground(url){
+ if(typeof url !== 'string' || !url.trim() || /^(undefined|null)$/i.test(url)) return 'none';
+ return 'url(' + JSON.stringify(url) + ')';
 }
 function iImage(key, sObj){
 	if(key !== undefined && key !== null && key !== false) key = String(key);
@@ -5906,7 +6076,9 @@ function commify(val){
 	return val;
 }
 function setLocation(place){
-	if(place) location.hash = "#"+place;
+	var locale = (document.cookie.match(/(?:^|;\s*)lc=([^;]+)/) || [])[1] || 'ko_KR';
+	if(/^(?:ko_KR|en_US|zh_CN|ko_KP)$/.test(locale)) location.hash = "#" + locale;
+	else if(place) location.hash = "#"+place;
 	else location.hash = "";
 }
 function fail(code){
@@ -5936,6 +6108,62 @@ function showSocialRequest(kind, data){
  else {var host=$('#SocialRequests');if(!host.length)host=$('<div id="SocialRequests">').appendTo(document.body);card.appendTo(host);}
 }
 
+/* Private friend windows live outside game panels so room transitions do not close them. */
+$(function(){
+ var active=null,records={},oldest=null,hasMore=false,busy=false,historyBusy=false,seen={},friends=[],lastPoll=0,unreadByPeer={};
+ var community=$('<section id="FriendsCommunity" class="friend-window" hidden><header class="friend-window-head"><img src="/img/custom/chat-brand-white.png" alt="끄투"><h2>친구/커뮤니티</h2><button class="friend-close" aria-label="친구 목록 닫기">×</button></header><div class="friend-list"></div><footer><button class="friend-add">친구 추가</button></footer></section>').appendTo('body');
+ var dm=$('<section id="FriendConversation" class="friend-window" hidden><header class="friend-window-head"><img src="/img/custom/chat-brand-white.png" alt="끄투"><div><h2></h2><p>대화는 친구를 삭제하기 전까지 저장됩니다.</p></div><button class="friend-close" aria-label="친구 채팅 닫기">×</button></header><button class="friend-older" hidden>이전 대화 보기</button><div class="friend-messages" role="log" aria-live="polite"></div><p class="friend-error" role="status"></p><form><input maxlength="200" placeholder="채팅 입력" aria-label="친구에게 보낼 메시지"><button type="submit">전송</button></form></section>').appendTo('body');
+ var alerts=$('<div id="FriendAlerts" aria-live="polite"></div>').appendTo('body');
+ var launcher=$('<button id="FriendLauncher" type="button" title="친구 목록"><img src="/img/custom/friends-icon.svg" alt=""><span>친구</span><b class="friend-launcher-unread" hidden></b></button>').appendTo('body');
+ var loginLauncher=$('<button id="GuestLoginLauncher" type="button">로그인</button>').hide().appendTo('body').on('click',function(){if(window.KkutuAccount)window.KkutuAccount.login();else location.href='/?account=login';});
+ var levelRanking=$('<section id="LevelRankingPanel" hidden><header><h2>레벨 랭킹</h2><button type="button" aria-label="랭킹 닫기">×</button></header><p class="level-ranking-status">현재 레벨이 높은 순서로 불러오는 중입니다.</p><div class="level-ranking-list"></div></section>').appendTo('body');
+ var levelRankingButton=$('<button id="LevelRankingBtn" class="for-lobby" type="button" aria-label="레벨 랭킹"><img src="/img/custom/ranking-icon.svg" alt=""><span>랭킹</span></button>').hide().appendTo('.kkutu-menu');
+ function api(path,data){return $.ajax({url:'/api/friend-chat/'+path,method:data?'POST':'GET',contentType:data?'application/json':undefined,data:data?JSON.stringify(data):undefined,headers:{'X-Requested-With':'XMLHttpRequest'}});}
+ function error(e){return e.responseJSON&&e.responseJSON.error||'연결을 확인하고 다시 시도해 주세요.';}
+ function display(panel){panel.appendTo('body').prop('hidden',false);keepOnScreen(panel);}
+ function keepOnScreen(panel){if(panel.prop('hidden'))return;var r=panel[0].getBoundingClientRect();panel.css({left:Math.max(8,Math.min(r.left,innerWidth-r.width-8)),top:Math.max(8,Math.min(r.top,innerHeight-r.height-8))});}
+ function movable(panel,key){var saved;try{saved=JSON.parse(localStorage.getItem(key));}catch(e){}panel.css(saved||{left:Math.max(8,(innerWidth-440)/2),top:Math.max(12,(innerHeight-500)/2)});
+  panel.find('header').on('pointerdown',function(ev){if($(ev.target).closest('button').length)return;var e=ev.originalEvent||ev,r=panel[0].getBoundingClientRect(),x=e.clientX,y=e.clientY;e.preventDefault();this.setPointerCapture(e.pointerId);$(window).on('pointermove.friendDrag',function(ev){var m=ev.originalEvent||ev;panel.css({left:Math.max(8,Math.min(innerWidth-r.width-8,r.left+m.clientX-x)),top:Math.max(8,Math.min(innerHeight-r.height-8,r.top+m.clientY-y))});}).one('pointerup.friendDrag pointercancel.friendDrag',function(){$(window).off('.friendDrag');try{localStorage.setItem(key,JSON.stringify({left:parseFloat(panel.css('left')),top:parseFloat(panel.css('top'))}));}catch(e){}});});
+  panel.find('.friend-close').on('click',function(){panel.prop('hidden',true);});
+ }
+ movable(community,'kkutu-friends-position');movable(dm,'kkutu-dm-position');$(window).on('resize',function(){keepOnScreen(community);keepOnScreen(dm);});
+ function name(id){var f=friends.filter(function(f){return f.id===id;})[0];return f?f.name:($data.friends||{})[id]||'친구';}
+ function renderFriends(){var list=community.find('.friend-list').empty();if(!friends.length)list.append($('<p>').text('등록된 친구가 없습니다. 프로필에서 친구를 추가해 주세요.'));friends.forEach(function(f){var row=$('<div class="friend-row">').appendTo(list);var identity=$('<div class="friend-identity">').appendTo(row);$('<strong>').text(f.name).appendTo(identity);var status=($data._friends||{})[f.id],online=!!($data.users||{})[f.id]||!!(status&&status.server!==false&&status.server!=null);$('<span class="friend-online">').toggleClass('is-online',online).text(online?'온라인':'오프라인').appendTo(identity);$('<button class="friend-open">').text('채팅').appendTo(row).on('click',function(){open(f.id);});$('<button class="friend-delete">').text('삭제').appendTo(row).on('click',function(){if(!confirm(f.name+'님을 친구에서 삭제할까요? 두 사람의 대화 기록도 삭제됩니다.'))return;send('friendRemove',{id:f.id},true);if(active===f.id){active=null;records={};dm.find('.friend-messages').empty();dm.prop('hidden',true);}alerts.children().filter(function(){return $(this).attr('data-peer')===f.id;}).remove();row.remove();setTimeout(poll,500);});});}
+ window.openFriendCommunity=function(){if($data.guest)return fail(451);display(community);poll();};
+ if($stage.menu.community)$stage.menu.community.empty().append($('<img>').attr({src:'/img/custom/friends-icon.svg',alt:''})).append($('<span>').text('친구')).attr('title','친구/커뮤니티').off('click').on('click',window.openFriendCommunity);launcher.on('click',window.openFriendCommunity);
+ community.find('.friend-add').on('click',function(){$stage.dialog.commFriendAdd.trigger('click');});
+ function markerKey(kind,id){return 'kkutu-friend-'+kind+':'+$data.id+':'+id;}
+ function marker(kind,id){try{return localStorage.getItem(markerKey(kind,id))||'0';}catch(e){return '0';}}
+ function newer(a,b){a=String(a);b=String(b);return a.length!==b.length?a.length>b.length:a>b;}
+ function remember(kind,id,last){if(newer(last,marker(kind,id)))try{localStorage.setItem(markerKey(kind,id),String(last));}catch(e){}}
+ function removeAlert(peer){alerts.children('[data-peer]').filter(function(){return $(this).attr('data-peer')===peer;}).remove();}
+ function renderUnread(){var count=Object.keys(unreadByPeer).reduce(function(sum,id){return sum+(Number(unreadByPeer[id])||0);},0),badge=launcher.find('.friend-launcher-unread');badge.text(count>99?'99+':count).prop('hidden',count<1);}
+ function markRead(peer,id){remember('read',peer,id);seen[peer]=id;unreadByPeer[peer]=0;renderUnread();removeAlert(peer);return api('read',{peer:peer,id:id}).fail(function(){dm.find('.friend-error').text('읽음 상태 저장을 다시 시도하고 있습니다.');});}
+ function alertFriend(id,last){if(!newer(last,marker('read',id))||seen[id]===last)return;seen[id]=last;removeAlert(id);var card=$('<section class="friend-toast">').attr('data-peer',id).appendTo(alerts);$('<strong>').text(name(id)+'님에게 채팅이 왔어요').appendTo(card);$('<button class="friend-go">').text('채팅 하러 가기').appendTo(card).on('click',function(){markRead(id,last);open(id);});$('<button class="friend-dismiss">').text('닫기').appendTo(card).on('click',function(){markRead(id,last);});}
+ function open(id){community.prop('hidden',true);if(active!==id){active=id;records={};oldest=null;hasMore=false;dm.find('.friend-messages').empty();}dm.find('h2').text(name(id)+' 채팅');dm.find('.friend-error').empty();display(dm);alerts.children().filter(function(){return $(this).attr('data-peer')===id;}).remove();load(false);dm.find('input').focus();}
+ window.openFriendConversation=open;
+ function paint(){var box=dm.find('.friend-messages'),node=box[0],atBottom=node.scrollHeight-node.scrollTop-node.clientHeight<50;var rows=Object.keys(records).sort(function(a,b){return Number(a)-Number(b);});box.empty();rows.forEach(function(id){var m=records[id],row=$('<div class="friend-message">').appendTo(box);var content=$('<div>').appendTo(row);$('<b>').text(m.sender===$data.id?'나':m.sender_name).appendTo(content);content.append(document.createTextNode(': '+m.body));$('<time>').text(new Date(Number(m.created_at)).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})).appendTo(row);$('<button>').text('신고').appendTo(row).on('click',function(){var button=$(this);if(!confirm('이 메시지를 운영자에게 신고할까요?'))return;api('report',{id:m.id}).done(function(){button.prop('disabled',true).text('신고됨');}).fail(function(e){dm.find('.friend-error').text(error(e));});});});if(atBottom)node.scrollTop=node.scrollHeight;}
+ function load(older){if(!active||dm.prop('hidden')||historyBusy)return;var peer=active;historyBusy=true;var box=dm.find('.friend-messages')[0],height=box.scrollHeight,scroll=box.scrollTop;api('history?peer='+encodeURIComponent(peer)+(older&&oldest?'&before='+oldest:'')).done(function(data){if(active!==peer)return;data.messages.forEach(function(m){records[m.id]=m;});if(older||oldest===null){hasMore=data.hasMore;oldest=data.messages.length?data.messages[0].id:oldest;}paint();if(older)box.scrollTop=scroll+box.scrollHeight-height;dm.find('.friend-older').prop('hidden',!hasMore);if(!dm.prop('hidden')&&!document.hidden){var ids=data.messages.filter(function(m){return m.sender===peer;}).map(function(m){return m.id;});if(ids.length)markRead(peer,ids[ids.length-1]);}}).fail(function(e){if(active!==peer)return;dm.find('.friend-error').text(error(e));if(e.status===403){records={};dm.find('.friend-messages').empty();}}).always(function(){historyBusy=false;});}
+ dm.find('.friend-older').on('click',function(){load(true);});
+ dm.find('input').on('keydown keyup keypress',function(e){e.stopPropagation();if(e.type==='keydown'&&e.key==='Enter'&&(e.isComposing||(e.originalEvent&&e.originalEvent.isComposing)))e.preventDefault();});
+ dm.find('form').on('submit',function(e){e.preventDefault();if(busy||!active)return;var input=dm.find('input'),value=input.val().trim(),peer=active;if(!value)return;busy=true;dm.find('[type=submit]').prop('disabled',true);api('send',{peer:peer,value:value}).done(function(data){if(active!==peer)return;records[data.message.id]=data.message;input.val('');paint();dm.find('.friend-messages').scrollTop(9999999);dm.find('.friend-error').empty();}).fail(function(e){dm.find('.friend-error').text(error(e));}).always(function(){busy=false;dm.find('[type=submit]').prop('disabled',false);});});
+ function isGuest(){var marker=$('#IS_GUEST').text().trim();if(marker==='false')return false;if(marker==='true')return true;return !$data.id||$data.guest===true;}
+ function poll(){var guest=isGuest();launcher.toggle(!guest);loginLauncher.toggle(guest);if(guest){unreadByPeer={};renderUnread();return;}if(Date.now()-lastPoll<1000)return;lastPoll=Date.now();api('inbox').done(function(data){friends=data.friends;unreadByPeer={};renderFriends();if(active&&!friends.some(function(f){return f.id===active;})){active=null;records={};dm.find('.friend-messages').empty();dm.prop('hidden',true);}alerts.children('[data-peer]').each(function(){var id=$(this).attr('data-peer');if(!friends.some(function(f){return f.id===id;}))$(this).remove();});data.inbox.forEach(function(item){var read=marker('read',item.sender);if(!newer(item.last_id,read)){api('read',{peer:item.sender,id:read});removeAlert(item.sender);return;}unreadByPeer[item.sender]=Number(item.unread)||1;if(active===item.sender&&!dm.prop('hidden')&&!document.hidden)load(false);else alertFriend(item.sender,item.last_id);});renderUnread();if(active&&!dm.prop('hidden'))load(false);});}
+ levelRanking.find('header button').on('click',function(){levelRanking.prop('hidden',true);});
+ levelRankingButton.on('click',function(){levelRanking.prop('hidden',false);levelRanking.find('.level-ranking-status').text('현재 레벨이 높은 순서로 불러오는 중입니다.').show();levelRanking.find('.level-ranking-list').empty();$.getJSON('/api/level-ranking').done(function(data){var list=levelRanking.find('.level-ranking-list').empty();(data.list||[]).forEach(function(row){var nickname=String(row.nickname||'이름 없음');$('<div class="level-ranking-row">').append($('<strong class="level-ranking-position">').text(row.rank),$('<span class="level-ranking-name">').text(nickname),$('<b class="level-ranking-level">').text('Lv.'+row.level),$('<small class="level-ranking-score">').text(Number(row.score).toLocaleString()+' 경험치')).appendTo(list);});levelRanking.find('.level-ranking-status').text(list.children().length?'총 '+list.children().length+'명':'랭킹 기록이 없습니다.');}).fail(function(e){levelRanking.find('.level-ranking-status').text(error(e));});});
+ setInterval(function(){var lobby=typeof getOnly==='function'&&getOnly()==='for-lobby';levelRankingButton.css('display',lobby?'inline-flex':'none');if(!lobby)levelRanking.prop('hidden',true);var guest=isGuest();launcher.toggle(!guest);loginLauncher.toggle(guest);},500);
+ $(document).on('visibilitychange',function(){if(!document.hidden){load(false);poll();}});
+ setInterval(poll,2500);poll();
+ window.showMentionNotice=function(profile,text,scope,authorId){
+  if(authorId===$data.id||profile.id===$data.id)return;var me=$data.users&&$data.users[$data.id];if(!me)return;
+  if(scope==='room'&&(!$data.room||!($data.room.players||[]).some(function(p){return (typeof p==='string'?p:p.id)===$data.id;})))return;
+  var n=me.profile&&(me.profile.title||me.profile.name);if(!n)return;var needle='@'+n,index=String(text).indexOf(needle),found=false;while(index>=0){var before=index?text.charAt(index-1):'',after=text.charAt(index+needle.length);if((!before||/\s/.test(before))&&(!after||/[\s.,!?~:;，。！？]/.test(after))){found=true;break;}index=text.indexOf(needle,index+1);}if(!found)return;
+  var card=$('<section class="friend-toast mention-toast">').appendTo(alerts);$('<strong>').text((profile.title||profile.name||'플레이어')+'님이 멘션을 했어요').appendTo(card);$('<span class="mention-scope">').text(scope==='room'?'방채팅':'메인채팅').appendTo(card);$('<button class="friend-dismiss">').text('닫기').appendTo(card).on('click',function(){card.remove();});setTimeout(function(){card.remove();},10000);
+ };
+ var suggestions=$('<div id="MentionSuggestions" role="listbox" aria-label="멘션할 플레이어" hidden>').appendTo('body');
+ $('#Talk')[0].addEventListener('keydown',function(e){if(suggestions.prop('hidden')||e.isComposing)return;var buttons=suggestions.children('button'),selected=buttons.index(buttons.filter('.selected'));if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();e.stopImmediatePropagation();selected=selected<0?(e.key==='ArrowDown'?0:buttons.length-1):(selected+(e.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length;buttons.removeClass('selected').eq(selected).addClass('selected')[0].scrollIntoView({block:'nearest'});}else if(e.key==='Enter'&&buttons.length){e.preventDefault();e.stopImmediatePropagation();buttons.eq(selected<0?0:selected).trigger('pointerdown');}else if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();suggestions.prop('hidden',true);}},true);
+ $('#Talk').on('input.mention',function(){var input=this,pos=input.selectionStart||0,before=input.value.slice(0,pos),match=before.match(/(?:^|\s)@([^@\n]*)$/);suggestions.empty().prop('hidden',true);if(!match)return;var scope=$data.chatScope||'main',query=match[1].toLowerCase(),players=($data.room&&$data.room.players||[]).map(function(p){return typeof p==='string'?p:p.id;});Object.keys($data.users||{}).filter(function(id){return id!==$data.id&&!$data.users[id].robot&&(scope==='main'||players.indexOf(id)>=0);}).map(function(id){var u=$data.users[id];return{id:id,name:u.profile&&(u.profile.title||u.profile.name)};}).filter(function(u){return u.name&&u.name.toLowerCase().indexOf(query)>=0;}).slice(0,8).forEach(function(u){$('<button type="button" role="option">').text('@'+u.name).appendTo(suggestions).on('pointerdown',function(e){e.preventDefault();var start=pos-match[1].length-1;input.value=input.value.slice(0,start)+'@'+u.name+' '+input.value.slice(pos);input.focus();input.setSelectionRange(start+u.name.length+2,start+u.name.length+2);suggestions.prop('hidden',true);});});if(suggestions.children().length){var r=input.getBoundingClientRect();suggestions.css({left:r.left,bottom:innerHeight-r.top+4,width:Math.min(r.width,320)}).prop('hidden',false);}}).on('blur',function(){setTimeout(function(){suggestions.prop('hidden',true);},150);});
+});
 
 /**
  * Rule the words! KKuTu Online

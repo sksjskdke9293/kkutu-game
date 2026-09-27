@@ -22,13 +22,26 @@ const ready = pool.query(`CREATE TABLE IF NOT EXISTS local_accounts (
  title varchar(100) NOT NULL DEFAULT '', message varchar(1000) NOT NULL DEFAULT '',
  image_url varchar(500) NOT NULL DEFAULT '', target_url varchar(500) NOT NULL DEFAULT '', updated_at bigint NOT NULL DEFAULT 0);
  ALTER TABLE site_notices ADD COLUMN IF NOT EXISTS target_url varchar(500) NOT NULL DEFAULT '';
+ ALTER TABLE site_notices ADD COLUMN IF NOT EXISTS image_url_en varchar(500) NOT NULL DEFAULT '';
+ ALTER TABLE site_notices ADD COLUMN IF NOT EXISTS target_url_en varchar(500) NOT NULL DEFAULT '';
+ ALTER TABLE site_notices ADD COLUMN IF NOT EXISTS image_url_zh varchar(500) NOT NULL DEFAULT '';
+ ALTER TABLE site_notices ADD COLUMN IF NOT EXISTS target_url_zh varchar(500) NOT NULL DEFAULT '';
+ ALTER TABLE site_notices ADD COLUMN IF NOT EXISTS image_url_kp varchar(500) NOT NULL DEFAULT '';
+ ALTER TABLE site_notices ADD COLUMN IF NOT EXISTS target_url_kp varchar(500) NOT NULL DEFAULT '';
  CREATE TABLE IF NOT EXISTS notice_posts (id serial PRIMARY KEY, image_url varchar(500) NOT NULL, target_url varchar(500) NOT NULL DEFAULT '', created_at bigint NOT NULL);
+ ALTER TABLE notice_posts ADD COLUMN IF NOT EXISTS image_url_en varchar(500) NOT NULL DEFAULT '';
+ ALTER TABLE notice_posts ADD COLUMN IF NOT EXISTS target_url_en varchar(500) NOT NULL DEFAULT '';
+ ALTER TABLE notice_posts ADD COLUMN IF NOT EXISTS image_url_zh varchar(500) NOT NULL DEFAULT '';
+ ALTER TABLE notice_posts ADD COLUMN IF NOT EXISTS target_url_zh varchar(500) NOT NULL DEFAULT '';
+ ALTER TABLE notice_posts ADD COLUMN IF NOT EXISTS image_url_kp varchar(500) NOT NULL DEFAULT '';
+ ALTER TABLE notice_posts ADD COLUMN IF NOT EXISTS target_url_kp varchar(500) NOT NULL DEFAULT '';
  CREATE TABLE IF NOT EXISTS service_state (state_key varchar(64) PRIMARY KEY, enabled boolean NOT NULL DEFAULT false, updated_at bigint NOT NULL DEFAULT 0);
  CREATE TABLE IF NOT EXISTS server_access (server_index integer NOT NULL, user_id varchar(128) NOT NULL, created_at bigint NOT NULL, PRIMARY KEY(server_index,user_id));
  CREATE TABLE IF NOT EXISTS game_login_owner (user_id varchar(128) PRIMARY KEY, server_index integer NOT NULL, token varchar(160) NOT NULL, updated_at bigint NOT NULL);`);
-const spinReady=ready.then(()=>pool.query(`CREATE TABLE IF NOT EXISTS daily_spins (
- user_id varchar(128) NOT NULL, spin_date date NOT NULL, reward integer NOT NULL,
- created_at bigint NOT NULL, PRIMARY KEY(user_id,spin_date));`));
+const nativeReady=ready.then(()=>pool.query(`CREATE TABLE IF NOT EXISTS native_login_codes (
+ code_hash char(64) PRIMARY KEY, profile jsonb NOT NULL,
+ expires_at bigint NOT NULL, used_at bigint);
+ CREATE INDEX IF NOT EXISTS native_login_codes_expiry ON native_login_codes(expires_at);`));
 ready.catch(()=>console.error('Account storage initialization failed'));
 const limits = new Map();
 setInterval(()=>{ const now=Date.now(); for(const [key,v] of limits) if(v.until<now) limits.delete(key); pool.query('DELETE FROM local_web_sessions WHERE expires_at < $1',[now]).catch(()=>{}); },60000).unref();
@@ -137,40 +150,40 @@ async function removeServerAccess(server,userId){await boot;await pool.query('DE
 async function claimGameLogin(userId,server,token){await boot;await pool.query('INSERT INTO game_login_owner(user_id,server_index,token,updated_at) VALUES($1,$2,$3,$4) ON CONFLICT(user_id) DO UPDATE SET server_index=EXCLUDED.server_index,token=EXCLUDED.token,updated_at=EXCLUDED.updated_at',[String(userId),Number(server),String(token),Date.now()]);return true;}
 async function ownsGameLogin(userId,token){await boot;const r=await pool.query('SELECT 1 FROM game_login_owner WHERE user_id=$1 AND token=$2',[String(userId),String(token)]);return r.rowCount>0;}
 async function releaseGameLogin(userId,token){await boot;await pool.query('DELETE FROM game_login_owner WHERE user_id=$1 AND token=$2',[String(userId),String(token)]);return true;}
-async function getDailySpin(userId){
- await spinReady;
- const date=new Date(Date.now()+9*3600000).toISOString().slice(0,10);
- const result=await pool.query('SELECT reward FROM daily_spins WHERE user_id=$1 AND spin_date=$2',[String(userId),date]);
- return {date:date,played:result.rowCount>0,reward:result.rowCount?Number(result.rows[0].reward):0};
+async function issueNativeLogin(profile){
+ await nativeReady;
+ // The production image still runs Node.js 12, which does not support the
+ // Buffer "base64url" encoding name. Convert regular base64 explicitly so
+ // native login codes work on both the current server and newer runtimes.
+ const code=crypto.randomBytes(32).toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+ const hash=crypto.createHash('sha256').update(code).digest('hex');
+ await pool.query('DELETE FROM native_login_codes WHERE expires_at<$1 OR used_at IS NOT NULL',[Date.now()]);
+ await pool.query('INSERT INTO native_login_codes(code_hash,profile,expires_at) VALUES($1,$2,$3)',[hash,JSON.stringify(profile),Date.now()+120000]);
+ return code;
 }
-async function playDailySpin(userId){
- await spinReady;
- const date=new Date(Date.now()+9*3600000).toISOString().slice(0,10);
+async function redeemNativeLogin(code){
+ await nativeReady;
+ if(typeof code!=='string'||code.length<30||code.length>100)return null;
+ const hash=crypto.createHash('sha256').update(code).digest('hex');
  const client=await pool.connect();
  try{
   await client.query('BEGIN');
-  const existing=await client.query('SELECT reward FROM daily_spins WHERE user_id=$1 AND spin_date=$2',[String(userId),date]);
-  if(existing.rowCount){await client.query('ROLLBACK');return {date:date,played:true,already:true,reward:Number(existing.rows[0].reward)};}
-  const rewards=[5,10,15,20,25,30,40,50];
-  const reward=rewards[crypto.randomInt(rewards.length)];
-  const claimed=await client.query('INSERT INTO daily_spins(user_id,spin_date,reward,created_at) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING RETURNING reward',[String(userId),date,reward,Date.now()]);
-  if(!claimed.rowCount){await client.query('ROLLBACK');return Object.assign(await getDailySpin(userId),{already:true});}
-  const updated=await client.query('UPDATE users SET money=COALESCE(money,0)+$1 WHERE _id=$2 RETURNING money',[reward,String(userId)]);
-  if(!updated.rowCount){await client.query('ROLLBACK');throw new Error('Spin account not found');}
-  await client.query('COMMIT');
-  return {date:date,played:true,already:false,reward:reward,money:Number(updated.rows[0].money)};
+  const found=await client.query('SELECT profile FROM native_login_codes WHERE code_hash=$1 AND used_at IS NULL AND expires_at>$2 FOR UPDATE',[hash,Date.now()]);
+  if(!found.rowCount){await client.query('ROLLBACK');return null;}
+  await client.query('UPDATE native_login_codes SET used_at=$1 WHERE code_hash=$2',[Date.now(),hash]);
+  await client.query('COMMIT');return found.rows[0].profile;
  }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
 }
 async function getSiteNotices(){
 	await boot;
-	const result=await pool.query('SELECT notice_key,enabled,title,message,image_url,target_url,updated_at FROM site_notices');
+	const result=await pool.query('SELECT notice_key,enabled,title,message,image_url,target_url,image_url_en,target_url_en,image_url_zh,target_url_zh,image_url_kp,target_url_kp,updated_at FROM site_notices');
 	const notices={};
 	result.rows.forEach(function(row){ notices[row.notice_key]=row; });
 	return notices;
 }
 async function getNoticePosts(){
 	await boot;
-	const result=await pool.query('SELECT id,image_url,target_url,created_at FROM notice_posts ORDER BY created_at DESC LIMIT 100');
+	const result=await pool.query('SELECT id,image_url,target_url,image_url_en,target_url_en,image_url_zh,target_url_zh,image_url_kp,target_url_kp,created_at FROM notice_posts ORDER BY created_at DESC');
 	return result.rows;
 }
 async function addNoticePost(data){
@@ -183,12 +196,27 @@ async function deleteNoticePost(id){
 	const result=await pool.query('DELETE FROM notice_posts WHERE id=$1',[Number(id)]);
 	return result.rowCount===1;
 }
+async function setNoticePostEnglish(id,data){
+ await boot;
+ const result=await pool.query('UPDATE notice_posts SET image_url_en=$2,target_url_en=$3 WHERE id=$1 RETURNING id',[Number(id),String(data.image_url||'').slice(0,500),String(data.target_url||'').slice(0,500)]);
+ return result.rowCount===1;
+}
+async function setNoticePostChinese(id,data){
+ await boot;
+ const result=await pool.query('UPDATE notice_posts SET image_url_zh=$2,target_url_zh=$3 WHERE id=$1 RETURNING id',[Number(id),String(data.image_url||'').slice(0,500),String(data.target_url||'').slice(0,500)]);
+ return result.rowCount===1;
+}
+async function setNoticePostChoson(id,data){
+ await boot;
+ const result=await pool.query('UPDATE notice_posts SET image_url_kp=$2,target_url_kp=$3 WHERE id=$1 RETURNING id',[Number(id),String(data.image_url||'').slice(0,500),String(data.target_url||'').slice(0,500)]);
+ return result.rowCount===1;
+}
 async function saveSiteNotice(key,data){
 	await boot;
 	if(key !== 'banner' && key !== 'game_entry') return false;
-	await pool.query(`INSERT INTO site_notices(notice_key,enabled,title,message,image_url,target_url,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7)
-		ON CONFLICT(notice_key) DO UPDATE SET enabled=EXCLUDED.enabled,title=EXCLUDED.title,message=EXCLUDED.message,image_url=EXCLUDED.image_url,target_url=EXCLUDED.target_url,updated_at=EXCLUDED.updated_at`,
-		[key,!!data.enabled,String(data.title||'').slice(0,100),String(data.message||'').slice(0,1000),String(data.image_url||'').slice(0,500),String(data.target_url||'').slice(0,500),Date.now()]);
+	await pool.query(`INSERT INTO site_notices(notice_key,enabled,title,message,image_url,target_url,image_url_en,target_url_en,image_url_zh,target_url_zh,image_url_kp,target_url_kp,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+		ON CONFLICT(notice_key) DO UPDATE SET enabled=EXCLUDED.enabled,title=EXCLUDED.title,message=EXCLUDED.message,image_url=EXCLUDED.image_url,target_url=EXCLUDED.target_url,image_url_en=EXCLUDED.image_url_en,target_url_en=EXCLUDED.target_url_en,image_url_zh=EXCLUDED.image_url_zh,target_url_zh=EXCLUDED.target_url_zh,image_url_kp=EXCLUDED.image_url_kp,target_url_kp=EXCLUDED.target_url_kp,updated_at=EXCLUDED.updated_at`,
+		[key,!!data.enabled,String(data.title||'').slice(0,100),String(data.message||'').slice(0,1000),String(data.image_url||'').slice(0,500),String(data.target_url||'').slice(0,500),String(data.image_url_en||'').slice(0,500),String(data.target_url_en||'').slice(0,500),String(data.image_url_zh||'').slice(0,500),String(data.target_url_zh||'').slice(0,500),String(data.image_url_kp||'').slice(0,500),String(data.target_url_kp||'').slice(0,500),Date.now()]);
 	return true;
 }
 async function migrateLocalToDiscord(localUserId,discordUserId,discordNickname){
@@ -233,7 +261,7 @@ async function deleteAccount(username){
 }
 function validUsername(s){return typeof s==='string' && /^[a-zA-Z0-9_]{3,24}$/.test(s);}
 function validNickname(s){return typeof s==='string' && /^[가-힣a-zA-Z0-9_]{2,20}$/.test(s) && !/^(admin|administrator|관리자|운영자|개발자|모레미)$/i.test(s);}
-function profile(row,sid){return {id:row.user_id,title:row.nickname,name:row.nickname,image:'/img/kkutu/guest.png',authType:'local',developer:row.developer===true,sid:sid};}
+function profile(row,sid){return {id:row.user_id,title:row.nickname,name:row.nickname,image:row.developer===true?'/img/custom/admin-profile-logo.png':'/img/kkutu/guest.png',authType:'local',developer:row.developer===true,sid:sid};}
 function safeNext(value){return typeof value==='string' && /^\/\?server=\d+$/.test(value)?value:'/?server=0';}
 function limited(req,res){
  const key=req.ip; const now=Date.now(); let v=limits.get(key);
@@ -275,7 +303,7 @@ async function bootstrap(){
  const seed=JSON.parse(fs.readFileSync(file,'utf8'));
  if(!/^[a-f0-9]{32}:[a-f0-9]{128}$/.test(seed.passwordHash))throw Error('Invalid administrator seed');
  const userId='local:'+crypto.createHash('sha256').update(seed.passwordHash).digest('hex').slice(0,32);
- await pool.query('INSERT INTO local_accounts(username,user_id,nickname,password_hash,developer,created_at) VALUES($1,$2,$3,$4,true,$5) ON CONFLICT(username) DO NOTHING',['admin',userId,'모레미',seed.passwordHash,Date.now()]);
+ await pool.query('INSERT INTO local_accounts(username,user_id,nickname,password_hash,developer,created_at) VALUES($1,$2,$3,$4,true,$5) ON CONFLICT(username) DO UPDATE SET nickname=EXCLUDED.nickname,developer=true',['admin',userId,'[GM]끄투게임',seed.passwordHash,Date.now()]);
 }
 const boot=bootstrap();boot.catch(()=>console.error('Administrator initialization failed'));
 function routes(app){
@@ -305,6 +333,16 @@ function routes(app){
   if(!row||!ok)return res.status(401).json({error:'아이디 또는 비밀번호가 올바르지 않습니다.'});
   await establish(req,row);res.json({ok:true,next:'/'});
  }));
+ app.post('/admin/login',wrap(async(req,res)=>{
+  if(limited(req,res)||!csrf(req,res))return;await boot;
+  const b=req.body||{};
+  if(!validUsername(b.username)||typeof b.password!=='string'||b.password.length>128)return res.status(400).json({error:'아이디와 비밀번호를 확인하세요.'});
+  const row=(await pool.query('SELECT * FROM local_accounts WHERE username=$1',[b.username.toLowerCase()])).rows[0];
+  const dummy='00000000000000000000000000000000:'+ '0'.repeat(128);
+  const ok=await verify(b.password,row?row.password_hash:dummy);
+  if(!row||!ok||row.developer!==true)return res.status(401).json({error:'운영자 계정 정보를 확인하세요.'});
+  await establish(req,row);res.json({ok:true,next:'/admin'});
+ }));
  app.post('/account/logout',wrap(async(req,res)=>{
   if(!csrf(req,res))return; await pool.query('DELETE FROM session WHERE _id=$1',[req.session.id]);
   await new Promise((resolve,reject)=>req.session.destroy(e=>e?reject(e):resolve()));res.json({ok:true});
@@ -314,13 +352,14 @@ function routes(app){
   const p=req.session.profile;
   const nickname=typeof (req.body||{}).nickname==='string'?(req.body||{}).nickname.normalize('NFC'):'';
   if(!p||p.authType==='local')return res.status(403).json({error:'소셜 로그인 후에만 닉네임을 설정할 수 있습니다.'});
+  if((req.body||{}).privacyConsent!==true)return res.status(400).json({error:'개인정보처리방침에 동의해 주세요.'});
   if(!validNickname(nickname))return res.status(400).json({error:'닉네임은 한글·영문·숫자·_ 2~20자로 입력하세요.'});
   if(!await changeDiscordNickname(p.id,nickname))return res.status(409).json({error:'이미 사용 중인 닉네임입니다.'});
   p.title=nickname;p.name=nickname;req.session.profile=p;req.session.needsNicknameSetup=false;
   await new Promise((resolve,reject)=>req.session.save(e=>e?reject(e):resolve()));
   res.json({ok:true,nickname:nickname});
  }));
- app.get('/login',(req,res)=>res.redirect('/?account=login'));
+ app.get('/login',(req,res)=>res.sendFile(path.join(__dirname,'public','account-login.html')));
  app.get('/logout',wrap(async(req,res)=>{
   const sid=req.session.id;
   await pool.query('DELETE FROM session WHERE _id=$1',[sid]);
@@ -328,4 +367,18 @@ function routes(app){
   res.clearCookie('connect.sid').redirect('/');
  }));
 }
-module.exports={SessionStore,secret,routes,passwordHash,verify,resetPassword,changeNickname,changeDiscordNickname,getNicknameOverride,getGameMaintenance,getGameMaintenanceStatus,setGameMaintenance,getActiveTheme,setActiveTheme,listServerAccess,hasServerAccess,addServerAccess,removeServerAccess,claimGameLogin,ownsGameLogin,releaseGameLogin,getDailySpin,playDailySpin,getSiteNotices,getNoticePosts,addNoticePost,deleteNoticePost,saveSiteNotice,migrateLocalToDiscord,deleteAccount,validUsername,validNickname,safeNext};
+async function changeProgress(userId,kind,value){
+ await boot;
+ const client=await pool.connect();
+ try{
+  await client.query('BEGIN');
+  const row=(await client.query('SELECT kkutu,server FROM users WHERE _id=$1 FOR UPDATE',[userId])).rows[0];
+  if(!row)throw Error('게임에 접속한 기록이 있는 계정을 선택하세요.');
+  const data=row.kkutu||{},before=Number(data.score)||0;
+  data.score=require('./account-progress').target(kind,value,before);
+  await client.query('UPDATE users SET kkutu=$1 WHERE _id=$2',[JSON.stringify(data),userId]);
+  await client.query('COMMIT');
+  return {ok:true,before:before,score:data.score,level:require('./account-progress').level(data.score),online:row.server!==null&&row.server!==undefined&&String(row.server)!==''};
+ }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
+}
+module.exports={changeProgress,SessionStore,secret,routes,passwordHash,verify,resetPassword,changeNickname,changeDiscordNickname,getNicknameOverride,getGameMaintenance,getGameMaintenanceStatus,setGameMaintenance,getActiveTheme,setActiveTheme,listServerAccess,hasServerAccess,addServerAccess,removeServerAccess,claimGameLogin,ownsGameLogin,releaseGameLogin,issueNativeLogin,redeemNativeLogin,getSiteNotices,getNoticePosts,addNoticePost,deleteNoticePost,setNoticePostEnglish,setNoticePostChinese,setNoticePostChoson,saveSiteNotice,migrateLocalToDiscord,deleteAccount,validUsername,validNickname,safeNext};

@@ -54,7 +54,7 @@ if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
 	auth.discord = Object.assign({}, auth.discord, {
 		clientID: process.env.DISCORD_CLIENT_ID,
 		clientSecret: process.env.DISCORD_CLIENT_SECRET,
-		callbackURL: process.env.DISCORD_CALLBACK_URL || 'https://kkutugame.kro.kr/login/discord/callback'
+		callbackURL: process.env.DISCORD_CALLBACK_URL || 'https://kkutugame.kr/login/discord/callback'
 	});
 	Fs.writeFileSync(authPath, `${JSON.stringify(auth, null, 2)}\n`, { mode: 0o600 });
 }
@@ -64,7 +64,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 	auth.google = Object.assign({}, auth.google, {
 		clientID: process.env.GOOGLE_CLIENT_ID,
 		clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-		callbackURL: process.env.GOOGLE_CALLBACK_URL || 'https://kkutugame.kro.kr/login/google/callback'
+		callbackURL: process.env.GOOGLE_CALLBACK_URL || 'https://kkutugame.kr/login/google/callback'
 	});
 	Fs.writeFileSync(authPath, `${JSON.stringify(auth, null, 2)}\n`, { mode: 0o600 });
 }
@@ -74,7 +74,7 @@ if (process.env.KAKAO_CLIENT_ID) {
 	auth.kakao = Object.assign({}, auth.kakao, {
 		clientID: process.env.KAKAO_CLIENT_ID,
 		clientSecret: process.env.KAKAO_CLIENT_SECRET || '',
-		callbackURL: process.env.KAKAO_CALLBACK_URL || 'https://kkutugame.kro.kr/login/kakao/callback'
+		callbackURL: process.env.KAKAO_CALLBACK_URL || 'https://kkutugame.kr/login/kakao/callback'
 	});
 	Fs.writeFileSync(authPath, `${JSON.stringify(auth, null, 2)}\n`, { mode: 0o600 });
 }

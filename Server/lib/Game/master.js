@@ -68,6 +68,7 @@ var discordStatus;
 var discordPasswordTickets;
 var latestLogin;
 var maintenanceActive = false;
+var MODERATED_CHAT = Symbol('moderatedChat');
 
 const DEVELOP = exports.DEVELOP = global.test || false;
 const GUEST_PERMISSION = exports.GUEST_PERMISSION = {
@@ -83,7 +84,7 @@ const GUEST_PERMISSION = exports.GUEST_PERMISSION = {
 	'kickVote': true,
 	'wp': true
 };
-const ENABLE_ROUND_TIME = exports.ENABLE_ROUND_TIME = [ 10, 30, 60, 90, 120, 150 ];
+const ENABLE_ROUND_TIME = exports.ENABLE_ROUND_TIME = [ 5, 10, 30, 60, 90, 120, 150 ];
 const ENABLE_FORM = exports.ENABLE_FORM = [ "S", "J" ];
 const MODE_LENGTH = exports.MODE_LENGTH = Const.GAME_TYPE.length;
 const PORT = process.env['KKUTU_PORT'];
@@ -254,6 +255,12 @@ Cluster.on('message', function(worker, msg){
 		case "discord-chat-out":
 			if(discordChat) discordChat.send(msg.data);
 			break;
+		case "chat-report":
+			if(discordChat) discordChat.report(msg.report, msg.reporter);
+			break;
+		case "profanity-event":
+			if(discordChat) discordChat.violation(msg.event);
+			break;
 		case "admin":
 			if(DIC[msg.id] && DIC[msg.id].admin) processAdmin(msg.id, msg.value);
 			break;
@@ -385,6 +392,24 @@ exports.init = function(_SID, CHAN){
 	latestLogin = require('./latest-login').create(DIC, CHAN);
 	discordChat = require('./discord-chat').create({
 		log: function(message){ JLog.warn(message); },
+		onModerate: function(action, report){
+			var reason = '채팅 신고 처리: ' + String(report.value || '').slice(0, 80);
+			if(action === 'account'){
+				if(report.guest) return Promise.resolve({ok:false, message:'손님은 일반 밴 대신 IP 밴을 사용해 주세요.'});
+				return new Promise(function(resolve){ MainDB.users.update(['_id', report.id]).set(['black', reason], ['blockedUntil', 0]).on(function(){
+					if(DIC[report.id]){ DIC[report.id].send('error',{code:444,message:reason,blockedUntil:0}); DIC[report.id].disconnect(); }
+					resolve({ok:true, message:'일반 밴이 적용되었습니다.'});
+				}); });
+			}
+			if(action === 'ip') return new Promise(function(resolve){ MainDB.ip_block.upsert(['_id', report.ip]).set(['reasonBlocked', reason], ['ipBlockedUntil', 0]).on(function(){
+				Object.keys(DIC).forEach(function(id){ var c=DIC[id]; if(c && c.remoteAddress === report.ip && !c.admin){ c.send('error',{code:446,reasonBlocked:reason,ipBlockedUntil:0}); c.disconnect(); } });
+				resolve({ok:true, message:'IP 밴이 적용되었습니다.'});
+			}); });
+			if(action === 'ipunban') return new Promise(function(resolve){ MainDB.ip_block.update(['_id', report.ip]).set(['reasonBlocked', ''], ['ipBlockedUntil', 0]).on(function(){
+				MainDB.profanity_warning.update(['_id', report.ip]).set(['count', 0], ['updatedAt', Date.now()]).on(function(){ resolve({ok:true, message:'IP 밴과 욕설 경고 누적이 해제되었습니다.'}); });
+			}); });
+			return Promise.resolve({ok:false, message:'지원하지 않는 처리입니다.'});
+		},
 		onMessage: function(message){
 			// Every player retains this master socket, including players in rooms.
 			// Send once here, never again through a worker or Client.chat().
@@ -674,13 +699,17 @@ function processClientRequest($c, msg) {
 	}
 	
 	switch (msg.type) {
-		case 'dailySpinGet':
-			if($c.guest)return $c.send('dailySpin',{guest:true});
-			LocalAuth.getDailySpin($c.id).then(function(result){$c.send('dailySpin',result);}).catch(function(){$c.sendError(500);});
+		case 'chatReport':
+			var report = KKuTu.getChatReport(msg.reportId);
+			if(!report) return $c.send('chatReportResult', {ok:false, message:'신고할 수 없는 메시지입니다.'});
+			$c._chatReports = $c._chatReports || {};
+			if($c._chatReports[msg.reportId]) return $c.send('chatReportResult', {ok:false, message:'이미 신고한 메시지입니다.'});
+			$c._chatReports[msg.reportId] = Date.now();
+			if(discordChat) discordChat.report(report, {id:$c.id, name:$c.profile.title || $c.profile.name || '손님'});
+			$c.send('chatReportResult', {ok:true, message:'채팅 신고가 운영자에게 전달되었습니다.'});
 			break;
-		case 'dailySpinPlay':
-			if($c.guest)return $c.send('dailySpin',{guest:true});
-			LocalAuth.playDailySpin($c.id).then(function(result){if(!result.already)$c.money=result.money;$c.send('dailySpin',result);}).catch(function(){$c.sendError(500);});
+		case 'profanityAcknowledge':
+			$c._profanityPending = false;
 			break;
 		case 'dailyQuestGet':
 			$c.send('dailyQuest', $c.getDailyQuestData());
@@ -724,9 +753,16 @@ function processClientRequest($c, msg) {
 		case 'talk':
 			if (!msg.value) return;
 			if (!msg.value.substr) return;
+			if($c._profanityPending) return $c.send('profanityWarning', {count:1});
 			if (!GUEST_PERMISSION.talk) if ($c.guest) {
 				$c.send('error', {code: 401});
 				return;
+			}
+			if(!msg[MODERATED_CHAT]){
+				return KKuTu.moderateChat($c, msg.value, function(result){
+					if(!result){ msg[MODERATED_CHAT] = true; return processClientRequest($c, msg); }
+					if(result.matched && discordChat) discordChat.violation({id:$c.id, ip:$c.remoteAddress, name:$c.profile.title || $c.profile.name || '손님', value:msg.value, matched:result.matched, count:result.count || 1, blocked:!!result.blocked});
+				});
 			}
 			msg.value = msg.value.substr(0, 200);
 			if ($c.admin) {

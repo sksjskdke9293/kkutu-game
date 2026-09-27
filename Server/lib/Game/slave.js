@@ -42,6 +42,7 @@ var MainDB = require('../Web/db');
 var LocalAuth = require('../Web/local-auth');
 var JLog = require('../sub/jjlog');
 var GLOBAL = require('../sub/global.json');
+var MODERATED_CHAT = Symbol('moderatedChat');
 
 var DIC = {};
 var DNAME = {};
@@ -76,7 +77,17 @@ process.on('uncaughtException', function(err){
 });
 process.on('message', function(msg){
 	switch(msg.type){
+		case 'account-progress':
+			var progressClient = DIC[msg.target];
+			var progressScore = Number(msg.score);
+			if(!progressClient || !Number.isSafeInteger(progressScore) || progressScore < 0) break;
+			progressClient.data.score = progressScore;
+			progressClient.send('user', progressClient.getData());
+			progressClient.publish('user', progressClient.getData());
+			break;
 		case 'guestName':
+            var $c = DIC[msg.target];
+            if(!$c) return;
 			if(!$c.guest || typeof msg.value !== 'string') return;
 			var guestName = msg.value.trim().replace(/[^0-9A-Za-z가-힣 _-]/g, '').slice(0, 12);
 			if(guestName.length < 2) return $c.sendError(400);
@@ -110,6 +121,7 @@ process.on('message', function(msg){
 			}else RESERVED[msg.session] = {
 				target: msg.target,
 				profile: msg.profile,
+                guestName: msg.guestName,
 				room: msg.room,
 				spec: msg.spec,
 				pass: msg.pass,
@@ -161,7 +173,7 @@ Server.on('connection', function(socket, info){
 		return;
 	}
 	MainDB.session.findOne([ '_id', key ]).limit([ 'profile', true ]).on(function($body){
-		$c = new KKuTu.Client(socket, $body ? $body.profile : null, key);
+		$c = new KKuTu.Client(socket, $body ? $body.profile : null, key, reserve.guestName);
 		if((retiredLogins.get($c.id) || 0) > connectionOrder) return $c.disconnect();
 		pendingClients.add($c);
 		$c.admin = GLOBAL.ADMIN.indexOf($c.id) != -1 || !!($c.profile && $c.profile.authType === 'local' && $c.profile.developer === true);
@@ -230,13 +242,17 @@ KKuTu.onClientMessage = function($c, msg){
 	if(!msg) return;
 	
 	switch(msg.type){
-		case 'dailySpinGet':
-			if($c.guest)return $c.send('dailySpin',{guest:true});
-			LocalAuth.getDailySpin($c.id).then(function(result){$c.send('dailySpin',result);}).catch(function(){$c.sendError(500);});
+		case 'profanityAcknowledge':
+			$c._profanityPending = false;
 			break;
-		case 'dailySpinPlay':
-			if($c.guest)return $c.send('dailySpin',{guest:true});
-			LocalAuth.playDailySpin($c.id).then(function(result){if(!result.already)$c.money=result.money;$c.send('dailySpin',result);}).catch(function(){$c.sendError(500);});
+		case 'chatReport':
+			temp = KKuTu.getChatReport(msg.reportId);
+			if(!temp) return $c.send('chatReportResult', {ok:false, message:'신고할 수 없는 메시지입니다.'});
+			$c._chatReports = $c._chatReports || {};
+			if($c._chatReports[msg.reportId]) return $c.send('chatReportResult', {ok:false, message:'이미 신고한 메시지입니다.'});
+			$c._chatReports[msg.reportId] = Date.now();
+			process.send({type:'chat-report', report:temp, reporter:{id:$c.id, name:$c.profile.title || $c.profile.name || '손님'}});
+			$c.send('chatReportResult', {ok:true, message:'채팅 신고가 운영자에게 전달되었습니다.'});
 			break;
 		case 'dailyQuestGet':
 			$c.send('dailyQuest', $c.getDailyQuestData());
@@ -251,6 +267,12 @@ KKuTu.onClientMessage = function($c, msg){
 			temp = $c.subPlace ? $c.pracRoom : ROOM[$c.place];
 			if(!temp || !temp.gaming || temp.rule.rule !== 'Yut') return;
 			temp.route('yutForceRoll', $c, msg);
+			break;
+		case 'adminAutoWord':
+			temp = $c.subPlace ? $c.pracRoom : ROOM[$c.place];
+			if(!temp || !temp.gaming || temp.game.late || temp.rule.rule !== 'Classic') return;
+			if(!temp.game.seq || temp.game.seq[temp.game.turn] !== $c.id) return;
+			temp.route('adminAutoWord', $c);
 			break;
 		case 'yell':
 			if(!msg.value) return;
@@ -270,11 +292,26 @@ KKuTu.onClientMessage = function($c, msg){
 			temp.route(msg.type, $c, msg);
 			break;
 		case 'talk':
-			if(!msg.value) return;
-			if(!msg.value.substr) return;
+   if(!msg.value || typeof msg.value !== 'string') return;
+   // Word submissions are validated by the game rule, never by chat moderation.
+   // Late submissions are dropped instead of being published as unmoderated chat.
+   if(msg.relay){
+    if(msg.relay !== true) return;
+    if(!GUEST_PERMISSION.talk && $c.guest) return $c.send('error', {code:401});
+    temp = $c.subPlace ? $c.pracRoom : ROOM[$c.place];
+    if(!temp || !temp.gaming || temp.game.late || temp.game.loading) return;
+    return temp.submit($c, msg.value, msg.data);
+   }
+			if($c._profanityPending) return $c.send('profanityWarning', {count:1});
 			if(!GUEST_PERMISSION.talk) if($c.guest){
 				$c.send('error', { code: 401 });
 				return;
+			}
+			if(!msg[MODERATED_CHAT]){
+				return KKuTu.moderateChat($c, msg.value, function(result){
+					if(!result){ msg[MODERATED_CHAT] = true; return KKuTu.onClientMessage($c, msg); }
+					if(result.matched) process.send({type:'profanity-event', event:{id:$c.id, ip:$c.remoteAddress, name:$c.profile.title || $c.profile.name || '손님', value:msg.value, matched:result.matched, count:result.count || 1, blocked:!!result.blocked}});
+				});
 			}
 			if(msg.relay){
 				if($c.subPlace) temp = $c.pracRoom;

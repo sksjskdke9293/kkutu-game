@@ -31,10 +31,52 @@ function badgeStorageKey(userId){
 
 exports.run = function(Server, page){
 
+var appConfigPath=Path.join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','app-config.json');
+var adConfigPath=Path.join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','ad-config.json');
+Server.get('/site-ad-image/:id',function(req,res){var id=String(req.params.id||'').replace(/[^0-9]/g,''),base=Path.join(process.env.KKUTU_PRIVATE_DIR||'/kkutu','site-ad-'+id);if(!id)return res.sendStatus(404);File.readFile(base,function(error,data){if(error)return res.sendStatus(404);File.readFile(base+'.type','utf8',function(e,type){res.type(e?'image/png':type).send(data);});});});
+Server.post('/admin/api/ad-image',require('body-parser').raw({type:['image/png','image/jpeg','image/webp','image/gif'],limit:'5mb'}),function(req,res){if(!checkAdmin(req,res,true))return;var id=String(Date.now())+String(Math.floor(Math.random()*1000)),dir=process.env.KKUTU_PRIVATE_DIR||'/kkutu',base=Path.join(dir,'site-ad-'+id);if(!Buffer.isBuffer(req.body)||!req.body.length)return res.status(400).send({error:'광고 이미지를 선택하세요.'});try{File.mkdirSync(dir,{recursive:true});File.writeFileSync(base,req.body);File.writeFileSync(base+'.type',req.get('content-type')||'image/png');res.send({ok:true,url:'/site-ad-image/'+id});}catch(e){res.status(500).send({error:'광고 이미지를 저장하지 못했습니다.'});}});
+function defaultAdPlacement(mode){return {mode:mode||'off',intervalSeconds:15,googleClient:'ca-pub-6810329915661089',googleSlot:'',items:[]};}
+function normalizeAdPlacement(value,mode){value=value||{};return Object.assign(defaultAdPlacement(mode),value,{googleClient:'ca-pub-6810329915661089',items:Array.isArray(value.items)?value.items:[]});}
+function defaultAdConfig(){return {portal:defaultAdPlacement('google'),game:defaultAdPlacement('off')};}
+function readAdConfig(){
+	try{
+		var value=JSON.parse(File.readFileSync(adConfigPath,'utf8'));
+		if(value.portal||value.game)return {portal:normalizeAdPlacement(value.portal,'google'),game:normalizeAdPlacement(value.game,'off')};
+		return {portal:normalizeAdPlacement(value,'google'),game:defaultAdPlacement('off')};
+	}catch(e){return defaultAdConfig();}
+}
+Server.get('/api/ad-config',function(req,res){res.set('Cache-Control','no-store').send(readAdConfig());});
+Server.get('/admin/api/ad-config',function(req,res){if(!checkAdmin(req,res,true))return;res.set('Cache-Control','no-store').send(readAdConfig());});
+Server.post('/admin/api/ad-config',function(req,res){
+	if(!checkAdmin(req,res,true))return;
+	var body=req.body||{},placement=String(body.placement||''),mode=String(body.mode||'off'),interval=Math.max(5,Math.min(3600,Number(body.intervalSeconds)||15)),slot=String(body.googleSlot||'').replace(/[^0-9]/g,'').slice(0,30),items=[];
+	if(['portal','game'].indexOf(placement)<0)return res.status(400).send({error:'광고 위치를 확인하세요.'});
+	try{items=Array.isArray(body.items)?body.items:JSON.parse(String(body.items||'[]'));}catch(e){return res.status(400).send({error:'운영자 광고 목록 형식을 확인하세요.'});}
+	if(['off','google','operator'].indexOf(mode)<0)return res.status(400).send({error:'광고 방식을 확인하세요.'});
+	items=items.slice(0,30).map(function(item){return {imageUrl:String(item.imageUrl||'').trim().slice(0,500),linkUrl:String(item.linkUrl||'').trim().slice(0,500),alt:String(item.alt||'광고').trim().slice(0,100)};}).filter(function(item){return /^https?:\/\//i.test(item.imageUrl)||/^\//.test(item.imageUrl);});
+	var config=readAdConfig();
+	config[placement]={mode:mode,intervalSeconds:interval,googleClient:'ca-pub-6810329915661089',googleSlot:slot,items:items};
+	try{File.mkdirSync(Path.dirname(adConfigPath),{recursive:true});File.writeFileSync(adConfigPath,JSON.stringify(config,null,2));noticeAdmin(req,'ad-config',placement+':'+mode);res.send(Object.assign({ok:true},config));}catch(e){res.status(500).send({error:'광고 설정을 저장하지 못했습니다.'});}
+});
+function readAppConfig(){try{return JSON.parse(File.readFileSync(appConfigPath,'utf8'));}catch(e){return {version:'1.0.0',redirectUrl:'/download'};}}
+Server.get('/api/app-config',function(req,res){var value=readAppConfig();if(/^\//.test(value.redirectUrl||''))value.redirectUrl='https://kkutugame.kr'+value.redirectUrl;res.set('Cache-Control','no-store').send(value);});
+Server.get('/admin/api/app-config',function(req,res){if(!checkAdmin(req,res,true))return;res.set('Cache-Control','no-store').send(readAppConfig());});
+Server.post('/admin/api/app-config',function(req,res){if(!checkAdmin(req,res,true))return;var version=String(req.body&&req.body.version||'').trim(),redirectUrl=String(req.body&&req.body.redirectUrl||'').trim();if(!/^\d+\.\d+\.\d+$/.test(version)||!(/^https?:\/\//i.test(redirectUrl)||/^\/[A-Za-z0-9_\-./?=&%]*$/.test(redirectUrl)))return res.status(400).send({error:'버전은 1.0.0 형식, 이동 주소는 /download 또는 https:// 주소로 입력하세요.'});try{File.mkdirSync(Path.dirname(appConfigPath),{recursive:true});File.writeFileSync(appConfigPath,JSON.stringify({version:version,redirectUrl:redirectUrl},null,2));res.send({ok:true,version:version,redirectUrl:redirectUrl});}catch(e){res.status(500).send({error:'앱 설정을 저장하지 못했습니다.'});}});
+
 Server.get("/admin", function(req, res){
-	if(!checkAdmin(req, res, true)) return;
+	if(!isAdminProfile(req.session && req.session.profile)) return res.sendFile(require("path").resolve(__dirname, "../public/admin-login.html"));
 	req.session.admin = true;
 	res.sendFile(require("path").resolve(__dirname, "../views/admin.html"));
+});
+Server.post('/admin/api/native-login-code', function(req,res){
+	if(!checkAdmin(req,res,true))return;
+	LocalAuth.issueNativeLogin(req.session.profile).then(function(code){
+		var uri='kkutugame://login?code='+encodeURIComponent(code);
+		res.set('Cache-Control','no-store').send({ok:true,code:code,uri:uri,expires_in:120});
+	}).catch(function(error){
+		JLog.error('[ADMIN] native login code issue failed: '+(error&&error.stack||error));
+		res.status(503).send({error:'앱 연결 코드를 만들지 못했습니다.'});
+	});
 });
 Server.get('/user-badge/:id', function(req,res){
 	var id=String(req.params.id||'').trim();
@@ -118,14 +160,23 @@ Server.get("/admin/api/ip", function(req, res){
 	});
 });
 Server.get("/admin/api/recent", function(req, res){
-	if(!checkAdmin(req, res, true)) return;
-	MainDB.access_log.direct('SELECT * FROM access_log ORDER BY "connectedAt" DESC LIMIT 100', function(error, result){
-		if(error){
-			JLog.warn('[ADMIN] recent access lookup failed: ' + error.toString());
-			return res.status(500).send({ error: '최근 접속 기록을 불러오지 못했습니다.' });
-		}
-		res.send({ list: result && result.rows ? result.rows : [] });
-	});
+ if(!checkAdmin(req, res, true)) return;
+ res.set('Cache-Control', 'no-store');
+ var requested = Number(req.query.page || 1);
+ if(!Number.isSafeInteger(requested) || requested < 1) requested = 1;
+ function failed(error){
+  JLog.warn('[ADMIN] recent access lookup failed: ' + error.toString());
+  res.status(500).send({error:'최근 접속 기록을 불러오지 못했습니다.'});
+ }
+ MainDB.access_log.direct('SELECT COUNT(*) AS total FROM access_log', function(error, result){
+  if(error) return failed(error);
+  var total = Number(result.rows[0].total), pages = Math.max(1, Math.ceil(total / 10));
+  var page = Math.min(requested, pages), offset = (page - 1) * 10;
+  MainDB.access_log.direct('SELECT * FROM access_log ORDER BY "connectedAt" DESC, _id DESC LIMIT 10 OFFSET ' + offset, function(error, result){
+   if(error) return failed(error);
+   res.send({list:result && result.rows || [], page:page, pageSize:10, total:total, totalPages:pages});
+  });
+ });
 });
 Server.get("/admin/api/accounts", function(req, res){
 	if(!checkAdmin(req, res, true)) return;
@@ -147,10 +198,12 @@ Server.get("/admin/api/accounts", function(req, res){
 	SELECT COALESCE(la.username, known.user_id) AS username, known.user_id,
 		COALESCE(la.nickname, nickname_override.nickname, active_session.nickname, latest_access."displayName", known.user_id) AS nickname,
 		COALESCE(la.developer, false) AS developer,
+		CASE WHEN COALESCE(progress.kkutu->>'score', '') ~ '^\\d+$'
+			THEN (progress.kkutu->>'score')::numeric ELSE 0 END AS experience,
 		COALESCE(la.created_at, first_access.first_seen, 0) AS created_at,
 		(la.username IS NOT NULL) AS local_account,
 		CASE WHEN la.username IS NOT NULL THEN '로컬' WHEN known.user_id LIKE 'discord-%' THEN 'Discord' ELSE '외부' END AS account_type
-	FROM known LEFT JOIN local_accounts la ON la.user_id=known.user_id
+	FROM known LEFT JOIN users progress ON progress._id=known.user_id LEFT JOIN local_accounts la ON la.user_id=known.user_id
 	LEFT JOIN account_nickname_overrides nickname_override ON nickname_override.user_id=known.user_id
 	LEFT JOIN latest_access ON latest_access."userId"=known.user_id
 	LEFT JOIN first_access ON first_access."userId"=known.user_id
@@ -161,7 +214,7 @@ Server.get("/admin/api/accounts", function(req, res){
 			JLog.warn('[ADMIN] account list lookup failed: ' + error.toString());
 			return res.status(500).send({ error: '계정 목록을 불러오지 못했습니다.' });
 		}
-		res.send({ list: result && result.rows ? result.rows : [] });
+		res.send({ list: (result && result.rows ? result.rows : []).map(function(row){row.level=require('../account-progress').level(Number(row.experience)||0);return row;}) });
 	});
 });
 Server.get('/admin/api/notices', function(req,res){
@@ -171,19 +224,40 @@ Server.get('/admin/api/notices', function(req,res){
 Server.post('/admin/api/notices/game-image', require('body-parser').raw({type:['image/png','image/jpeg','image/webp'],limit:'3mb'}), function(req,res){
 	if(!checkAdmin(req,res,true)) return;
 	if(!Buffer.isBuffer(req.body)||!req.body.length) return res.status(400).send({error:'이미지 파일을 선택하세요.'});
-	var file=Path.join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','game-notice-image');
-	File.writeFile(file,req.body,function(error){ if(error)return res.status(500).send({error:'이미지를 저장하지 못했습니다.'}); File.writeFile(file+'.type',req.get('content-type')||'image/png',function(){ res.send({ok:true,url:'/site-notice-image?v='+Date.now()}); }); });
+	var lang=req.query.lang==='kp'?'kp':(req.query.lang==='zh'?'zh':(req.query.lang==='en'?'en':'ko')),suffix=lang==='ko'?'':'-'+lang,file=Path.join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','game-notice-image'+suffix);
+	File.writeFile(file,req.body,function(error){ if(error)return res.status(500).send({error:'이미지를 저장하지 못했습니다.'}); File.writeFile(file+'.type',req.get('content-type')||'image/png',function(){ res.send({ok:true,url:'/site-notice-image'+suffix+'?v='+Date.now()}); }); });
 });
 Server.get('/admin/api/notice-posts', function(req,res){ if(!checkAdmin(req,res,true))return; LocalAuth.getNoticePosts().then(function(posts){res.send({posts:posts});}).catch(function(){res.status(500).send({error:'공지 목록을 불러오지 못했습니다.'});}); });
 Server.post('/admin/api/notice-posts', require('body-parser').raw({type:['image/png','image/jpeg','image/webp'],limit:'3mb'}), function(req,res){
  if(!checkAdmin(req,res,true))return; if(!Buffer.isBuffer(req.body)||!req.body.length)return res.status(400).send({error:'이미지를 선택하세요.'});
  LocalAuth.addNoticePost({image_url:'',target_url:req.query.target_url||''}).then(function(post){ var file=Path.join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','notice-post-'+post.id); File.writeFile(file,req.body,function(error){if(error)return res.status(500).send({error:'이미지를 저장하지 못했습니다.'});File.writeFile(file+'.type',req.get('content-type')||'image/png',function(){LocalAuth.getNoticePosts().then(function(){res.send({ok:true,post:post});});});});}).catch(function(){res.status(500).send({error:'공지를 저장하지 못했습니다.'});});
 });
-Server.post('/admin/api/notice-posts/:id/delete', function(req,res){ if(!checkAdmin(req,res,true))return; var id=String(req.params.id||'').replace(/[^0-9]/g,''); LocalAuth.deleteNoticePost(id).then(function(ok){if(!ok)return res.status(404).send({error:'공지를 찾을 수 없습니다.'});var base=Path.join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','notice-post-'+id);File.unlink(base,function(){});File.unlink(base+'.type',function(){});res.send({ok:true});}).catch(function(){res.status(500).send({error:'공지를 삭제하지 못했습니다.'});}); });
+Server.post('/admin/api/notice-posts/:id/english', require('body-parser').raw({type:['image/png','image/jpeg','image/webp'],limit:'3mb'}), function(req,res){
+ if(!checkAdmin(req,res,true))return;
+ var id=String(req.params.id||'').replace(/[^0-9]/g,'');
+ if(!id||!Buffer.isBuffer(req.body)||!req.body.length)return res.status(400).send({error:'영어 공지 이미지를 선택하세요.'});
+ var file=Path.join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','notice-post-en-'+id);
+ File.writeFile(file,req.body,function(error){if(error)return res.status(500).send({error:'영어 공지를 저장하지 못했습니다.'});File.writeFile(file+'.type',req.get('content-type')||'image/png',function(){LocalAuth.setNoticePostEnglish(id,{image_url:'/site-notice-post-en/'+id,target_url:req.query.target_url||''}).then(function(ok){res.status(ok?200:404).send({ok:ok});}).catch(function(){res.status(500).send({error:'영어 공지를 저장하지 못했습니다.'});});});});
+});
+Server.post('/admin/api/notice-posts/:id/chinese', require('body-parser').raw({type:['image/png','image/jpeg','image/webp'],limit:'3mb'}), function(req,res){
+ if(!checkAdmin(req,res,true))return;
+ var id=String(req.params.id||'').replace(/[^0-9]/g,'');
+ if(!id||!Buffer.isBuffer(req.body)||!req.body.length)return res.status(400).send({error:'중국어 공지 이미지를 선택하세요.'});
+ var file=Path.join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','notice-post-zh-'+id);
+ File.writeFile(file,req.body,function(error){if(error)return res.status(500).send({error:'중국어 공지를 저장하지 못했습니다.'});File.writeFile(file+'.type',req.get('content-type')||'image/png',function(){LocalAuth.setNoticePostChinese(id,{image_url:'/site-notice-post-zh/'+id,target_url:req.query.target_url||''}).then(function(ok){res.status(ok?200:404).send({ok:ok});}).catch(function(){res.status(500).send({error:'중국어 공지를 저장하지 못했습니다.'});});});});
+});
+Server.post('/admin/api/notice-posts/:id/choson', require('body-parser').raw({type:['image/png','image/jpeg','image/webp'],limit:'3mb'}), function(req,res){
+ if(!checkAdmin(req,res,true))return;
+ var id=String(req.params.id||'').replace(/[^0-9]/g,'');
+ if(!id||!Buffer.isBuffer(req.body)||!req.body.length)return res.status(400).send({error:'조선어 공지 이미지를 선택하세요.'});
+ var file=Path.join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','notice-post-kp-'+id);
+ File.writeFile(file,req.body,function(error){if(error)return res.status(500).send({error:'조선어 공지를 저장하지 못했습니다.'});File.writeFile(file+'.type',req.get('content-type')||'image/png',function(){LocalAuth.setNoticePostChoson(id,{image_url:'/site-notice-post-kp/'+id,target_url:req.query.target_url||''}).then(function(ok){res.status(ok?200:404).send({ok:ok});}).catch(function(){res.status(500).send({error:'조선어 공지를 저장하지 못했습니다.'});});});});
+});
+Server.post('/admin/api/notice-posts/:id/delete', function(req,res){ if(!checkAdmin(req,res,true))return; var id=String(req.params.id||'').replace(/[^0-9]/g,''); LocalAuth.deleteNoticePost(id).then(function(ok){if(!ok)return res.status(404).send({error:'공지를 찾을 수 없습니다.'});var base=Path.join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','notice-post-'+id);File.unlink(base,function(){});File.unlink(base+'.type',function(){});var english=Path.join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','notice-post-en-'+id);File.unlink(english,function(){});File.unlink(english+'.type',function(){});var chinese=Path.join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','notice-post-zh-'+id);File.unlink(chinese,function(){});File.unlink(chinese+'.type',function(){});var choson=Path.join(process.env.KKUTU_PRIVATE_DIR || '/kkutu','notice-post-kp-'+id);File.unlink(choson,function(){});File.unlink(choson+'.type',function(){});res.send({ok:true});}).catch(function(){res.status(500).send({error:'공지를 삭제하지 못했습니다.'});}); });
 Server.post('/admin/api/notices/:key', function(req,res){
 	if(!checkAdmin(req,res,true)) return;
 	var key=String(req.params.key||'');
-	LocalAuth.saveSiteNotice(key,{enabled:req.body.enabled==='true'||req.body.enabled==='1',title:req.body.title,message:req.body.message,image_url:req.body.image_url,target_url:req.body.target_url})
+	LocalAuth.saveSiteNotice(key,{enabled:req.body.enabled==='true'||req.body.enabled==='1',title:req.body.title,message:req.body.message,image_url:req.body.image_url,target_url:req.body.target_url,image_url_en:req.body.image_url_en,target_url_en:req.body.target_url_en,image_url_zh:req.body.image_url_zh,target_url_zh:req.body.target_url_zh,image_url_kp:req.body.image_url_kp,target_url_kp:req.body.target_url_kp})
 		.then(function(saved){ if(!saved)return res.status(400).send({error:'공지 종류를 확인하세요.'}); noticeAdmin(req,'notice-save',key); res.send({ok:true}); })
 		.catch(function(error){ JLog.warn('[ADMIN] notice save failed: '+error.toString()); res.status(500).send({error:'공지를 저장하지 못했습니다.'}); });
 });
@@ -201,6 +275,17 @@ Server.post("/admin/api/accounts/discord-nickname", function(req, res){
 		JLog.warn('[ADMIN] Discord nickname change failed: ' + error.toString());
 		res.status(500).send({ error: '닉네임을 변경하지 못했습니다.' });
 	});
+});
+Server.post('/admin/api/accounts/progress',function(req,res){
+ if(!checkAdmin(req,res,true))return;
+ var userId=String(req.body.user_id||''),kind=String(req.body.kind||''),raw=String(req.body.value||'');
+ if(!userId||userId.length>128||!/^\d+$/.test(raw))return res.status(400).send({error:'계정과 값을 확인하세요.'});
+ LocalAuth.changeProgress(userId,kind,Number(raw)).then(function(result){
+  var gameServers=req.app&&req.app.locals&&req.app.locals.gameServers||[];
+  gameServers.forEach(function(server){if(server&&typeof server.send==='function')server.send('account-progress',{id:userId,score:result.score});});
+  noticeAdmin(req,'account-progress',userId,kind+': '+result.before+' -> '+result.score);
+  res.send(result);
+ }).catch(function(error){res.status(400).send({error:error.message});});
 });
 Server.post("/admin/api/accounts/password", function(req, res){
 	if(!checkAdmin(req, res, true)) return;
@@ -283,7 +368,9 @@ Server.post("/admin/api/ip/unblock", function(req, res){
 	var ip = normalizeIp(req.body.ip);
 	if(!ip) return res.status(400).send({ error: "올바른 IP 주소를 입력하세요." });
 	MainDB.ip_block.update([ '_id', ip ]).set([ 'reasonBlocked', '' ], [ 'ipBlockedUntil', 0 ]).on(function(){
-		noticeAdmin(req, "ip-unblock", ip); res.send({ ok: true });
+		MainDB.profanity_warning.update([ '_id', ip ]).set([ 'count', 0 ], [ 'updatedAt', Date.now() ]).on(function(){
+			noticeAdmin(req, "ip-unblock", ip); res.send({ ok: true });
+		});
 	});
 });
 
@@ -524,11 +611,13 @@ Server.post("/gwalli/shop", function(req, res){
 function noticeAdmin(req, ...args){
 	JLog.info(`[ADMIN] ${req.originalUrl} ${req.ip} | ${args.join(' | ')}`);
 }
+function isAdminProfile(profile){
+	return !!profile && (GLOBAL.ADMIN.indexOf(profile.id) !== -1 || (profile.authType === 'local' && profile.developer === true));
+}
 function checkAdmin(req, res, hide){
 	if(global.isPublic){
 		if(req.session.profile){
-			var localDeveloper = req.session.profile.authType === 'local' && req.session.profile.developer === true;
-			if(GLOBAL.ADMIN.indexOf(req.session.profile.id) == -1 && !localDeveloper){
+			if(!isAdminProfile(req.session.profile)){
 				req.session.admin = false;
 				return hide ? (res.sendStatus(404), false) : (res.send({ error: 400 }), false);
 			}

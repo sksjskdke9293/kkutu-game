@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert/strict');
 const source=fs.readFileSync('Server/lib/Web/lib/kkutu/ready.js','utf8');
 const events={}, sent=[];
-const field=()=>({text:'',attrs:{},val(v){if(v===undefined)return this.text;this.text=v;return this;},focus(){return this;},prop(){return this;},attr(v){if(v&&typeof v==='object')Object.assign(this.attrs,v);return this;},on(n,f){events[n]=f;return this;}});
+const field=()=>({text:'',attrs:{},val(v){if(v===undefined)return this.text;this.text=v;return this;},focus(){return this;},removeAttr(name){delete this.attrs[name];return this;},prop(){return this;},attr(v){if(v&&typeof v==='object')Object.assign(this.attrs,v);return this;},on(n,f){events[n]=f;return this;}});
 const word=field(),chat=field();
 let visible=true;
 const context={
@@ -18,7 +18,7 @@ events.compositionend();events.keydown({key:'Enter',preventDefault(){}});assert.
 visible=false;word.val('숨김');context.submitGameWord();assert.equal(sent.length,2);
 visible=true;context.$data.room.gaming=false;context.submitGameWord();assert.equal(sent.length,2);
 context.$data.room.gaming=true;
-const start=source.indexOf("\t$stage.chatBtn.on('click', function(e){")+"\t$stage.chatBtn.on('click', function(e){".length;
+const start=source.indexOf(" $stage.chatBtn.on('click', function(e){")+" $stage.chatBtn.on('click', function(e){".length;
 const end=source.indexOf('}).hotkey($stage.talk, 13);',start);
 vm.runInContext('function submitChat(){'+source.slice(start,end)+'}',context);
 chat.val('채팅입니다');word.val('게임단어');context.submitChat();

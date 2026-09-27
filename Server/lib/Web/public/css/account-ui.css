@@ -1,30 +1,451 @@
-#AccountOverlay { position:fixed; inset:0; z-index:2147483100; display:grid; place-items:center; padding:16px; background:rgba(21,43,32,.5); box-sizing:border-box; }
-#AccountOverlay[hidden] { display:none !important; }
-#AccountCard { position:relative; width:min(460px,100%); max-height:calc(100dvh - 32px); overflow:auto; background:#fff; color:#223e30; border:1px solid #cce4d4; border-radius:24px; padding:30px; box-sizing:border-box; box-shadow:0 20px 70px #163a3540; font:16px/1.5 Arial,sans-serif; }
-#AccountCard * { float:none; box-sizing:border-box; }
-#AccountCard h2 { font-size:25px; margin:0 36px 22px 0; }
-#AccountCard p { margin:10px 0; }
-#AccountCard label { display:block; font-weight:bold; margin:14px 0 5px; }
-#AccountCard input { display:block; width:100%; height:46px; padding:10px 12px; border:1px solid #a9c9b6; border-radius:10px; background:white; color:#203c2a; font:16px Arial,sans-serif; }
-#AccountCard button { display:block; position:static; width:100%; min-height:46px; margin:12px 0 0; border:0; padding:10px 12px; border-radius:12px; background:#d9f0df; color:#24553a; cursor:pointer; font:bold 16px Arial,sans-serif; }
-#AccountCard button.primary { background:#287950; color:white; }
-#AccountCard button.account-discord { background:#5865f2; color:white; }
-#AccountCard button.account-google { background:#fff; color:#202124; border:1px solid #dadce0; }
-#AccountCard button.account-kakao { background:#fee500; color:#191919; }
-#AccountCard button.account-link { background:transparent; text-decoration:underline; font-size:14px; }
-#AccountCard #AccountClose { position:absolute; width:36px; min-height:36px; right:14px; top:14px; margin:0; padding:0; background:#eff6f1; }
-#AccountCard .account-warning { color:#8a4d19; font-size:12px; background:#fff3df; border-radius:8px; padding:10px; }
-#AccountError { color:#a32929; font-size:14px; min-height:20px; }
-#AccountCard button:disabled { opacity:.55; cursor:wait; }
-#AccountBar { position:fixed; top:8px; right:12px; left:auto; z-index:90; display:flex; gap:6px; align-items:center; max-width:calc(100vw - 140px); font:14px Arial,sans-serif; }
-#AccountBar button { float:none; width:auto; min-height:34px; padding:6px 10px; margin:0; border:1px solid #c5dfcc; border-radius:12px; background:#f7fff9; color:#28573f; cursor:pointer; }
-.moremi-developer-badge { display:inline-block !important; width:22px !important; height:22px !important; min-width:22px !important; max-width:22px !important; min-height:22px !important; max-height:22px !important; object-fit:contain !important; object-position:center !important; vertical-align:middle; margin-left:4px; float:none !important; flex:0 0 22px !important; border-radius:4px; }
-body[data-game-view='for-lobby'] .MeBox { top:48px !important; }
-body:not([data-game-view='for-lobby'])[data-game-view] .kkutu-menu { top:48px !important; }
-body[data-game-view='for-gaming'] .GameBox { top:0 !important; }
-body[data-game-view='for-master'] .RoomBox,body[data-game-view='for-normal'] .RoomBox { top:98px !important; }
-@media(max-width:800px){
- body[data-game-view='for-lobby'] .kkutu-menu { top:116px !important; }
- body[data-game-view='for-lobby'] #LobbyHero { top:calc(224px + (100dvh - 494px)/2) !important; }
- #AccountCard { padding:24px 20px; }
+#AccountOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(21,43,32,.5);
+  box-sizing: border-box;
+}
+#AccountOverlay[hidden] {
+  display: none !important;
+}
+#AccountCard {
+  position: relative;
+  width: min(460px,100%);
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  background: #fff;
+  color: #223e30;
+  border: 1px solid #cce4d4;
+  border-radius: 24px;
+  padding: 30px;
+  box-sizing: border-box;
+  box-shadow: 0 20px 70px #163a3540;
+  font:
+    16px/1.5 Arial,sans-serif;
+}
+#AccountCard * {
+  float: none;
+  box-sizing: border-box;
+}
+#AccountCard h2 {
+  font-size: 25px;
+  margin: 0 36px 22px 0;
+}
+#AccountCard p {
+  margin: 10px 0;
+}
+#AccountCard label {
+  display: block;
+  font-weight: bold;
+  margin: 14px 0 5px;
+}
+#AccountCard input {
+  display: block;
+  width: 100%;
+  height: 46px;
+  padding: 10px 12px;
+  border: 1px solid #a9c9b6;
+  border-radius: 10px;
+  background: white;
+  color: #203c2a;
+  font:
+    16px Arial,sans-serif;
+}
+#AccountCard button {
+  display: block;
+  position: static;
+  width: 100%;
+  min-height: 46px;
+  margin: 12px 0 0;
+  border: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #d9f0df;
+  color: #24553a;
+  cursor: pointer;
+  font:
+    bold 16px Arial,sans-serif;
+}
+#AccountCard button.primary {
+  background: #287950;
+  color: white;
+}
+#AccountCard button.account-discord {
+  background: #5865f2;
+  color: white;
+}
+#AccountCard button.account-google {
+  background: #fff;
+  color: #202124;
+  border: 1px solid #dadce0;
+}
+#AccountCard button.account-kakao {
+  background: #fee500;
+  color: #191919;
+}
+#AccountCard button.account-link {
+  background: transparent;
+  text-decoration: underline;
+  font-size: 14px;
+}
+#AccountCard #AccountClose {
+  position: absolute;
+  width: 36px;
+  min-height: 36px;
+  right: 14px;
+  top: 14px;
+  margin: 0;
+  padding: 0;
+  background: #eff6f1;
+}
+#AccountCard .account-warning {
+  color: #8a4d19;
+  font-size: 12px;
+  background: #fff3df;
+  border-radius: 8px;
+  padding: 10px;
+}
+#AccountError {
+  color: #a32929;
+  font-size: 14px;
+  min-height: 20px;
+}
+#AccountCard button:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+#AccountCard .account-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 16px 0 4px;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.45;
+}
+#AccountCard .account-consent input {
+  display: block;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  padding: 0;
+}
+#AccountCard .account-consent a {
+  color: #287950;
+  text-decoration: underline;
+}
+body.account-login-page {
+  min-height: 100vh;
+  margin: 0;
+  background: linear-gradient(145deg,#f8fbf8 0%,#f4f7f5 52%,#edf7ef 100%);
+  font-family: "Noto Sans KR",Arial,sans-serif;
+}
+body.account-login-page #AccountOverlay {
+  background: transparent;
+  align-items: center;
+  padding-top: 112px;
+}
+body.account-login-page #AccountCard {
+  width: min(430px,100%);
+  border: 1px solid rgba(33,83,55,.12);
+  border-radius: 24px;
+  box-shadow: 0 24px 70px rgba(27,61,42,.13);
+  padding: 36px;
+  background: rgba(255,255,255,.96);
+}
+body.account-login-page #AccountCard h2 {
+  text-align: center;
+  margin: 4px 0 8px;
+  font-size: 28px;
+  color: #17231c;
+  letter-spacing: -.04em;
+}
+body.account-login-page #AccountCard .account-description {
+  text-align: center;
+  color: #6b756f;
+  margin: 0 0 22px;
+}
+body.account-login-page #AccountCard input {
+  border-color: #c9d0d5;
+  border-radius: 8px;
+}
+body.account-login-page #AccountCard button.primary {
+  background: #47a450;
+}
+body.account-login-page #AccountCard button {
+  min-height: 50px;
+  border-radius: 13px;
+  transition:
+    transform .16s ease,box-shadow .16s ease,filter .16s ease;
+}
+body.account-login-page #AccountCard button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(24,55,38,.12);
+  filter: brightness(1.015);
+}
+body.account-login-page #AccountCard .account-password-find {
+  margin-top: 18px;
+  background: #f1f4f2;
+  color: #526058;
+  font-size: 14px;
+}
+.login-brand {
+  position: absolute;
+  z-index: 2147483200;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.login-brand img {
+  width: min(270px,64vw);
+  height: 68px;
+  object-fit: contain;
+}
+.login-back {
+  position: absolute;
+  z-index: 2147483200;
+  top: 28px;
+  left: 28px;
+  padding: 9px 13px;
+  border-radius: 12px;
+  color: #34463b;
+  background: rgba(255,255,255,.8);
+  text-decoration: none;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(20,45,31,.07);
+}
+#AccountBar {
+  position: fixed;
+  top: 8px;
+  right: 12px;
+  left: auto;
+  z-index: 90;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  max-width: calc(100vw - 140px);
+  font:
+    14px Arial,sans-serif;
+}
+#AccountBar button {
+  float: none;
+  width: auto;
+  min-height: 34px;
+  padding: 6px 10px;
+  margin: 0;
+  border: 1px solid #c5dfcc;
+  border-radius: 12px;
+  background: #f7fff9;
+  color: #28573f;
+  cursor: pointer;
+}
+.moremi-developer-badge {
+  display: inline-block !important;
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  max-width: 22px !important;
+  min-height: 22px !important;
+  max-height: 22px !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  vertical-align: middle;
+  margin-left: 4px;
+  float: none !important;
+  flex: 0 0 22px !important;
+  border-radius: 4px;
+}
+body[data-game-view="for-lobby"] .MeBox {
+  top: 48px !important;
+}
+body:not([data-game-view="for-lobby"])[data-game-view] .kkutu-menu {
+  top: 48px !important;
+}
+body[data-game-view="for-gaming"] .GameBox {
+  top: 0 !important;
+}
+body[data-game-view="for-master"] .RoomBox,
+body[data-game-view="for-normal"] .RoomBox {
+  top: 98px !important;
+}
+@media (max-width: 800px) {
+  body[data-game-view="for-lobby"] .kkutu-menu {
+    top: 116px !important;
+  }
+  body[data-game-view="for-lobby"] #LobbyHero {
+    top: calc(224px + (100dvh - 494px)/2) !important;
+  }
+  #AccountCard {
+    padding: 24px 20px;
+  }
+}
+#GuestPrivacyConsentLabel {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+  white-space: normal !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+#GuestPrivacyConsent {
+  display: block !important;
+  flex: 0 0 20px !important;
+  width: 20px !important;
+  height: 20px !important;
+  margin: 1px 0 0 !important;
+}
+#GuestPrivacyConsentLabel span {
+  display: inline !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: auto !important;
+  height: auto !important;
+  color: #fff !important;
+  text-align: left !important;
+}
+#GuestPrivacyConsentLabel a {
+  display: inline !important;
+  visibility: visible !important;
+  color: #ffe598 !important;
+  text-decoration: underline !important;
+  margin: 0 3px !important;
+}
+body.guest-name-locked #GuestPrivacyConsentLabel {
+  order: 3;
+  width: min(380px,90vw);
+  color: #fff !important;
+  background: rgba(0,0,0,.42) !important;
+  padding: 11px 13px !important;
+  border-radius: 10px !important;
+}
+body.guest-name-locked #GuestNameSave {
+  order: 4 !important;
+}
+body.guest-name-locked #GuestNameHint {
+  order: 5 !important;
+}
+#PlaytimeReminder {
+  position: fixed;
+  z-index: 2147483000;
+  top: 86px;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: min(760px,calc(100vw - 32px));
+  padding: 18px 28px;
+  box-sizing: border-box;
+  transform: translate(-50%,-18px);
+  opacity: 0;
+  pointer-events: none;
+  border: 3px solid #ffe36c;
+  border-radius: 17px;
+  background: linear-gradient(135deg,rgba(116,28,20,.97),rgba(37,14,13,.97));
+  box-shadow:
+    0 0 0 4px rgba(255,224,83,.2),0 14px 42px rgba(0,0,0,.48);
+  color: #fff;
+  font-family: Arial,'Malgun Gothic',sans-serif;
+  text-align: center;
+  transition:
+    opacity .3s ease,transform .3s ease;
+  backdrop-filter: blur(10px);
+}
+#PlaytimeReminder strong {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  font-size: 21px;
+  line-height: 1.35;
+  color: #fff7b5;
+}
+#PlaytimeReminder .playtime-warning {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 4px 0 0 !important;
+  padding: 0 !important;
+  font-size: 15px !important;
+  line-height: 1.45 !important;
+  font-weight: 800 !important;
+  color: #fff !important;
+  text-align: center !important;
+  white-space: normal !important;
+}
+#PlaytimeReminder.is-visible {
+  opacity: 1;
+  transform: translate(-50%,0);
+  animation: playtime-alert-blink 1s ease-in-out infinite;
+}
+@keyframes playtime-alert-blink {
+  0%,
+  100% {
+    filter: brightness(1);
+    box-shadow:
+      0 0 0 4px rgba(255,224,83,.2),0 14px 42px rgba(0,0,0,.48);
+  }
+  50% {
+    filter: brightness(1.3);
+    box-shadow:
+      0 0 0 8px rgba(255,224,83,.5),0 0 32px rgba(255,101,65,.72),0 14px 42px rgba(0,0,0,.48);
+  }
+}
+@media (max-width: 800px) {
+  #PlaytimeReminder {
+    top: 66px;
+    width: calc(100vw - 20px);
+    padding: 14px 16px;
+  }
+  #PlaytimeReminder strong {
+    font-size: 17px;
+  }
+  #PlaytimeReminder .playtime-warning {
+    font-size: 13px !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #PlaytimeReminder.is-visible {
+    animation: none;
+  }
+}
+
+/* Keep the required consent copy visible inside every game theme. */
+html body #AccountOverlay #AccountCard .account-consent {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 10px;
+  width: 100%;
+  height: auto;
+  color: inherit !important;
+}
+
+html body #AccountOverlay #AccountCard .account-consent-copy {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: static !important;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto !important;
+  height: auto !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  color: inherit !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  clip-path: none !important;
+}
+
+html body #AccountOverlay #AccountCard .account-consent-copy a {
+  display: inline !important;
+  visibility: visible !important;
+  color: inherit !important;
+  font-weight: 700;
+  text-decoration: underline !important;
 }

@@ -41,6 +41,7 @@ const KKUTU_LIST = [
 	"Web/lib/kkutu/rule_sock.js",
 	"Web/lib/kkutu/rule_yut.js",
 	"Web/lib/kkutu/body.js",
+	"Web/lib/kkutu/friend-ui.js",
 	"Web/lib/kkutu/tail.js"
 ];
 

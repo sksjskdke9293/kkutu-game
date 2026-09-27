@@ -85,7 +85,7 @@ $lib.Daneo.turnEnd = function(id, data){
 		playSound('timeout');
 	}
 	if(data.hint){
-		data.hint = data.hint._id;
+		data.hint = maskDefinitionProfanity(data.hint._id);
 		hi = data.hint.indexOf($data._chars[0]);
 		if(hi == -1) hi = data.hint.indexOf($data._chars[1]);
 		

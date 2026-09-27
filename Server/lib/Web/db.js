@@ -86,6 +86,7 @@ Pub.ready = function(isPub){
 			DB.users = new mainAgent.Table("users");
 			/* Enhanced User Block System [S] */
 			DB.ip_block = new mainAgent.Table("ip_block");
+			DB.profanity_warning = new mainAgent.Table("profanity_warning");
 			DB.access_log = new mainAgent.Table("access_log");
 			/* Enhanced User Block System [E] */
 			

@@ -146,6 +146,6 @@ exports.readyRobot = function(robot){
 		var available=(words||[]).filter(function(word){return my.game.chain.indexOf(word._id)<0;});
 		if(!available.length)return;
 		var pick=available[Math.floor(Math.random()*Math.min(available.length,20))];
-		setTimeout(function(){if(my.gaming&&!my.game.late&&my.game.turnAt===at)my.turnRobot(robot,pick._id);},1200+Math.floor(Math.random()*900));
+		setTimeout(function(){if(my.gaming&&!my.game.late&&my.game.turnAt===at)my.turnRobot(robot,pick._id);},Number(robot.level)===4?0:1200+Math.floor(Math.random()*900));
 	});
 };

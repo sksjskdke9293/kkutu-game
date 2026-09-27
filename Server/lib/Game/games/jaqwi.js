@@ -21,7 +21,7 @@ var Lizard = require('../../sub/lizard');
 var DB;
 var DIC;
 
-var ROBOT_CATCH_RATE = [ 0.1, 0.3, 0.5, 0.7, 0.99 ];
+var ROBOT_CATCH_RATE = [ 0.1, 0.3, 0.5, 0.7, 1 ];
 var ROBOT_TYPE_COEF = [ 2000, 1200, 800, 300, 0 ];
 var robotTimers = {};
 
@@ -189,7 +189,7 @@ exports.readyRobot = function(robot){
 	for(i=0; i<2; i++){
 		if(Math.random() < ROBOT_CATCH_RATE[level]){
 			text = my.game.answer._id;
-			delay = my.game.roundTime / 3 * i + text.length * ROBOT_TYPE_COEF[level];
+			delay = level === 4 ? 0 : my.game.roundTime / 3 * i + text.length * ROBOT_TYPE_COEF[level];
 			robot._timer = setTimeout(my.turnRobot, delay, robot, text);
 			robot._delay = delay;
 			break;

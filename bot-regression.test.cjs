@@ -19,16 +19,18 @@ api.init({kkutu_manner:{ko:manner},kkutu:{ko:{
 }}}, {});
 for (let level=0; level<5; level++) {
  const bot={level,_done:[]};
- const room={gaming:true,mode:3,opts:{dictionary:'standard'},rule:{lang:'ko'},
+ const room={gaming:true,mode:3,opts:{dictionary:'standard',shield:0},rule:{lang:'ko'},
   game:{char:'가',chain:['가방'],turnAt:123,turnTime:15000,late:false},
   turnRobot: (_,word) => {selected=word;}};
  selected=null; pending=null;queries=0;
  api.readyRobot.call(room,bot);
- assert.equal(queries,1,'must not fan out lookahead scans');
+ assert.equal(queries,level===4?0:1,'nuclear bot skips dictionary latency; others avoid query fanout');
  assert.ok(pending && Number.isFinite(pending.delay));
  assert.equal(room.game.robotTimer,pending);
+ if(level===4) assert.equal(pending.delay,0,"nuclear bot has no artificial delay");
  pending.fn();
- assert.equal(selected,'가게',`level ${level}: unused zero-hit word`);
+ if(level===4) assert.ok(selected.startsWith('가') && selected.length>1);
+ else assert.equal(selected,'가게',`level ${level}: unused zero-hit word`);
  selected=null; room.game.turnAt++;
  pending.fn();
  assert.equal(selected,null,'stale turn must not submit');

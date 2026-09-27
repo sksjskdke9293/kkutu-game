@@ -8,6 +8,24 @@
 		if(!response.ok) throw new Error(data.error || '요청을 처리하지 못했습니다.');
 		return data;
 	}
+	var nativeLoginUri='';
+	async function issueNativeLoginCode(){
+		var card=document.getElementById('native-login-card'),input=document.getElementById('native-login-code');
+		if(!card||!input)return;
+		input.value='';input.placeholder='코드를 만드는 중...';nativeLoginUri='';
+		try{
+			var data=await request('/admin/api/native-login-code',{method:'POST'});
+			input.value=data.code||'';nativeLoginUri=data.uri||'';
+			message(card,'새 코드가 발급되었습니다. 2분 안에 사용하세요.');
+		}catch(error){input.placeholder='발급 실패';message(card,error.message,true);}
+	}
+	var nativeOpen=document.getElementById('native-login-open');
+	if(nativeOpen)nativeOpen.onclick=function(){if(!nativeLoginUri){issueNativeLoginCode();return;}window.location.href=nativeLoginUri;};
+	var nativeCopy=document.getElementById('native-login-copy');
+	if(nativeCopy)nativeCopy.onclick=async function(){var value=document.getElementById('native-login-code').value;if(!value)return;try{await navigator.clipboard.writeText(value);toast('연결 코드를 복사했습니다.');}catch(error){document.getElementById('native-login-code').select();document.execCommand('copy');toast('연결 코드를 복사했습니다.');}};
+	var nativeRefresh=document.getElementById('native-login-refresh');
+	if(nativeRefresh)nativeRefresh.onclick=issueNativeLoginCode;
+	issueNativeLoginCode();
 	document.querySelectorAll('.card[data-kind]').forEach(function(card){
 		var kind = card.dataset.kind;
 		card.querySelector('.lookup').onclick = async function(){
@@ -46,12 +64,23 @@
 		if(duration) body.set('duration', duration);
 		await request('/admin/api/' + kind + '/' + action, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:body });
 	}
-	async function loadRecent(){
+ var recentPage = 1, recentPages = 1, recentLoading = false;
+ function updateRecentPager(){
+  document.getElementById('recent-prev').disabled = recentLoading || recentPage <= 1;
+  document.getElementById('recent-next').disabled = recentLoading || recentPage >= recentPages;
+ }
+ async function loadRecent(page){
 		var tbody = document.getElementById('recent-list');
 		if(!tbody) return;
-		tbody.innerHTML = '<tr><td colspan="5">불러오는 중...</td></tr>';
+  if(recentLoading) return;
+  recentLoading = true;
+  updateRecentPager();
+  tbody.innerHTML = '<tr><td colspan="5">불러오는 중...</td></tr>';
 		try {
-			var data = await request('/admin/api/recent');
+			var data = await request('/admin/api/recent?page=' + (Number.isSafeInteger(page) && page > 0 ? page : recentPage));
+   recentPage = data.page;
+   recentPages = data.totalPages;
+   document.getElementById('recent-page-info').textContent = recentPage + ' / ' + recentPages + ' 페이지 · 총 ' + data.total + '건';
 			tbody.innerHTML = '';
 			(data.list || []).forEach(function(row){
 				var tr = document.createElement('tr');
@@ -60,7 +89,8 @@
 				tbody.appendChild(tr);
 			});
 			if(!tbody.children.length) tbody.innerHTML='<tr><td colspan="5">접속 기록이 없습니다.</td></tr>';
-		} catch(error) { tbody.innerHTML='<tr><td colspan="5">'+escapeHtml(error.message)+'</td></tr>'; }
+		 } catch(error) { tbody.innerHTML='<tr><td colspan="5">'+escapeHtml(error.message)+'</td></tr>'; }
+  finally { recentLoading = false; updateRecentPager(); }
 	}
 	async function loadAccounts(){
 		var tbody = document.getElementById('accounts-list');
@@ -76,7 +106,8 @@
 					controls='<button class="password-reset" data-username="'+escapeAttr(row.username)+'">비밀번호 변경</button> <button class="nickname-change" data-username="'+escapeAttr(row.username)+'" data-nickname="'+escapeAttr(row.nickname)+'">닉네임 변경</button>';
 					if(!row.developer) controls+=' <button class="account-delete" data-username="'+escapeAttr(row.username)+'">계정 삭제</button>';
 				} else if(row.account_type === 'Discord') controls='<button class="discord-nickname-change" data-user-id="'+escapeAttr(row.user_id)+'" data-nickname="'+escapeAttr(row.nickname)+'">게임 닉네임 변경</button>';
-				var joined=Number(row.created_at)>0?new Date(Number(row.created_at)).toLocaleString():'기록 없음';
+				controls+=' <span>Lv.'+escapeHtml(row.level)+' · 경험치 '+escapeHtml(row.experience)+'</span> <button class="progress-change" data-user-id="'+escapeAttr(row.user_id)+'" data-kind="level">레벨 변경</button> <button class="progress-change" data-user-id="'+escapeAttr(row.user_id)+'" data-kind="add">경험치 지급</button> <button class="progress-change" data-user-id="'+escapeAttr(row.user_id)+'" data-kind="score">총 경험치 설정</button>';
+                var joined=Number(row.created_at)>0?new Date(Number(row.created_at)).toLocaleString():'기록 없음';
 				controls+=' <button class="badge-upload" data-user-id="'+escapeAttr(row.user_id)+'">배지 이미지</button>';
 				tr.innerHTML = '<td><code>'+escapeHtml(row.username)+'</code></td><td>'+escapeHtml(row.nickname)+'</td><td><code>'+escapeHtml(row.user_id)+'</code></td><td>'+joined+'</td><td class="account-actions">'+controls+'</td><td>'+escapeHtml(row.account_type)+' · '+(row.developer?'운영자':'일반')+'</td>';
 				tbody.appendChild(tr);
@@ -84,7 +115,14 @@
 			if(!tbody.children.length) tbody.innerHTML='<tr><td colspan="6">가입 계정이 없습니다.</td></tr>';
 		} catch(error) { tbody.innerHTML='<tr><td colspan="6">'+escapeHtml(error.message)+'</td></tr>'; }
 	}
-	function escapeHtml(value){ var div=document.createElement('div'); div.textContent=String(value||''); return div.innerHTML; }
+	document.addEventListener('click',async function(event){
+ var button=event.target.closest('#accounts-list .progress-change');if(!button)return;
+ var kind=button.dataset.kind,value=prompt(kind==='level'?'변경할 레벨 (1~360) — 해당 레벨 시작 경험치로 설정됩니다.':kind==='add'?'추가로 지급할 경험치':'설정할 총 경험치');
+ if(value===null)return;if(!/^\d+$/.test(value)){toast('0 이상의 정수를 입력하세요.',true);return;}
+ button.disabled=true;
+ try{var data=new URLSearchParams({user_id:button.dataset.userId,kind:kind,value:value});var result=await request('/admin/api/accounts/progress',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:data});toast('Lv.'+result.level+' · 경험치 '+result.score+' 적용 완료');await loadAccounts();}catch(error){toast(error.message,true);}finally{button.disabled=false;}
+ });
+ function escapeHtml(value){ var div=document.createElement('div'); div.textContent=String(value||''); return div.innerHTML; }
 	function escapeAttr(value){ return escapeHtml(value).replace(/"/g,'&quot;'); }
 	document.addEventListener('click', async function(event){
 		var button=event.target.closest('#recent-list button'); if(!button) return;
@@ -153,20 +191,32 @@
 		try { var data=await request('/admin/api/notices');
 			document.querySelectorAll('.notice-editor').forEach(function(card){ var notice=data[card.dataset.notice]||{};
 				var target=card.querySelector('.notice-target-url'); if(target)target.value=notice.target_url||'';
+				var targetEn=card.querySelector('.notice-target-url-en'); if(targetEn)targetEn.value=notice.target_url_en||'';
+				var targetZh=card.querySelector('.notice-target-url-zh'); if(targetZh)targetZh.value=notice.target_url_zh||'';
+				var targetKp=card.querySelector('.notice-target-url-kp'); if(targetKp)targetKp.value=notice.target_url_kp||'';
 				card.querySelector('.notice-enabled').checked=notice.enabled===true;
 			});
 		} catch(error){ toast(error.message,true); }
 	}
 	async function saveNotice(card,enabled){
-		var key=card.dataset.notice, imageUrl='';
+		var key=card.dataset.notice, imageUrl='', imageUrlEn='', imageUrlZh='', imageUrlKp='';
 		if(key==='game_entry'){
 			var fileInput=card.querySelector('.notice-image-file'), file=fileInput.files[0];
 			if(file){
 				if(file.size>3*1024*1024)throw new Error('이미지는 최대 3MB까지 업로드할 수 있습니다.');
 				var uploaded=await request('/admin/api/notices/game-image',{method:'POST',headers:{'Content-Type':file.type},body:file}); imageUrl=uploaded.url; fileInput.value='';
 			}else{ var current=await request('/admin/api/notices'); imageUrl=(current.game_entry&&current.game_entry.image_url)||''; }
+			var fileEnInput=card.querySelector('.notice-image-file-en'),fileEn=fileEnInput&&fileEnInput.files[0];
+			if(fileEn){if(fileEn.size>3*1024*1024)throw new Error('영어 이미지는 최대 3MB까지 업로드할 수 있습니다.');var uploadedEn=await request('/admin/api/notices/game-image?lang=en',{method:'POST',headers:{'Content-Type':fileEn.type},body:fileEn});imageUrlEn=uploadedEn.url;fileEnInput.value='';}
+			else{var currentEn=await request('/admin/api/notices');imageUrlEn=(currentEn.game_entry&&currentEn.game_entry.image_url_en)||'';}
+			var fileZhInput=card.querySelector('.notice-image-file-zh'),fileZh=fileZhInput&&fileZhInput.files[0];
+			if(fileZh){if(fileZh.size>3*1024*1024)throw new Error('중국어 이미지는 최대 3MB까지 업로드할 수 있습니다.');var uploadedZh=await request('/admin/api/notices/game-image?lang=zh',{method:'POST',headers:{'Content-Type':fileZh.type},body:fileZh});imageUrlZh=uploadedZh.url;fileZhInput.value='';}
+			else{var currentZh=await request('/admin/api/notices');imageUrlZh=(currentZh.game_entry&&currentZh.game_entry.image_url_zh)||'';}
+			var fileKpInput=card.querySelector('.notice-image-file-kp'),fileKp=fileKpInput&&fileKpInput.files[0];
+			if(fileKp){if(fileKp.size>3*1024*1024)throw new Error('조선어 이미지는 최대 3MB까지 업로드할 수 있습니다.');var uploadedKp=await request('/admin/api/notices/game-image?lang=kp',{method:'POST',headers:{'Content-Type':fileKp.type},body:fileKp});imageUrlKp=uploadedKp.url;fileKpInput.value='';}
+			else{var currentKp=await request('/admin/api/notices');imageUrlKp=(currentKp.game_entry&&currentKp.game_entry.image_url_kp)||'';}
 		}
-		var body=new URLSearchParams(); body.set('enabled',enabled?'true':'false'); body.set('title',''); body.set('message',''); body.set('image_url',imageUrl); body.set('target_url',(card.querySelector('.notice-target-url')||{}).value||'');
+		var body=new URLSearchParams(); body.set('enabled',enabled?'true':'false'); body.set('title',''); body.set('message',''); body.set('image_url',imageUrl); body.set('target_url',(card.querySelector('.notice-target-url')||{}).value||'');body.set('image_url_en',imageUrlEn);body.set('target_url_en',(card.querySelector('.notice-target-url-en')||{}).value||'');body.set('image_url_zh',imageUrlZh);body.set('target_url_zh',(card.querySelector('.notice-target-url-zh')||{}).value||'');body.set('image_url_kp',imageUrlKp);body.set('target_url_kp',(card.querySelector('.notice-target-url-kp')||{}).value||'');
 		await request('/admin/api/notices/'+key,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body}); card.querySelector('.notice-enabled').checked=enabled;
 	}
 	document.addEventListener('click',async function(event){
@@ -175,13 +225,15 @@
 		try{ await saveNotice(card,enabled); toast(enabled?'공지가 저장되어 표시됩니다.':'공지가 삭제되었습니다.'); }
 		catch(error){toast(error.message,true);} button.disabled=false;
 	});
-	var refresh=document.getElementById('recent-refresh'); if(refresh) refresh.onclick=loadRecent;
+	var refresh=document.getElementById('recent-refresh'); if(refresh) refresh.onclick=function(){loadRecent(1);};
+ document.getElementById('recent-prev').onclick=function(){loadRecent(recentPage-1);};
+ document.getElementById('recent-next').onclick=function(){loadRecent(recentPage+1);};
 	var accountRefresh=document.getElementById('accounts-refresh'); if(accountRefresh) accountRefresh.onclick=loadAccounts;
 	loadRecent();
 	loadAccounts();
 	loadNotices();
 	async function loadNoticePosts(){ var box=document.getElementById('notice-post-list'); if(!box)return; try{var data=await request('/admin/api/notice-posts');box.innerHTML='';(data.posts||[]).forEach(function(post){var row=document.createElement('div');row.className='notice-post-row';row.innerHTML='<img src="/site-notice-post/'+post.id+'?v='+post.created_at+'" alt="공지"><span>'+new Date(Number(post.created_at)).toLocaleString()+'</span><button data-id="'+post.id+'">삭제</button>';box.appendChild(row);});}catch(error){toast(error.message,true);} }
-	var addPost=document.getElementById('notice-post-add');if(addPost)addPost.onclick=async function(){var file=document.getElementById('notice-post-file').files[0],url=document.getElementById('notice-post-url').value;if(!file){toast('공지 이미지를 선택하세요.',true);return;}addPost.disabled=true;try{await request('/admin/api/notice-posts?target_url='+encodeURIComponent(url),{method:'POST',headers:{'Content-Type':file.type},body:file});document.getElementById('notice-post-file').value='';document.getElementById('notice-post-url').value='';toast('누적 공지가 등록되었습니다.');loadNoticePosts();}catch(error){toast(error.message,true);}addPost.disabled=false;};
+	var addPost=document.getElementById('notice-post-add');if(addPost)addPost.onclick=async function(){var file=document.getElementById('notice-post-file').files[0],url=document.getElementById('notice-post-url').value,fileEn=document.getElementById('notice-post-file-en').files[0],urlEn=document.getElementById('notice-post-url-en').value,fileZh=document.getElementById('notice-post-file-zh').files[0],urlZh=document.getElementById('notice-post-url-zh').value,fileKp=document.getElementById('notice-post-file-kp').files[0],urlKp=document.getElementById('notice-post-url-kp').value;if(!file){toast('한국어 공지 이미지를 선택하세요.',true);return;}if(fileEn&&fileEn.size>3*1024*1024){toast('영어 이미지는 최대 3MB입니다.',true);return;}if(fileZh&&fileZh.size>3*1024*1024){toast('중국어 이미지는 최대 3MB입니다.',true);return;}if(fileKp&&fileKp.size>3*1024*1024){toast('조선어 이미지는 최대 3MB입니다.',true);return;}addPost.disabled=true;try{var created=await request('/admin/api/notice-posts?target_url='+encodeURIComponent(url),{method:'POST',headers:{'Content-Type':file.type},body:file});if(fileEn)await request('/admin/api/notice-posts/'+created.post.id+'/english?target_url='+encodeURIComponent(urlEn),{method:'POST',headers:{'Content-Type':fileEn.type},body:fileEn});if(fileZh)await request('/admin/api/notice-posts/'+created.post.id+'/chinese?target_url='+encodeURIComponent(urlZh),{method:'POST',headers:{'Content-Type':fileZh.type},body:fileZh});if(fileKp)await request('/admin/api/notice-posts/'+created.post.id+'/choson?target_url='+encodeURIComponent(urlKp),{method:'POST',headers:{'Content-Type':fileKp.type},body:fileKp});['notice-post-file','notice-post-file-en','notice-post-file-zh','notice-post-file-kp','notice-post-url','notice-post-url-en','notice-post-url-zh','notice-post-url-kp'].forEach(function(id){document.getElementById(id).value='';});toast('한국어·영어·중국어·조선어 공지가 등록되었습니다.');loadNoticePosts();}catch(error){toast(error.message,true);}addPost.disabled=false;};
 	document.addEventListener('click',async function(event){var b=event.target.closest('#notice-post-list button');if(!b)return;try{await request('/admin/api/notice-posts/'+b.dataset.id+'/delete',{method:'POST'});toast('공지가 삭제되었습니다.');loadNoticePosts();}catch(error){toast(error.message,true);}});
 	loadNoticePosts();
 	async function loadServerMaintenance(){
@@ -214,5 +266,20 @@
 	var accessAdd=document.getElementById('server-access-add');if(accessAdd)accessAdd.onclick=async function(){var input=document.getElementById('server-access-user'),body=new URLSearchParams();body.set('server','2');body.set('user_id',input.value.trim());try{await request('/admin/api/server-access',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body});input.value='';toast('추석 서버 입장을 허용했습니다.');loadServerAccess();}catch(error){toast(error.message,true);}};
 	document.addEventListener('click',async function(event){var button=event.target.closest('#server-access-list button');if(!button)return;var body=new URLSearchParams();body.set('server','2');body.set('user_id',button.dataset.user);body.set('remove','true');try{await request('/admin/api/server-access',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body});toast('입장 허용을 삭제했습니다.');loadServerAccess();}catch(error){toast(error.message,true);}});
 	loadServerAccess();
+	function adElement(placement,name){return document.getElementById(placement+'-ad-'+name);}
+	function renderAdItems(placement){var card=adElement(placement,'config-card'),box=adElement(placement,'item-list');if(!card||!box)return;box.innerHTML='';(card._adItems||[]).forEach(function(item,index){var row=document.createElement('div');row.className='notice-post-row';var img=document.createElement('img');img.src=item.imageUrl;img.alt='광고 미리보기';var text=document.createElement('span');text.textContent=item.imageUrl+(item.linkUrl?' → '+item.linkUrl:'');var button=document.createElement('button');button.type='button';button.textContent='삭제';button.dataset.index=index;row.appendChild(img);row.appendChild(text);row.appendChild(button);box.appendChild(row);});if(!(card._adItems||[]).length)box.textContent='등록된 운영자 광고가 없습니다.';}
+	async function loadAdConfig(placement){var card=adElement(placement,'config-card');if(!card)return;try{var all=await request('/admin/api/ad-config'),data=all[placement]||{};card._adItems=data.items||[];adElement(placement,'mode').value=data.mode||'off';adElement(placement,'google-slot').value=data.googleSlot||'';adElement(placement,'interval').value=data.intervalSeconds||15;renderAdItems(placement);}catch(error){message(card,error.message,true);}}
+	function setupAdEditor(placement){
+		var card=adElement(placement,'config-card');if(!card)return;
+		var upload=adElement(placement,'image-upload'),fileInput=adElement(placement,'image-file'),add=adElement(placement,'item-add'),save=adElement(placement,'config-save');
+		upload.onclick=function(){fileInput.click();};
+		fileInput.onchange=async function(){var file=fileInput.files[0];if(!file)return;if(file.size>5*1024*1024){toast('광고 이미지는 최대 5MB입니다.',true);fileInput.value='';return;}upload.disabled=true;upload.textContent='업로드 중...';try{var uploaded=await request('/admin/api/ad-image',{method:'POST',headers:{'Content-Type':file.type},body:file});adElement(placement,'image-url').value=uploaded.url;toast('이미지를 업로드했습니다. 광고 추가를 눌러주세요.');}catch(error){toast(error.message,true);}upload.disabled=false;upload.textContent='이미지 업로드';fileInput.value='';};
+		add.onclick=function(){var imageUrl=adElement(placement,'image-url').value.trim(),linkUrl=adElement(placement,'link-url').value.trim();if(!/^https?:\/\//i.test(imageUrl)&&imageUrl.charAt(0)!=='/'){toast('광고 이미지 주소를 입력하세요.',true);return;}if(linkUrl&&!/^https?:\/\//i.test(linkUrl)&&linkUrl.charAt(0)!=='/'){toast('클릭 후 이동 주소를 확인하세요.',true);return;}(card._adItems||(card._adItems=[])).push({imageUrl:imageUrl,linkUrl:linkUrl,alt:'광고'});adElement(placement,'image-url').value='';adElement(placement,'link-url').value='';renderAdItems(placement);};
+		adElement(placement,'item-list').onclick=function(event){var button=event.target.closest('button');if(!button)return;card._adItems.splice(Number(button.dataset.index),1);renderAdItems(placement);};
+		save.onclick=async function(){save.disabled=true;try{await request('/admin/api/ad-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({placement:placement,mode:adElement(placement,'mode').value,googleSlot:adElement(placement,'google-slot').value,intervalSeconds:Number(adElement(placement,'interval').value),items:card._adItems||[]})});message(card,(placement==='portal'?'광고 1':'광고 2')+' 설정을 저장했습니다.');toast('광고 설정을 저장했습니다.');await loadAdConfig(placement);}catch(error){message(card,error.message,true);}save.disabled=false;};
+		loadAdConfig(placement);
+	}
+	setupAdEditor('portal');
+	setupAdEditor('game');
 
 })();

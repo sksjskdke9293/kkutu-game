@@ -30,6 +30,7 @@ function process(req, accessToken, MainDB, $p, done) {
     delete $p.token;
     var linkLocalUserId=req.session.linkLocalUserId;
     var linkProvider=req.session.linkProvider;
+    var nativeLogin=req.session.nativeLogin===true;
     var finish = function(){
       if(linkLocalUserId && linkProvider !== $p.authType) throw new Error('선택한 소셜 계정으로 다시 로그인해 주세요.');
       var linked=linkLocalUserId?LocalAuth.migrateLocalToDiscord(linkLocalUserId,$p.id,$p.title):Promise.resolve(null);
@@ -41,6 +42,7 @@ function process(req, accessToken, MainDB, $p, done) {
         $p.sid = req.session.id;
         req.session.admin = GLOBAL.ADMIN.includes($p.id);
         req.session.authType = $p.authType;
+		req.session.nativeLogin = nativeLogin;
 		req.session.migrationNotice = migration ? (migration.retained ? '운영자 계정이 소셜 계정과 연결되었습니다. 기존 계정은 유지됩니다.' : '계정 이전이 완료되었습니다. 게임 닉네임과 게임 데이터도 함께 이전되었습니다.') : '';
         MainDB.session.upsert([ '_id', req.session.id ]).set({
             'profile': $p,
@@ -50,7 +52,7 @@ function process(req, accessToken, MainDB, $p, done) {
             req.session.profile = $p;
 			// Every new social account must choose its in-game nickname. Existing
 			// players and migrated local accounts keep their saved title.
-			req.session.needsNicknameSetup = !$body && !migratedNickname && !nickname;
+			req.session.needsNicknameSetup = !migratedNickname && !nickname;
             MainDB.users.update([ '_id', $p.id ]).set([ 'lastLogin', now ]).on();
 			req.session.save(function(saveError){ done(saveError || null, $p); });
         });
@@ -86,12 +88,23 @@ exports.run = (Server, page) => {
 	for (let i in config) {
 		try {
 			let auth = require(path.resolve(__dirname, '..', 'auth', 'auth_' + i + '.js'))
-			Server.get('/login/' + auth.config.vendor, passport.authenticate(auth.config.vendor))
+			var loginOptions = auth.config.vendor === 'kakao' ? { prompt: 'login' } : {};
+			Server.get('/login/' + auth.config.vendor, passport.authenticate(auth.config.vendor, loginOptions))
 			Server.get('/login/' + auth.config.vendor + '/callback', passport.authenticate(auth.config.vendor, {
-				successRedirect: '/',
+				successRedirect: '/native/complete',
 				failureRedirect: '/loginfail'
 			}))
-			passport.use(new auth.config.strategy(auth.strategyConfig, auth.strategy(process, MainDB /*, Ajae */)));
+			var strategy = new auth.config.strategy(auth.strategyConfig, auth.strategy(process, MainDB /*, Ajae */));
+			// passport-kakao does not forward arbitrary authenticate options by
+			// default.  Add Kakao's prompt parameter so pressing Kakao login again
+			// always starts a fresh authentication instead of silently reusing the
+			// provider's previous account state.
+			if(auth.config.vendor === 'kakao'){
+				strategy.authorizationParams = function(options){
+					return { prompt: (options && options.prompt) || 'login' };
+				};
+			}
+			passport.use(strategy);
 			strategyList[auth.config.vendor] = {
 				vendor: auth.config.vendor,
 				displayName: auth.config.displayName,
@@ -105,6 +118,36 @@ exports.run = (Server, page) => {
 			JLog.error(error.message)
 		}
 	}
+
+	Server.get('/native/login', function(req,res){
+		req.session.nativeLogin=true;
+		req.session.save(function(error){if(error)return res.status(503).send('로그인 준비에 실패했습니다.');res.redirect(req.session.profile?'/native/complete':'/login?account=login&native=1');});
+	});
+	Server.get('/native/complete', function(req,res){
+		if(!req.session.profile){
+			if(req.session.nativeLogin)return res.redirect('/login?account=login&native=1');
+			return res.redirect('/');
+		}
+		if(!req.session.nativeLogin)return res.redirect('/');
+		if(req.session.needsNicknameSetup)return res.redirect('/login?account=login&native=1');
+		LocalAuth.issueNativeLogin(req.session.profile).then(function(code){
+			req.session.nativeLogin=false;req.session.save(function(){});
+			var uri='kkutugame://login?code='+encodeURIComponent(code);
+			res.set('Cache-Control','no-store').type('html').send('<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Windows 앱 연결</title><style>body{font-family:system-ui,sans-serif;background:#f5fbf2;display:grid;place-items:center;min-height:100vh;margin:0;color:#203528}.card{background:#fff;padding:42px;border-radius:24px;box-shadow:0 18px 55px #2343;max-width:460px;text-align:center}.button{display:inline-block;background:#50b45f;color:#fff;text-decoration:none;padding:14px 28px;border-radius:16px;font-weight:700}.sub{display:block;margin-top:16px;color:#4d7658;font-size:14px}</style><div class="card"><h1>Windows 앱을 여는 중입니다</h1><p>앱이 설치되어 있으면 로그인 정보를 연결한 뒤 앱 메인으로 이동합니다.<br>앱이 열리지 않으면 설치 파일을 자동으로 내려받습니다.</p><a class="button" href="'+uri+'">끄투게임즈코리아 앱 열기</a><a class="sub" href="/downloads/kkutugameskorea-setup-1.0.0.exe">설치 파일 직접 다운로드</a></div><script>(function(){var opened=false;function mark(){opened=true}window.addEventListener("blur",mark);window.addEventListener("pagehide",mark);document.addEventListener("visibilitychange",function(){if(document.hidden)mark()});location.href='+JSON.stringify(uri)+';setTimeout(function(){if(opened){location.replace("/");return}var a=document.createElement("a");a.href="/downloads/kkutugameskorea-setup-1.0.0.exe";a.download="kkutugameskorea-setup-1.0.0.exe";document.body.appendChild(a);a.click();setTimeout(function(){location.replace("/")},1200)},5000)})()</script>');
+		}).catch(function(error){JLog.error('[NATIVE LOGIN] code issue failed: '+(error&&error.stack||error));res.status(503).send('앱 연결 코드를 만들지 못했습니다.');});
+	});
+	Server.post('/native/exchange', function(req,res){
+		res.set('Cache-Control','no-store');
+		LocalAuth.redeemNativeLogin(req.body&&req.body.code).then(function(profile){
+			if(!profile)return res.status(401).json({error:'로그인 코드가 만료되었거나 이미 사용되었습니다.'});
+			req.session.regenerate(function(error){if(error)return res.status(503).json({error:'세션을 만들지 못했습니다.'});
+				profile.sid=req.session.id;req.session.profile=profile;req.session.authType=profile.authType;
+				MainDB.session.upsert(['_id',req.session.id]).set({'profile':profile,'createdAt':Date.now()}).on(function(){
+					req.session.save(function(saveError){if(saveError)return res.status(503).json({error:'세션을 저장하지 못했습니다.'});res.json({ok:true,user:{id:profile.id,nickname:profile.title||profile.name||profile.id}});});
+				});
+			});
+		}).catch(function(){res.status(503).json({error:'로그인 연결에 실패했습니다.'});});
+	});
 	
 	Server.get("/login", (req, res) => {
 		if(global.isPublic){

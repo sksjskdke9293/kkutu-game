@@ -25,7 +25,6 @@ $(document).ready(function(){
 		var query = $(this).val().toLowerCase();
 		$('.rooms-item').each(function(){ $(this).toggle($(this).text().toLowerCase().indexOf(query) >= 0); });
 	});
-	$('<button id="RoomAddBot" type="button">봇 추가</button>').appendTo('.team-selector').on('click', function(){ send('invite', {target:'AI'}); });
 	$('#QuickRoomBtn').appendTo('body').empty().append($('<span>').addClass('mobile-menu-label').text('빠른 시작'));
 	$('#HelpBtn, #SettingBtn, #CommunityBtn').appendTo('body').addClass('detached-menu');
 	$('.RoomListBox, .ShopBox').each(function(){
@@ -43,7 +42,9 @@ $(document).ready(function(){
 	$data.URL = $("#URL").html();
 	window.__kkutuConnect = function(){ connect(); };
 	$data.version = $("#version").html();
-	$data.server = location.href.match(/\?.*server=(\d+)/)[1];
+	var serverMatch = location.href.match(/[?&]server=(\d+)/);
+	var playMatch = location.pathname.match(/^\/play([1-3])$/);
+	$data.server = serverMatch ? serverMatch[1] : (playMatch ? String(Number(playMatch[1]) - 1) : '0');
 	$data.shop = {};
 	$data._okg = 0;
 	$data._playTime = 0;
@@ -82,7 +83,6 @@ $(document).ready(function(){
 			quickRoom: $("#QuickRoomBtn"),
 			tutorial: $("#TutorialBtn"),
 			dailyQuest: $("#DailyQuestBtn"),
-			dailySpin: $("#DailySpinBtn"),
 			spectate: $("#SpectateBtn"),
 			shop: $("#ShopBtn"),
 			dict: $("#DictionaryBtn"),
@@ -207,7 +207,7 @@ $(document).ready(function(){
 		try{ localStorage.setItem(getRankStorageKey(), JSON.stringify(profile)); }catch(ex){}
 	}
 	function getRankTier(rating){
-		if(rating >= 1500) return {name:'끄투게임 랭크', image:'/img/custom/ranks/rank-kkutugame.png'};
+		if(rating >= 1500) return {name:'끄투게임즈코리아 랭크', image:'/img/custom/ranks/rank-kkutugame.png'};
 		if(rating >= 1300) return {name:'자연', image:'/img/custom/ranks/rank-nature.png'};
 		if(rating >= 1150) return {name:'실버', image:'/img/custom/ranks/rank-silver.png'};
 		if(rating >= 850) return {name:'브론즈', image:'/img/custom/ranks/rank-bronze.png'};
@@ -253,40 +253,50 @@ $(document).ready(function(){
 		$('<div id="RankMatchOverlay"><section><img src="/img/custom/ranks/rank-bronze.png" alt="순위전"><h2>순위전 매칭</h2><p id="RankMatchStatus">상대방을 기다리는 중 · 1 / 2</p><p>표준 낱말집으로 2인 대결을 시작합니다.</p><button id="RankMatchCancel" type="button">매칭 취소</button></section></div>').appendTo('body');
 		$('#RankMatchCancel').on('click', function(){ send('rankCancel', {}, true); $('#RankMatchOverlay').remove(); });
 	}
-	function initChatResize(){
-		var node = $stage.box.chat.get(0);
-		var $grip;
-		var start;
-		var storageKey = 'kkutu-chat-size-v1';
-		if(!node || node.querySelector('.chat-resize-grip')) return;
-		try{
-			var saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
-			if(saved && saved.width >= 360 && saved.height >= 180){
-				node.style.setProperty('--kkutu-chat-width', saved.width + 'px');
-				node.style.setProperty('--kkutu-chat-height', saved.height + 'px');
-			}
-		}catch(ex){}
-		$grip = $('<button type="button" class="chat-resize-grip" aria-label="채팅창 크기 조절" title="드래그해서 채팅창 크기 조절">↖</button>');
-		$stage.box.chat.append($grip);
-		$grip.on('pointerdown', function(e){
-			if(e.pointerType == 'touch') return;
-			start = { x: e.clientX, y: e.clientY, width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height };
-			e.preventDefault();
-			$grip.get(0).setPointerCapture && $grip.get(0).setPointerCapture(e.pointerId);
-			$(window).on('pointermove.chatResize', function(move){
-				if(!start) return;
-				var width = Math.max(360, Math.min(window.innerWidth - 24, Math.round(start.width + start.x - move.clientX)));
-				var height = Math.max(180, Math.min(window.innerHeight - 92, Math.round(start.height + start.y - move.clientY)));
-				node.style.setProperty('--kkutu-chat-width', width + 'px');
-				node.style.setProperty('--kkutu-chat-height', height + 'px');
-			});
-			$(window).one('pointerup.chatResize pointercancel.chatResize', function(){
-				$(window).off('.chatResize');
-				if(start) try{ localStorage.setItem(storageKey, JSON.stringify({ width: Math.round(node.getBoundingClientRect().width), height: Math.round(node.getBoundingClientRect().height) })); }catch(ex){}
-				start = null;
-			});
-		});
-	}
+
+
+ var socialDock=$('<aside id="LobbySocialDock" aria-label="방문자목록과 메인채팅"><span class="social-dock-edge" title="왼쪽 가장자리를 드래그해 너비 조절"></span></aside>').hide().appendTo('body');
+ var chatHome=$('<span hidden>').insertBefore($stage.box.chat),usersHome=$('<span hidden>').insertBefore($stage.box.userList);
+ window.fitVisitorNames=function(){ document.documentElement.style.setProperty('--social-panel-width',Math.round(socialDock.get(0).getBoundingClientRect().width || 330)+'px'); $('#LobbySocialDock .users-name').each(function(){var el=this;el.style.setProperty('font-size','22px','important');var size=22;while(el.scrollWidth>el.clientWidth && el.clientWidth>0 && size>11){size--;el.style.setProperty('font-size',size+'px','important');}});};
+ if(window.ResizeObserver)new ResizeObserver(function(){window.fitVisitorNames();}).observe(socialDock.get(0));
+ window.syncLobbySocialDock=function(){
+  var lobby=getOnly()==='for-lobby';
+  if(lobby){$stage.box.userList.appendTo(socialDock);$stage.box.chat.appendTo(socialDock);socialDock.show();window.fitVisitorNames();}
+  else{$stage.box.userList.insertAfter(usersHome);$stage.box.chat.insertAfter(chatHome);socialDock.hide();}
+ };
+ try{var dockWidth=Number(localStorage.getItem('kkutu-social-width'));if(dockWidth>=290)socialDock.get(0).style.setProperty('--social-width',Math.min(dockWidth,innerWidth>800?innerWidth-460:innerWidth-24)+'px');}catch(e){}
+ socialDock.find('.social-dock-edge').on('pointerdown',function(ev){var e=ev.originalEvent||ev;e.preventDefault();var x=e.clientX,w=socialDock.get(0).getBoundingClientRect().width;this.setPointerCapture(e.pointerId);$(window).on('pointermove.socialDock',function(ev){var m=ev.originalEvent||ev;socialDock.get(0).style.setProperty('--social-width',Math.max(290,Math.min(innerWidth>800?innerWidth-460:innerWidth-24,w+x-m.clientX))+'px');}).one('pointerup.socialDock pointercancel.socialDock',function(){$(window).off('.socialDock');try{localStorage.setItem('kkutu-social-width',socialDock.get(0).getBoundingClientRect().width);}catch(e){}});});
+ $('<span class="social-mobile-height-edge" title="위아래로 드래그해 채팅창 높이 조절" aria-hidden="true"></span>').appendTo(socialDock).on('pointerdown',function(ev){
+  var e=ev.originalEvent||ev;if(innerWidth>800)return;e.preventDefault();var y=e.clientY,h=socialDock.get(0).getBoundingClientRect().height;this.setPointerCapture(e.pointerId);
+  $(window).on('pointermove.socialHeight',function(ev){var m=ev.originalEvent||ev;socialDock.get(0).style.setProperty('--mobile-chat-height',Math.max(180,Math.min(innerHeight-90,h+y-m.clientY))+'px');}).one('pointerup.socialHeight pointercancel.socialHeight',function(){$(window).off('.socialHeight');try{localStorage.setItem('kkutu-mobile-chat-height',socialDock.get(0).getBoundingClientRect().height);}catch(e){}});
+ });
+ try{var mobileHeight=Number(localStorage.getItem('kkutu-mobile-chat-height'));if(mobileHeight>=180)socialDock.get(0).style.setProperty('--mobile-chat-height',mobileHeight+'px');}catch(e){}
+ var mobileChatEdge=$('<span class="mobile-chat-height-edge" title="위아래로 드래그해 채팅창 높이 조절"></span>').appendTo($stage.box.chat);
+ try{var savedHeight=Number(localStorage.getItem('kkutu-mobile-room-chat-height'));if(savedHeight>=150)document.documentElement.style.setProperty('--mobile-room-chat-height',savedHeight+'px');}catch(e){}
+ mobileChatEdge.on('pointerdown',function(ev){var e=ev.originalEvent||ev;if(innerWidth>800)return;e.preventDefault();var y=e.clientY,h=$stage.box.chat[0].getBoundingClientRect().height;this.setPointerCapture(e.pointerId);$(window).on('pointermove.mobileChatHeight',function(ev){var m=ev.originalEvent||ev;document.documentElement.style.setProperty('--mobile-room-chat-height',Math.max(150,Math.min(innerHeight-200,h+y-m.clientY))+'px');}).one('pointerup.mobileChatHeight pointercancel.mobileChatHeight',function(){$(window).off('.mobileChatHeight');try{localStorage.setItem('kkutu-mobile-room-chat-height',$stage.box.chat[0].getBoundingClientRect().height);}catch(e){}});});
+ function initChatResize(){
+  var node=$stage.box.chat.get(0),start=null;
+  if(!node)return;
+  $(node).find('.chat-resize-grip,.chat-resize-edge').remove();
+  var stateKey='';
+  window.syncChatGeometry=function(){
+   var mode=document.body.getAttribute('data-game-view')||'for-lobby';
+   if(mode===stateKey)return;stateKey=mode;
+   ['left','top','width','height'].forEach(function(k){node.style.removeProperty('--chat-'+k);});
+   try{var saved=JSON.parse(localStorage.getItem('kkutu-chat-edges-v2-'+mode)||'null');if(saved){saved.width=Math.min(saved.width,innerWidth-24);saved.height=Math.min(saved.height,innerHeight-100);saved.left=Math.max(8,Math.min(saved.left,innerWidth-saved.width-8));saved.top=Math.max(8,Math.min(saved.top,innerHeight-saved.height-8));Object.keys(saved).forEach(function(k){node.style.setProperty('--chat-'+k,saved[k]+'px');});}}catch(e){}
+  };
+  ['n','s','e','w','ne','nw','se','sw'].forEach(function(edge){
+   var handle=$('<span>').addClass('chat-resize-edge edge-'+edge).attr({'aria-hidden':'true',title:'가장자리를 드래그해 채팅창 크기 조절'}).appendTo(node);
+   handle.on('pointerdown',function(ev){var e=ev.originalEvent||ev;if(innerWidth<=800)return;e.preventDefault();var r=node.getBoundingClientRect();start={x:e.clientX,y:e.clientY,left:r.left,top:r.top,width:r.width,height:r.height};handle.get(0).setPointerCapture(e.pointerId);
+    $(window).on('pointermove.chatEdges',function(ev){var m=ev.originalEvent||ev;if(!start)return;var dx=m.clientX-start.x,dy=m.clientY-start.y,l=start.left,t=start.top,r=l+start.width,b=t+start.height;
+     if(edge.indexOf('e')>=0)r=Math.min(innerWidth-8,Math.max(l+340,r+dx));if(edge.indexOf('w')>=0)l=Math.max(8,Math.min(r-340,l+dx));if(edge.indexOf('s')>=0)b=Math.min(innerHeight-8,Math.max(t+220,b+dy));if(edge.indexOf('n')>=0)t=Math.max(8,Math.min(b-220,t+dy));
+     node.style.setProperty('--chat-left',l+'px');node.style.setProperty('--chat-top',t+'px');node.style.setProperty('--chat-width',(r-l)+'px');node.style.setProperty('--chat-height',(b-t)+'px');
+    });
+    $(window).one('pointerup.chatEdges pointercancel.chatEdges',function(){ $(window).off('.chatEdges');var r=node.getBoundingClientRect();try{localStorage.setItem('kkutu-chat-edges-v2-'+stateKey,JSON.stringify({left:r.left,top:r.top,width:r.width,height:r.height}));}catch(e){}start=null; });
+   });
+  });window.syncChatGeometry();
+ }
+
 	if(_WebSocket == undefined){
 		$('#intro-text').text('브라우저 WebSocket을 사용할 수 없습니다.');
 		loading(L['websocketUnsupport']);
@@ -409,18 +419,39 @@ $(document).ready(function(){
 		stopDrag();
 	});
 	// addInterval(checkInput, 1);
-	var tabs = $('<div id="ChatTabs"><button type="button" data-scope="main">메인</button><button type="button" data-scope="room">방</button></div>').prependTo('.ChatBox');
+	$stage.box.chat.attr('id','ChatPanel');
+	$data.chatUnread = {main:0, room:0};
+	var tabs = $('<div id="ChatTabs"><button type="button" data-scope="main">메인채팅 <b class="chat-unread" data-unread="main"></b></button><button type="button" data-scope="room">방 채팅 <b class="chat-unread" data-unread="room"></b></button></div>').prependTo('.ChatBox > .product-body');
+ tabs.prepend('<span class="chat-brand-mark" aria-label="끄투"><img src="/img/custom/chat-brand-white.png" alt="끄투" draggable="false"></span>');
+ window.markChatUnread = function(scope){
+  scope=scope==='room'?'room':'main';
+  if($data.chatScope!==scope) $data.chatUnread[scope]=($data.chatUnread[scope]||0)+1;
+  var count=$data.chatUnread[scope]||0;
+  tabs.find('[data-unread="'+scope+'"]').text(count>99?'99+':count).toggle(count>0);
+ };
  window.syncChatTabs = function(){
-  var roomId=$data.room && $data.room.id;
-  if(roomId && roomId !== $data._chatRoomId) $data.chatScope='room';
+  var roomId=$data.room ? String($data.room.id) : '';
+  if(roomId !== $data._chatRoomId){
+   $('#Chat,#chat-log-board').find('[data-chat-scope="room"]').remove();
+   $data.chatUnread.room=0;tabs.find('[data-unread="room"]').empty().hide();
+   if(roomId)$data.chatScope='room';
+  }
   $data._chatRoomId=roomId;
   if(!$data.room) $data.chatScope='main';
   if(!$data.chatScope) $data.chatScope=$data.room ? 'room' : 'main';
   tabs.find('[data-scope="room"]').toggle(!!$data.room);
   tabs.find('button').each(function(){ $(this).attr('aria-selected',$(this).attr('data-scope') === $data.chatScope); });
+  $data.chatUnread[$data.chatScope]=0;
+  tabs.find('[data-unread="'+$data.chatScope+'"]').empty().hide();
   $('.ChatBox').attr('data-chat-tab',$data.chatScope);
  };
- tabs.on('click','button',function(){ $data.chatScope=$(this).attr('data-scope'); syncChatTabs(); });
+ tabs.on('click','button',function(e){ e.preventDefault(); e.stopPropagation(); $data._chatRoomId=$data.room ? String($data.room.id) : ''; $data.chatScope=$(this).attr('data-scope'); syncChatTabs(); $stage.chat.scrollTop(999999999); });
+ $stage.talk.attr('placeholder','채팅창');
+ function formatChatRows(){
+  $stage.chat.children('.chat-item').each(function(){var row=$(this);if(row.children('.chat-message-content').length)return;var text=row.children('.chat-head,.chat-body');if(text.length)text.wrapAll('<div class="chat-message-content"></div>');});
+ }
+ if(window.MutationObserver)new MutationObserver(formatChatRows).observe($stage.chat.get(0),{childList:true});
+ formatChatRows();
  syncChatTabs();
  $stage.chatBtn.on('click', function(e){
 		checkInput();
@@ -724,7 +755,7 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 	function beginQuickMatch(){
 		$stage.dialog.quick.hide();
 		$('#MatchOverlay').remove();
-		$('<div id="MatchOverlay"><section><h2>빠른 시작</h2><p id="MatchStatus">상대방을 기다리는 중 · 1 / 2</p><div id="MatchVotes"></div><p id="MatchHint"></p><button id="MatchCancel" type="button">매칭 취소</button></section></div>').appendTo('body');
+		$('<div id="MatchOverlay"><section><h2>'+(ENGLISH_UI?'Quick Join':'빠른 시작')+'</h2><p id="MatchStatus">'+(ENGLISH_UI?'Waiting for another player · 1 / 2':'상대방을 기다리는 중 · 1 / 2')+'</p><div id="MatchVotes"></div><p id="MatchHint"></p><button id="MatchCancel" type="button">'+(ENGLISH_UI?'Cancel match':'매칭 취소')+'</button></section></div>').appendTo('body');
 		$('#MatchCancel').on('click', function(){ send('matchCancel', {}, true); $('#MatchOverlay').remove(); });
 		send('matchJoin', {}, true);
 	}
@@ -806,7 +837,7 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 		$('#purchase-ping-before').html(commify(my.money) + L['ping']);
 		$('#purchase-ping-cost').html('200' + L['ping']);
 		$('#purchase-ping-after').html(commify(my.money - 200) + L['ping']);
-		$('#purchase-item-name').text('둥근모 글꼴');
+		$('#purchase-item-name').text('끄투 글꼴');
 		$('#purchase-item-desc').text('해당 상품은 환불이 불가한 상품입니다. 이에 이해 하셨습니까?');
 		$stage.dialog.purchaseOK.attr('disabled', my.money < 200).text('수락');
 		$stage.dialog.purchaseNO.text('거절');
@@ -923,7 +954,8 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 		$stage.dialog.room.hide();
 	});
 	$stage.dialog.resultOK.on('click', function(e){
-		if($data._resultPage == 1 && $data._resultRank){
+        restoreResultAd();
+		if(!$('#ResultDiag').hasClass('match-result-screen') && $data._resultPage == 1 && $data._resultRank){
 			drawRanking($data._resultRank[$data.id]);
 			return;
 		}
@@ -966,21 +998,21 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 		$a[0].click();
 	});
 	$stage.dialog.dictInjeong.on('click', function(e){
-		var $target = $(e.currentTarget);
-		
-		if($target.is(':disabled')) return;
-		if(!$("#dict-theme").val()) return;
-		$target.prop('disabled', true);
-		$("#dict-output").html(L['searching']);
-		$.get("/injeong/" + $("#dict-input").val() + "?theme=" + $("#dict-theme").val(), function(res){
-			addTimeout(function(){
-				$target.prop('disabled', false);
-			}, 2000);
-			if(res.error) return $("#dict-output").html(res.error + ": " + L['wpFail_' + res.error]);
-			
-			$("#dict-output").html(L['wpSuccess'] + "(" + res.message + ")");
-		});
-	});
+        var $target = $(e.currentTarget), word = String($('#dict-input').val() || '').trim();
+        var theme = $('#dict-theme').val();
+        if($target.is(':disabled')) return;
+        if(!word){ $('#dict-output').text('신청할 단어를 입력해 주세요.'); return; }
+        if(!theme){ $('#dict-output').text('주제를 선택해 주세요.'); return; }
+        $target.prop('disabled', true);
+        $('#dict-output').text(L['searching'] || '신청 중…');
+        $.ajax({url:'/injeong/' + encodeURIComponent(word),data:{theme:theme},dataType:'json',timeout:12000})
+        .done(function(res){
+            if(res.error) return $('#dict-output').text(res.message || (res.error + ': ' + (L['wpFail_' + res.error] || '신청하지 못했습니다.')));
+            $('#dict-output').text((L['wpSuccess'] || '신청했습니다.') + '(' + res.message + ')');
+        }).fail(function(){
+            $('#dict-output').text('서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+        }).always(function(){ addTimeout(function(){ $target.prop('disabled', false); }, 2000); });
+    });
 	$stage.dialog.dictSearch.on('click', function(e){
 		var $target = $(e.currentTarget);
 		
@@ -1341,40 +1373,9 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 		if($data._dailyQuest) window.renderDailyQuests($data._dailyQuest);
 		send('dailyQuestGet');
 	});
-	setInterval(function(){
+	_setInterval(function(){
 		if($('#DailyQuestOverlay').length) send('dailyQuestGet');
 	}, 60000);
-	var spinRewards=[5,10,15,20,25,30,40,50],spinBusy=false;
-	window.renderDailySpin=function(data){
-		var $panel=$('#DailySpinOverlay');if(!$panel.length)return;
-		var $button=$panel.find('.daily-spin-button'),$message=$panel.find('.daily-spin-message');
-		if(data.guest){$button.prop('disabled',true);$message.text('로그인한 계정만 하루에 한 번 돌릴 수 있어요.');return;}
-		if(data.already||(!spinBusy&&data.played)){$button.prop('disabled',true);$message.text('오늘은 이미 돌렸어요. 받은 보상: '+data.reward+'핑');return;}
-		if(data.played&&spinBusy){
-			spinBusy=false;$button.prop('disabled',true);
-			var index=spinRewards.indexOf(Number(data.reward));
-			if(index<0){$message.text('결과를 확인할 수 없습니다.');return;}
-			var degrees=2160-(index+.5)*45;
-			$panel.find('.daily-spin-wheel').css('transform','rotate('+degrees+'deg)');
-			$message.text('팽이가 도는 중…');
-			setTimeout(function(){if($panel.closest('body').length){$message.text(data.reward+'핑을 받았습니다!');if($data.users&&$data.users[$data.id])$data.users[$data.id].money=data.money;if(typeof updateMe==='function')updateMe();}},4700);
-			return;
-		}
-		$button.prop('disabled',false);$message.text('오늘의 한 번! 화살표가 가리킨 핑을 받아요.');
-	};
-	$(document).on('click','#DailySpinBtn',function(){
-		$('#DailySpinOverlay').remove();spinBusy=false;
-		var $overlay=$('<section id="DailySpinOverlay" role="dialog" aria-modal="true" aria-label="일일 팽이 돌리기">').appendTo('body');
-		var $card=$('<div class="daily-spin-card">').appendTo($overlay);
-		$('<button type="button" class="daily-spin-close" aria-label="닫기">×</button>').appendTo($card).on('click',function(){$overlay.remove();});
-		$card.append('<h2>일일 팽이 돌리기</h2><p>매일 자정에 한 번 다시 돌릴 수 있어요.</p>');
-		var $stage=$('<div class="daily-spin-stage"><div class="daily-spin-pointer">▼</div><div class="daily-spin-wheel"></div><div class="daily-spin-center">핑</div></div>').appendTo($card);
-		spinRewards.forEach(function(reward,index){var angle=(index+.5)*45;$('<b>').text(reward).css('transform','translate(-50%,-50%) rotate('+angle+'deg) translateY(-112px) rotate('+(-angle)+'deg)').appendTo($stage.find('.daily-spin-wheel'));});
-		$card.append('<div class="daily-spin-message">보상을 확인하는 중…</div>');
-		$('<button class="daily-spin-button" type="button" disabled>팽이 돌리기</button>').appendTo($card).on('click',function(){if(spinBusy)return;spinBusy=true;$(this).prop('disabled',true);send('dailySpinPlay');});
-		$overlay.on('click',function(e){if(e.target===this)$overlay.remove();});
-		send('dailySpinGet');
-	});
 
 	function connect(){
 		if(ws && (ws.readyState === 0 || ws.readyState === 1)) return;

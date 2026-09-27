@@ -213,7 +213,7 @@ exports.readyRobot = function(robot){
 		}else denied();
 	}
 	function after(){
-		delay += text.length * ROBOT_TYPE_COEF[level];
+		delay = level === 4 ? 0 : delay + text.length * ROBOT_TYPE_COEF[level];
 		setTimeout(my.turnRobot, delay, robot, text);
 	}
 };

@@ -1,0 +1,125 @@
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+}
+body.login-fail-page {
+  font-family: "Noto Sans KR","Pretendard",Arial,sans-serif;
+  color: #17231c;
+  background:
+    linear-gradient(rgba(255,255,255,.84),rgba(255,255,255,.94)),url('/img/custom/main-hero-ko.png?v=20260920') center/cover fixed no-repeat;
+}
+.login-fail-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+}
+.login-fail-brand {
+  display: block;
+  width: min(260px,66vw);
+  margin-bottom: 28px;
+}
+.login-fail-brand img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.login-fail-card {
+  width: min(470px,100%);
+  padding: 38px 38px 32px;
+  text-align: center;
+  background: rgba(255,255,255,.97);
+  border: 1px solid rgba(32,81,50,.12);
+  border-radius: 26px;
+  box-shadow: 0 24px 70px rgba(23,60,37,.16);
+}
+.login-fail-icon {
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  margin: 0 auto 17px;
+  border-radius: 50%;
+  background: #fff0ed;
+  color: #ef6258;
+  font-size: 36px;
+  font-weight: 900;
+  box-shadow: inset 0 0 0 1px rgba(239,98,88,.15);
+}
+.login-fail-eyebrow {
+  margin: 0 0 7px;
+  color: #4caf5a;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+.login-fail-card h1 {
+  margin: 0;
+  font-size: 29px;
+  letter-spacing: -.045em;
+}
+.login-fail-description {
+  margin: 13px auto 26px;
+  max-width: 330px;
+  color: #69766e;
+  font-size: 15px;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+.login-fail-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.login-fail-actions a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 16px;
+  border-radius: 14px;
+  text-decoration: none;
+  font-weight: 800;
+  transition:
+    transform .16s ease,box-shadow .16s ease;
+}
+.login-fail-actions a:hover {
+  transform: translateY(-2px);
+}
+.login-fail-primary {
+  color: #fff;
+  background: linear-gradient(135deg,#55bd5e,#76db49);
+  box-shadow: 0 9px 20px rgba(74,177,76,.22);
+}
+.login-fail-secondary {
+  color: #3d4a42;
+  background: #f1f5f2;
+  border: 1px solid #e1e8e3;
+}
+.login-fail-help {
+  margin: 24px 0 0;
+  color: #98a19b;
+  font-size: 12px;
+  line-height: 1.55;
+}
+@media (max-width: 520px) {
+  .login-fail-shell {
+    padding: 24px 16px;
+  }
+  .login-fail-card {
+    padding: 32px 22px 26px;
+    border-radius: 22px;
+  }
+  .login-fail-card h1 {
+    font-size: 25px;
+  }
+  .login-fail-actions {
+    grid-template-columns: 1fr;
+  }
+}

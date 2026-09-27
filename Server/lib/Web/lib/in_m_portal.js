@@ -129,8 +129,10 @@
 	}
 	function connectToServer(server){
 		closeServerChooser();
-		if(window.KkutuAccount && typeof window.KkutuAccount.start === 'function') window.KkutuAccount.start('/?server=' + server);
-		else location.href='/?server=' + server;
+		var locale=(new URLSearchParams(location.search).get('locale')||(document.cookie.match(/(?:^|;\s*)lc=([^;]+)/)||[])[1]||'ko_KR');
+		var url='/play' + (Number(server) + 1) + '#' + locale;
+		if(window.KkutuAccount && typeof window.KkutuAccount.start === 'function') window.KkutuAccount.start(url);
+		else location.href=url;
 	}
 	function closeServerChooser(){
 		$('#ServerSelectOverlay').prop('hidden', true);

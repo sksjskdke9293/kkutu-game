@@ -8,10 +8,17 @@
 }
 
 :80 {
-	reverse_proxy web:80
+	reverse_proxy web:80 {
+        lb_try_duration 15s
+        lb_try_interval 500ms
+    }
 }
 
-https://kkutugame.kro.kr {
+
+https://kkutugame.kro.kr, https://kkutugameskorea.kro.kr {
+	redir https://kkutugame.kr{uri} permanent
+}
+https://kkutugame.kr {
 	handle_path /room/* {
 		reverse_proxy game:8496 {
 			header_up Host {http.request.host}
@@ -43,41 +50,44 @@ https://kkutugame.kro.kr {
 		}
 	}
 	handle {
-		reverse_proxy web:80
+		reverse_proxy web:80 {
+        lb_try_duration 15s
+        lb_try_interval 500ms
+    }
 	}
 }
 
-https://kkutugame.kro.kr:8080 {
+https://kkutugame.kr:8080, https://kkutugame.kro.kr:8080, https://kkutugameskorea.kro.kr:8080 {
 	reverse_proxy game:8080 {
 		header_up Host {http.request.host}
 	}
 }
 
-https://kkutugame.kro.kr:8081 {
+https://kkutugame.kr:8081, https://kkutugame.kro.kr:8081, https://kkutugameskorea.kro.kr:8081 {
 	reverse_proxy game2:8081 {
 		header_up Host {http.request.host}
 	}
 }
 
-https://kkutugame.kro.kr:8082 {
+https://kkutugame.kr:8082, https://kkutugame.kro.kr:8082, https://kkutugameskorea.kro.kr:8082 {
 	reverse_proxy game3:8082 {
 		header_up Host {http.request.host}
 	}
 }
 
-https://kkutugame.kro.kr:8496 {
+https://kkutugame.kr:8496, https://kkutugame.kro.kr:8496, https://kkutugameskorea.kro.kr:8496 {
 	reverse_proxy game:8496 {
 		header_up Host {http.request.host}
 	}
 }
 
-https://kkutugame.kro.kr:8497 {
+https://kkutugame.kr:8497, https://kkutugame.kro.kr:8497, https://kkutugameskorea.kro.kr:8497 {
 	reverse_proxy game2:8497 {
 		header_up Host {http.request.host}
 	}
 }
 
-https://kkutugame.kro.kr:8498 {
+https://kkutugame.kr:8498, https://kkutugame.kro.kr:8498, https://kkutugameskorea.kro.kr:8498 {
 	reverse_proxy game3:8498 {
 		header_up Host {http.request.host}
 	}

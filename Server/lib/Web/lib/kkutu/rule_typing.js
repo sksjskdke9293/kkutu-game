@@ -39,7 +39,10 @@ function onSpace(e){
 	}
 }
 function drawList(){
-	var wl = $data._list.slice($data.chain);
+	var list = $data._list || [];
+	if(!list.length){ $stage.game.display.text('낱말을 불러오는 중…'); return; }
+	var index = $data.chain % list.length;
+	var wl = list.slice(index).concat(list.slice(0, index));
 	var lv = $data.room.opts.proverb ? 1 : 5;
 	var pts = "";
 	var w0l = wl[0].length;
