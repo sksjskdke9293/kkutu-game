@@ -405,7 +405,7 @@ $(document).ready(function(){
 		{ key: "lobby", value: "/media/kkutu/LobbyBGM.mp3?v=uploaded-20260906-restored" },
 		{ key: "lobbyAutumn", value: "/media/kkutu/LobbyAutumnBGM.mp3?v=autumn-20260910" },
 		{ key: "lobbyChuseok", value: "/media/kkutu/LobbyChuseokBGM.mp3?v=chuseok-20260914" },
-		{ key: "game", value: "/media/kkutu/GameBGM.mp3?v=small-moments-game-20260910" },
+		{ key: "game", value: "/media/kkutu/GameBGM.mp3?v=game-20260927-2" },
 		{ key: "jaqwi", value: "/media/kkutu/JaqwiBGM.mp3" },
 		{ key: "jaqwiF", value: "/media/kkutu/JaqwiFastBGM.mp3" },
 		{ key: "ranked", value: "/media/kkutu/RankedBGM.mp3?v=ranked-20260907" },
@@ -4598,7 +4598,7 @@ function gameReady(){
 	clearBoard();
 	$stage.game.display.html(L['soon']);
 	playSound('game_start');
-	if(!$data.room.ranked && !(RULE[MODE[$data.room.mode]] && RULE[MODE[$data.room.mode]].rule === 'Classic')) playBGM('game');
+	if(!$data.room.ranked) playBGM('game');
 	forkChat();
 	addTimeout(function(){
 		$stage.box.room.height(360).hide();
@@ -5756,7 +5756,7 @@ function getAudio(k, url, cb){
 }
 function playBGM(key, force){
 	var chuseokTheme = document.documentElement.getAttribute('data-site-theme') === 'chuseok';
-	if(chuseokTheme) key = 'lobbyChuseok';
+	if(chuseokTheme && (key === 'lobby' || key === 'lobbyChuseok')) key = 'lobbyChuseok';
 	else if((key === 'lobby' || key === 'lobbyAutumn') && ($data.room && $data.room.gaming || $('body').attr('data-game-view') === 'for-gaming')) return;
 	delete $data._pendingBGM;
 	if(key == 'lobby' && $data.opts && $data.opts.lb == 'autumn') key = 'lobbyAutumn';
@@ -5769,7 +5769,6 @@ function playBGM(key, force){
 	return $data.bgm;
 }
 function stopBGM(){ delete $data._pendingBGM;
-	if(document.documentElement.getAttribute('data-site-theme') === 'chuseok' && !$data.muteBGM && $data.bgm && $data.bgm.key === 'lobbyChuseok') return;
 	if($data.bgm){
 		$data.bgm.stop();
 		delete $data.bgm;

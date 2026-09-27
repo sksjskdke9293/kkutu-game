@@ -9212,9 +9212,14 @@ body #SettingDiag .settings-actions {
 
 @media (min-width: 801px) {
   html body[data-game-view="for-lobby"] .RoomListBox {
-    inset: 8px !important;
-    width: auto !important;
-    height: auto !important;
+    inset: auto !important;
+    left: 50% !important;
+    top: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: min(1120px,calc(100vw - 48px)) !important;
+    height: min(720px,calc(100dvh - 48px)) !important;
+    transform: translate(-50%,-50%) !important;
     border: 1px solid rgba(255,255,255,.42) !important;
     border-radius: 17px !important;
     background: rgba(8,10,15,.77) !important;

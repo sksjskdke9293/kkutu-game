@@ -327,7 +327,7 @@ $(document).ready(function(){
 		{ key: "lobby", value: "/media/kkutu/LobbyBGM.mp3?v=uploaded-20260906-restored" },
 		{ key: "lobbyAutumn", value: "/media/kkutu/LobbyAutumnBGM.mp3?v=autumn-20260910" },
 		{ key: "lobbyChuseok", value: "/media/kkutu/LobbyChuseokBGM.mp3?v=chuseok-20260914" },
-		{ key: "game", value: "/media/kkutu/GameBGM.mp3?v=small-moments-game-20260910" },
+		{ key: "game", value: "/media/kkutu/GameBGM.mp3?v=game-20260927-2" },
 		{ key: "jaqwi", value: "/media/kkutu/JaqwiBGM.mp3" },
 		{ key: "jaqwiF", value: "/media/kkutu/JaqwiFastBGM.mp3" },
 		{ key: "ranked", value: "/media/kkutu/RankedBGM.mp3?v=ranked-20260907" },
