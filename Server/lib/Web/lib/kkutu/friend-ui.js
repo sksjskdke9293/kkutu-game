@@ -7,7 +7,7 @@ $(function(){
  var launcher=$('<button id="FriendLauncher" type="button" title="친구 목록"><img src="/img/custom/friends-icon.svg" alt=""><span>친구</span><b class="friend-launcher-unread" hidden></b></button>').appendTo('body');
  var loginLauncher=$('<button id="GuestLoginLauncher" type="button">로그인</button>').hide().appendTo('body').on('click',function(){if(window.KkutuAccount)window.KkutuAccount.login();else location.href='/?account=login';});
  var levelRanking=$('<section id="LevelRankingPanel" hidden><header><h2>레벨 랭킹</h2><button type="button" aria-label="랭킹 닫기">×</button></header><p class="level-ranking-status">현재 레벨이 높은 순서로 불러오는 중입니다.</p><div class="level-ranking-list"></div></section>').appendTo('body');
- var levelRankingButton=$('<button id="LevelRankingBtn" class="for-lobby" type="button" aria-label="레벨 랭킹"><img src="/img/custom/ranking-icon.svg" alt=""><span>랭킹</span></button>').hide().appendTo('.kkutu-menu');
+ var levelRankingButton=$('<button id="LevelRankingBtn" class="for-lobby" type="button" aria-label="레벨 랭킹"><img src="/img/custom/ranking-icon.svg" alt=""><strong class="level-ranking-button-label">랭킹</strong></button>').hide().appendTo('.kkutu-menu');
  function api(path,data){return $.ajax({url:'/api/friend-chat/'+path,method:data?'POST':'GET',contentType:data?'application/json':undefined,data:data?JSON.stringify(data):undefined,headers:{'X-Requested-With':'XMLHttpRequest'}});}
  function error(e){return e.responseJSON&&e.responseJSON.error||'연결을 확인하고 다시 시도해 주세요.';}
  function display(panel){panel.appendTo('body').prop('hidden',false);keepOnScreen(panel);}
