@@ -334,6 +334,7 @@ $(document).ready(function(){
 
 
  var socialDock=$('<aside id="LobbySocialDock" aria-label="방문자목록과 메인채팅"><span class="social-dock-edge" title="왼쪽 가장자리를 드래그해 너비 조절"></span></aside>').hide().appendTo('body');
+ var activeWordbooks=$('<aside id="ActiveWordbooks" aria-label="현재 적용된 낱말집"><strong>현재 적용된 낱말집</strong><span>대한민국 학교 사전</span></aside>').appendTo('body');
  var mobileSocialToggle=$('<button id="MobileSocialToggle" type="button" aria-label="방문자 목록과 채팅 열기" aria-expanded="false"><span aria-hidden="true">‹</span></button>').hide().appendTo(socialDock);
  var chatHome=$('<span hidden>').insertBefore($stage.box.chat),usersHome=$('<span hidden>').insertBefore($stage.box.userList);
  window.fitVisitorNames=function(){ document.documentElement.style.setProperty('--social-panel-width',Math.round(socialDock.get(0).getBoundingClientRect().width || 330)+'px'); $('#LobbySocialDock .users-name').each(function(){var el=this;el.style.setProperty('font-size','22px','important');var size=22;while(el.scrollWidth>el.clientWidth && el.clientWidth>0 && size>11){size--;el.style.setProperty('font-size',size+'px','important');}});};
@@ -1026,7 +1027,7 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 		var i, k, opts = {
 			injpick: $data._injpick,
 			shield: Math.max(0, Math.min(100, Number($("#room-shield").val()) || 0)),
-			dictionary: $("#room-dictionary").val() || "standard"
+			dictionary: "standard"
 		};
 		for(i in OPTIONS){
 			k = OPTIONS[i].name.toLowerCase();
@@ -1125,10 +1126,13 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 	(function initWordbookManager(){
 		var catalog=[{id:'school-kr',name:'대한민국 학교 사전',dictionary:'standard'}],storageKey='kkutu-wordbooks-v1',added;
 		if(!$('#wordbook-catalog-results').length)return;
+		var detail=$('<section id="WordbookDetail" hidden><header><button class="wordbook-detail-back" type="button">‹</button><h2></h2><button class="wordbook-detail-close" type="button" aria-label="닫기">×</button></header><form><input type="search" placeholder="낱말 검색" maxlength="30"><button type="submit">검색</button></form><p class="wordbook-detail-status" role="status"></p><div class="wordbook-word-list" role="list"></div><footer><button class="wordbook-prev" type="button">이전</button><span></span><button class="wordbook-next" type="button">다음</button></footer></section>').appendTo('body'),detailPage=1,detailQuery='',detailBook=null;
 		try{added=JSON.parse(localStorage.getItem(storageKey)||'["school-kr"]');}catch(e){added=['school-kr'];}
 		if(!Array.isArray(added))added=['school-kr'];
 		function save(){try{localStorage.setItem(storageKey,JSON.stringify(added));}catch(e){}$('#room-dictionary').val('standard');}
-		function makeRow(book,buttonText,handler,disabled){var row=$('<div class="wordbook-row" role="listitem">').append($('<strong>').text(book.name));$('<button type="button">').text(buttonText).prop('disabled',!!disabled).appendTo(row).on('click',handler);return row;}
+		function openDetail(book){detailBook=book;detailPage=1;detailQuery='';detail.find('h2').text(book.name);detail.find('input').val('');detail.prop('hidden',false);loadDetail();}
+		function loadDetail(){if(!detailBook)return;detail.addClass('loading');detail.find('.wordbook-detail-status').text('낱말을 불러오는 중입니다.');$.getJSON('/api/wordbooks/'+encodeURIComponent(detailBook.id)+'/words',{page:detailPage,q:detailQuery}).done(function(data){var list=detail.find('.wordbook-word-list').empty();(data.words||[]).forEach(function(item){var row=$('<div class="wordbook-word" role="listitem">').appendTo(list);$('<strong>').text(item.word).appendTo(row);if(item.mean)$('<p>').text(item.mean).appendTo(row);});detail.find('.wordbook-detail-status').text(list.children().length?'한 페이지에 '+data.pageSize+'개씩 표시합니다.':'검색된 낱말이 없습니다.');detail.find('footer span').text(data.page+'페이지');detail.find('.wordbook-prev').prop('disabled',data.page<=1);detail.find('.wordbook-next').prop('disabled',!data.hasMore);}).fail(function(xhr){detail.find('.wordbook-word-list').empty();detail.find('.wordbook-detail-status').text(xhr.responseJSON&&xhr.responseJSON.error||'낱말을 불러오지 못했습니다.');}).always(function(){detail.removeClass('loading');});}
+		function makeRow(book,buttonText,handler,disabled){var row=$('<div class="wordbook-row" role="listitem">').append($('<strong>').text(book.name)),actions=$('<div class="wordbook-row-actions">').appendTo(row);$('<button class="wordbook-detail-button" type="button">').text('자세히 보기').appendTo(actions).on('click',function(){openDetail(book);});$('<button type="button">').text(buttonText).prop('disabled',!!disabled).appendTo(actions).on('click',handler);return row;}
 		function matches(book,query){query=String(query||'').trim().toLowerCase();return !query||book.name.toLowerCase().indexOf(query)>=0;}
 		function renderCatalog(){var query=$('#wordbook-catalog-query').val(),box=$('#wordbook-catalog-results').empty(),found=catalog.filter(function(book){return matches(book,query);});if(!found.length)return box.append($('<p class="wordbook-empty">').text('검색된 낱말집이 없습니다.'));found.forEach(function(book){var exists=added.indexOf(book.id)>=0;box.append(makeRow(book,exists?'추가됨':'추가',function(){if(added.indexOf(book.id)<0)added.push(book.id);save();renderCatalog();renderAdded();},exists));});}
 		function renderAdded(){var query=$('#wordbook-added-query').val(),box=$('#wordbook-added-list').empty(),found=catalog.filter(function(book){return added.indexOf(book.id)>=0&&matches(book,query);});if(!found.length)return box.append($('<p class="wordbook-empty">').text('추가된 낱말집이 없습니다.'));found.forEach(function(book){box.append(makeRow(book,'삭제',function(){added=added.filter(function(id){return id!==book.id;});save();renderCatalog();renderAdded();}));});}
@@ -1136,6 +1140,10 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 		$('#wordbook-added-search').on('click',renderAdded);
 		$('#wordbook-catalog-query').on('keydown',function(e){if(e.key==='Enter'){e.preventDefault();renderCatalog();}});
 		$('#wordbook-added-query').on('keydown',function(e){if(e.key==='Enter'){e.preventDefault();renderAdded();}});
+		detail.find('.wordbook-detail-close,.wordbook-detail-back').on('click',function(){detail.prop('hidden',true);});
+		detail.find('form').on('submit',function(e){e.preventDefault();detailQuery=detail.find('input').val().trim();detailPage=1;loadDetail();});
+		detail.find('.wordbook-prev').on('click',function(){if(detailPage>1){detailPage--;loadDetail();}});
+		detail.find('.wordbook-next').on('click',function(){detailPage++;loadDetail();});
 		renderCatalog();renderAdded();save();
 	})();
 	$stage.dialog.wordPlusOK.on('click', function(e){
@@ -5628,7 +5636,7 @@ function getOptions(mode, opts, hash){
 	var modeNames = {EKT:'영어 끄투',ESH:'영어 끝말잇기',KKT:'한국어 쿵쿵따',KSH:'한국어 끝말잇기',KAW:'아무말잇기',KAL:'전체',CSQ:'자음퀴즈',KCW:'한국어 십자말풀이',KTY:'한국어 타자 대결',ETY:'영어 타자 대결',KAP:'한국어 앞말잇기',HUN:'훈민정음',KDA:'한국어 단어 대결',EDA:'영어 단어 대결',KSS:'한국어 솎솎',ESS:'영어 솎솎'};
 	var R = [modeNames[modeKey] || (L && L['mode' + modeKey]) || '게임'];
 	var i, k; opts = opts || {};
-	var dictionaryLabels = {basic:'기본 낱말집',standard:'표준 낱말집',complex:'확장 낱말집'};
+	var dictionaryLabels = {basic:'대한민국 학교 사전',standard:'대한민국 학교 사전',complex:'대한민국 학교 사전'};
 	for(i in OPTIONS){ k = OPTIONS[i].name.toLowerCase(); if(opts[k]) R.push((L && L['opt' + OPTIONS[i].name]) || OPTIONS[i].name); }
 	if(["KSH","KKT","KAP","YUT"].indexOf(modeKey) != -1) R.push(dictionaryLabels[opts.dictionary] || dictionaryLabels.standard);
 	if(hash && Array.isArray(opts.injpick) && opts.injpick.length) R.push(opts.injpick.join('|'));

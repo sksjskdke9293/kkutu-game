@@ -49,6 +49,22 @@ function consume($user, key, value, force){
 
 exports.run = function(Server, page){
 
+Server.get('/api/wordbooks/:id/words', function(req, res){
+	if(req.params.id !== 'school-kr') return res.status(404).send({error:'낱말집을 찾을 수 없습니다.'});
+	var pageNumber = Math.max(1, Math.min(5000, parseInt(req.query.page, 10) || 1));
+	var pageSize = 100;
+	var query = String(req.query.q || '').trim().normalize('NFC').replace(/[^0-9A-Za-z가-힣 _-]/g, '').slice(0, 30);
+	var escaped = query.replace(/'/g, "''").replace(/[%_]/g, '\\$&');
+	var where = 'morae_standard=true' + (escaped ? " AND _id ILIKE '%" + escaped + "%' ESCAPE '\\\\'" : '');
+	var sql = 'SELECT _id, mean FROM kkutu_ko WHERE ' + where + ' ORDER BY _id ASC LIMIT ' + (pageSize + 1) + ' OFFSET ' + ((pageNumber - 1) * pageSize);
+	MainDB.kkutu.ko.direct(sql, function(error, result){
+		if(error){JLog.warn('[WORDBOOK] '+error.toString());return res.status(503).send({error:'낱말 목록을 불러오지 못했습니다.'});}
+		var rows = result && result.rows || [], hasMore = rows.length > pageSize;
+		res.set('Cache-Control','private, max-age=30');
+		res.send({id:'school-kr',name:'대한민국 학교 사전',page:pageNumber,pageSize:pageSize,hasMore:hasMore,words:rows.slice(0,pageSize).map(function(row){return {word:row._id,mean:String(row.mean||'').replace(/^＂\d+＂/, '').slice(0,180)};})});
+	});
+});
+
 Server.get("/box", function(req, res){
 	if(req.session.profile){
 		/*if(Const.ADMIN.indexOf(req.session.profile.id) == -1){

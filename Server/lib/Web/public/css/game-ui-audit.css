@@ -8696,6 +8696,17 @@ html body #DictionaryDiag .wordbook-row button:disabled {
   color: #fff;
 }
 
+.wordbook-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+html body #DictionaryDiag .wordbook-row .wordbook-detail-button {
+  background: #4d9ee8 !important;
+}
+
 .wordbook-row strong {
   flex: 1 1 auto;
   min-width: 0;
@@ -8783,5 +8794,328 @@ html body #DictionaryDiag #wordbook-catalog-results .wordbook-row button {
 
   .wordbook-row strong {
     font-size: 23px;
+  }
+
+  .wordbook-row-actions {
+    gap: 5px;
+  }
+
+  html body #DictionaryDiag .wordbook-row button {
+    height: 38px !important;
+    padding: 0 10px !important;
+    font-size: 15px !important;
+  }
+}
+
+/* Word list detail opened from each owned/catalog wordbook row. */
+#WordbookDetail[hidden] {
+  display: none !important;
+}
+
+#WordbookDetail {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: min(720px,calc(100vw - 24px));
+  height: min(720px,calc(100dvh - 28px));
+  transform: translate(-50%,-50%);
+  display: grid;
+  grid-template-rows: 68px 58px 30px minmax(0,1fr) 52px;
+  padding: 10px;
+  box-sizing: border-box;
+  color: #fff;
+  border: 2px solid rgba(255,255,255,.9);
+  border-radius: 22px;
+  background: rgba(7,10,15,.94);
+  box-shadow: 0 22px 65px rgba(0,0,0,.58);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 2147483300;
+}
+
+#WordbookDetail header {
+  display: grid;
+  grid-template-columns: 48px minmax(0,1fr) 48px;
+  align-items: center;
+  border-bottom: 3px solid #fff;
+}
+
+#WordbookDetail header h2 {
+  margin: 0;
+  overflow: hidden;
+  text-align: center;
+  font-size: 29px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#WordbookDetail header button {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid #ffffff90;
+  border-radius: 50%;
+  background: #ffffff12;
+  color: #fff;
+  font: 900 30px/1 sans-serif;
+}
+
+#WordbookDetail form {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 90px;
+  gap: 8px;
+  padding: 8px 4px 4px;
+}
+
+#WordbookDetail form input {
+  min-width: 0;
+  padding: 0 16px;
+  border: 2px solid #111;
+  border-radius: 22px;
+  background: #fff;
+  color: #222;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+#WordbookDetail form button,
+#WordbookDetail footer button {
+  border: 1px solid #fff;
+  border-radius: 22px;
+  background: #91dc45;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+#WordbookDetail button:disabled {
+  opacity: .42;
+}
+
+.wordbook-detail-status {
+  margin: 0;
+  padding: 4px 8px;
+  color: #ffffffb8;
+  font-size: 13px;
+}
+
+.wordbook-word-list {
+  min-height: 0;
+  overflow-y: auto;
+  border-top: 1px solid #ffffff42;
+  border-bottom: 1px solid #ffffff42;
+}
+
+.wordbook-word {
+  display: grid;
+  grid-template-columns: minmax(120px,180px) minmax(0,1fr);
+  gap: 13px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #ffffff24;
+}
+
+.wordbook-word strong {
+  font-size: 18px;
+}
+
+.wordbook-word p {
+  margin: 0;
+  overflow: hidden;
+  color: #ffffffc9;
+  line-height: 1.45;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#WordbookDetail footer {
+  display: grid;
+  grid-template-columns: 94px 1fr 94px;
+  gap: 10px;
+  align-items: center;
+  padding-top: 7px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+#room-dictionary-panel {
+  display: none !important;
+}
+
+#ActiveWordbooks {
+  display: none;
+}
+
+#ActiveWordbooks span {
+  display: block !important;
+}
+
+@media (min-width: 801px) {
+  html body[data-game-view="for-gaming"] #ActiveWordbooks {
+    position: fixed;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    width: 210px;
+    padding: 14px 16px;
+    box-sizing: border-box;
+    border: 1px solid rgba(255,255,255,.35);
+    border-radius: 17px;
+    background: rgba(7,10,15,.78);
+    color: #fff;
+    box-shadow: 0 10px 28px rgba(0,0,0,.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 70;
+  }
+
+  #ActiveWordbooks strong {
+    font-size: 14px;
+    color: #ffffffb8;
+  }
+
+  #ActiveWordbooks span {
+    font-size: 18px;
+    font-weight: 900;
+  }
+}
+
+@media (max-width: 800px) {
+  #WordbookDetail {
+    width: calc(100vw - 10px);
+    height: calc(100dvh - 12px);
+    grid-template-rows: 58px 52px 28px minmax(0,1fr) 48px;
+    padding: 6px;
+    border-radius: 17px;
+  }
+
+  #WordbookDetail header h2 {
+    font-size: 22px;
+  }
+
+  .wordbook-word {
+    grid-template-columns: minmax(86px,120px) minmax(0,1fr);
+    gap: 8px;
+    padding: 9px 7px;
+  }
+
+  .wordbook-word strong {
+    font-size: 16px;
+  }
+
+  html body[data-game-view="for-lobby"] :is(
+    #TutorialBtn,
+    #DailyQuestBtn,
+    #ShopBtn,
+    #DictionaryBtn,
+    #LevelRankingBtn
+  ) {
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    left: clamp(18px, calc(25vw - 88px), 32px) !important;
+    width: 199px !important;
+    height: 52px !important;
+    padding: 0 24px !important;
+    font-size: 22px !important;
+    line-height: 1 !important;
+    text-align: left !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+  }
+
+  html body[data-game-view="for-lobby"] #DailyQuestBtn .daily-quest-icon,
+  html body[data-game-view="for-lobby"] #LevelRankingBtn img {
+    flex: 0 0 30px !important;
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 26px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LevelRankingBtn .level-ranking-button-label {
+    display: inline !important;
+    font-size: 22px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #TutorialBtn {
+    gap: 4px !important;
+    padding: 0 8px 0 45px !important;
+    font-size: 20px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #TutorialBtn::before {
+    left: 14px !important;
+    width: 25px !important;
+    height: 25px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #TutorialBtn::after {
+    flex: 0 0 auto !important;
+    margin-left: auto !important;
+    font-size: 8px !important;
+    white-space: nowrap !important;
+  }
+
+  html body[data-game-view="for-lobby"] #DailyQuestBtn {
+    top: 370px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #ShopBtn {
+    top: 436px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #DictionaryBtn {
+    top: 502px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LevelRankingBtn {
+    top: 568px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbyHero {
+    left: calc(50% + 23px) !important;
+    top: 350px !important;
+  }
+}
+
+@media (max-width: 400px) {
+  html body[data-game-view="for-lobby"] :is(
+    #TutorialBtn,
+    #DailyQuestBtn,
+    #ShopBtn,
+    #DictionaryBtn,
+    #LevelRankingBtn
+  ) {
+    left: 18px !important;
+    width: 174px !important;
+    padding-right: 13px !important;
+    font-size: 20px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LevelRankingBtn .level-ranking-button-label {
+    font-size: 20px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #TutorialBtn {
+    padding: 0 6px 0 40px !important;
+    font-size: 18px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #TutorialBtn::before {
+    left: 11px !important;
+    width: 23px !important;
+    height: 23px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #TutorialBtn::after {
+    font-size: 7px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbyHero {
+    left: auto !important;
+    right: 10px !important;
+    top: 350px !important;
   }
 }

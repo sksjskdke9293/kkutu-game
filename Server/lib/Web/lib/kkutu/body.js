@@ -3172,7 +3172,7 @@ function getOptions(mode, opts, hash){
 	var modeNames = {EKT:'영어 끄투',ESH:'영어 끝말잇기',KKT:'한국어 쿵쿵따',KSH:'한국어 끝말잇기',KAW:'아무말잇기',KAL:'전체',CSQ:'자음퀴즈',KCW:'한국어 십자말풀이',KTY:'한국어 타자 대결',ETY:'영어 타자 대결',KAP:'한국어 앞말잇기',HUN:'훈민정음',KDA:'한국어 단어 대결',EDA:'영어 단어 대결',KSS:'한국어 솎솎',ESS:'영어 솎솎'};
 	var R = [modeNames[modeKey] || (L && L['mode' + modeKey]) || '게임'];
 	var i, k; opts = opts || {};
-	var dictionaryLabels = {basic:'기본 낱말집',standard:'표준 낱말집',complex:'확장 낱말집'};
+	var dictionaryLabels = {basic:'대한민국 학교 사전',standard:'대한민국 학교 사전',complex:'대한민국 학교 사전'};
 	for(i in OPTIONS){ k = OPTIONS[i].name.toLowerCase(); if(opts[k]) R.push((L && L['opt' + OPTIONS[i].name]) || OPTIONS[i].name); }
 	if(["KSH","KKT","KAP","YUT"].indexOf(modeKey) != -1) R.push(dictionaryLabels[opts.dictionary] || dictionaryLabels.standard);
 	if(hash && Array.isArray(opts.injpick) && opts.injpick.length) R.push(opts.injpick.join('|'));
