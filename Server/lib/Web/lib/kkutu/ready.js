@@ -699,6 +699,10 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 		$data._shop = false;
 		$data._roomListOpen = !$data._roomListOpen;
 		$('body').toggleClass('room-browser-open', $data._roomListOpen);
+		if($data._roomListOpen){
+			$('.dialog').hide();
+			$('#FriendsCommunity,#FriendConversation,#LevelRankingPanel').prop('hidden',true);
+		}
 		$stage.dialog.quick.hide();
 		$stage.dialog.room.hide();
 		$stage.box.shop.hide();

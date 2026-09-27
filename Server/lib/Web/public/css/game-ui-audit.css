@@ -9221,7 +9221,7 @@ body #SettingDiag .settings-actions {
     box-shadow: 0 26px 90px rgba(0,0,0,.5) !important;
     backdrop-filter: blur(17px) !important;
     -webkit-backdrop-filter: blur(17px) !important;
-    z-index: 1080 !important;
+    z-index: 1800 !important;
   }
   html body[data-game-view="for-lobby"] .RoomListBox .product-title {
     display: flex !important;
@@ -9288,6 +9288,13 @@ body.room-browser-open #LobbySocialDock {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;
+}
+
+html body[data-game-view="for-lobby"].room-browser-open #FriendLauncher,
+html body[data-game-view="for-lobby"].room-browser-open #SettingBtn,
+html body[data-game-view="for-lobby"].room-browser-open #LevelRankingPanel,
+html body[data-game-view="for-lobby"].room-browser-open .friend-window {
+  display: none !important;
 }
 
 html body[data-game-view="for-lobby"].room-browser-open #LobbySocialDock > .UserListBox,
