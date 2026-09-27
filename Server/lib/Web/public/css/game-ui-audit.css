@@ -9213,20 +9213,20 @@ body #SettingDiag .settings-actions {
 @media (min-width: 801px) {
   html body[data-game-view="for-lobby"] .RoomListBox {
     inset: auto !important;
-    left: 50% !important;
-    top: 50% !important;
-    right: auto !important;
-    bottom: auto !important;
-    width: min(1120px,calc(100vw - 48px)) !important;
-    height: min(720px,calc(100dvh - 48px)) !important;
-    transform: translate(-50%,-50%) !important;
+    left: clamp(236px,17vw,270px) !important;
+    top: 72px !important;
+    right: calc(var(--social-panel-width,330px) + 26px) !important;
+    bottom: 136px !important;
+    width: auto !important;
+    height: auto !important;
+    transform: none !important;
     border: 1px solid rgba(255,255,255,.42) !important;
     border-radius: 17px !important;
     background: rgba(8,10,15,.77) !important;
     box-shadow: 0 26px 90px rgba(0,0,0,.5) !important;
     backdrop-filter: blur(17px) !important;
     -webkit-backdrop-filter: blur(17px) !important;
-    z-index: 1800 !important;
+    z-index: 70 !important;
   }
   html body[data-game-view="for-lobby"] .RoomListBox .product-title {
     display: flex !important;
@@ -9289,12 +9289,6 @@ html body[data-game-view="for-gaming"] .branded-room-head .room-head-brand img {
   background: #fa686d !important;
 }
 
-body.room-browser-open #LobbySocialDock {
-  display: none !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
 html body[data-game-view="for-lobby"].room-browser-open #FriendLauncher,
 html body[data-game-view="for-lobby"].room-browser-open #SettingBtn,
 html body[data-game-view="for-lobby"].room-browser-open #LevelRankingPanel,
@@ -9302,11 +9296,204 @@ html body[data-game-view="for-lobby"].room-browser-open .friend-window {
   display: none !important;
 }
 
-html body[data-game-view="for-lobby"].room-browser-open #LobbySocialDock > .UserListBox,
-html body[data-game-view="for-lobby"].room-browser-open #LobbySocialDock > #ChatPanel {
-  display: none !important;
+html body[data-game-view="for-lobby"].room-browser-open #QuickRoomBtn {
+  display: flex !important;
+  align-items: center !important;
 }
 
 body .RoomListBox .product-title > small {
   display: none !important;
+}
+
+html body #FriendLauncher {
+  display: inline-flex;
+  flex-flow: row nowrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  width: 100px !important;
+  min-width: 100px !important;
+  height: 44px !important;
+  padding: 4px 10px !important;
+  line-height: 1 !important;
+}
+
+html body #FriendLauncher img,
+html body #FriendLauncher span {
+  position: static !important;
+  inset: auto !important;
+  float: none !important;
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+html body #FriendLauncher span {
+  width: auto !important;
+  height: auto !important;
+  line-height: 1 !important;
+  writing-mode: horizontal-tb !important;
+}
+
+@media (max-width: 800px) {
+  html body[data-game-view="for-lobby"] #FriendLauncher {
+    width: 126px !important;
+    min-width: 126px !important;
+    height: 51px !important;
+  }
+}
+
+/* Compact mobile screens keep every control inside the viewport. */
+@media (max-width: 800px) {
+  html body[data-game-view="for-lobby"].is-guest-player #FriendLauncher {
+    display: none !important;
+  }
+
+  html body[data-game-view="for-lobby"].is-guest-player #SettingBtn {
+    left: 32px !important;
+    right: auto !important;
+  }
+
+  html body[data-game-view="for-lobby"].is-guest-player .MeBox {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  html body[data-game-view="for-lobby"].room-browser-open .RoomListBox {
+    inset: 54px 4px 136px 4px !important;
+    display: flex !important;
+    width: auto !important;
+    max-width: calc(100vw - 8px) !important;
+    min-width: 0 !important;
+    height: auto !important;
+    flex-direction: column !important;
+  }
+
+  html body[data-game-view="for-lobby"] .RoomListBox .product-title {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding-right: 54px !important;
+    box-sizing: border-box !important;
+  }
+
+  html body[data-game-view="for-lobby"] .RoomListBox .panel-close {
+    position: absolute !important;
+    display: flex !important;
+    right: 8px !important;
+    left: auto !important;
+    top: 8px !important;
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 2147483000 !important;
+  }
+
+  html body[data-game-view="for-lobby"] .RoomListBox #RoomBrowseTools {
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) auto !important;
+    flex: 0 0 auto !important;
+    gap: 6px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 8px !important;
+    box-sizing: border-box !important;
+  }
+
+  html body[data-game-view="for-lobby"] .RoomListBox #RoomBrowseTools > div {
+    grid-column: 1 / -1 !important;
+    min-width: 0 !important;
+  }
+
+  html body[data-game-view="for-lobby"] .RoomListBox #RoomSearch {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  html body[data-game-view="for-lobby"] .RoomListBox #BrowseCreate {
+    display: inline-flex !important;
+    min-width: 84px !important;
+    max-width: 42vw !important;
+    align-items: center !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+  }
+
+  html body[data-game-view="for-lobby"] .RoomListBox .product-body {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  html body[data-game-view="for-gaming"] .GameBox > .product-title.branded-room-head {
+    left: 50% !important;
+    right: auto !important;
+    top: 6px !important;
+    display: flex !important;
+    width: min(270px,calc(100vw - 108px)) !important;
+    min-height: 48px !important;
+    height: 48px !important;
+    padding: 3px 8px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transform: translateX(-50%) !important;
+    overflow: hidden !important;
+  }
+
+  html body[data-game-view="for-gaming"] .branded-room-head .room-head-identity,
+  html body[data-game-view="for-gaming"] .branded-room-head .room-head-details {
+    display: none !important;
+  }
+
+  html body[data-game-view="for-gaming"] .branded-room-head .room-head-brand {
+    display: flex !important;
+    position: static !important;
+    width: 100% !important;
+    height: 42px !important;
+    padding: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  html body[data-game-view="for-gaming"] .branded-room-head .room-head-brand img {
+    width: min(230px,100%) !important;
+    height: 38px !important;
+    object-fit: contain !important;
+  }
+
+  html body[data-game-view="for-gaming"] .graph-bar {
+    transition: width 30ms linear !important;
+  }
+}
+
+@media (max-width: 400px) {
+  html body[data-game-view="for-lobby"].is-guest-player #SettingBtn {
+    left: 18px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #NewRoomBtn,
+  html body[data-game-view="for-lobby"] #LeaderboardBtn {
+    width: calc(50vw - 18px) !important;
+  }
+
+  html body[data-game-view="for-lobby"] #NewRoomBtn {
+    left: 12px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LeaderboardBtn {
+    left: calc(50% + 6px) !important;
+  }
+
+  html body[data-game-view="for-lobby"] #QuickRoomBtn,
+  html body[data-game-view="for-lobby"] #QuickRoomBtn:hover,
+  html body[data-game-view="for-lobby"] #QuickRoomBtn:active {
+    left: 12px !important;
+    width: calc(100vw - 24px) !important;
+  }
 }

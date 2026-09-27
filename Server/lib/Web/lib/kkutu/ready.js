@@ -358,7 +358,10 @@ $(document).ready(function(){
 	MODE = Object.keys(RULE);
 	if(document.documentElement.getAttribute('data-site-theme') !== 'chuseok') $('#room-mode option, #quick-mode option').filter(function(){return MODE[Number(this.value)]==='YUT';}).remove();
 	mobile = $("#mobile").html() == "true";
-	if(mobile) TICK = 200;
+	/* Keep the game clocks visually smooth on phones as well.  The old
+	 * 200 ms mobile step made both turn and round gauges jump five times a
+	 * second even though modern mobile browsers handle the normal cadence. */
+	if(mobile) TICK = 30;
 	$data._timePercent = false ? function(){
 		return $data._turnTime / $data.turnTime * 100 + "%";
 	} : function(){
