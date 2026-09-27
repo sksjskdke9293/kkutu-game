@@ -280,6 +280,17 @@ KKuTu.onClientMessage = function($c, msg){
 			
 			$c.publish('yell', { value: msg.value });
 			break;
+		case 'guestName':
+			if(!$c.guest || typeof msg.value !== 'string') return;
+			var guestName = msg.value.trim().replace(/[^0-9A-Za-z가-힣 _-]/g, '').slice(0, 12);
+			if(guestName.length < 2) return $c.sendError(400);
+			$c.guestNamed = true;
+			delete DNAME[($c.profile.title || '').replace(/\s/g, '')];
+			$c.profile.title = guestName + '(손님)';
+			$c.profile.name = $c.profile.title;
+			DNAME[$c.profile.title.replace(/\s/g, '')] = $c.id;
+			$c.publish('user', $c.getData());
+			break;
 		case 'refresh':
 			$c.refresh().then(function(result){if(result && result.result===200)$c.send('user',$c.getData());});
 			break;

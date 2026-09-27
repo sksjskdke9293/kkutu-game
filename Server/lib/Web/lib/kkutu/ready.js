@@ -1044,6 +1044,22 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 			$("#dict-output").html(processWord(res.word, res.mean, res.theme, String(res.type || '').split(',')));
 		});
 	}).hotkey($("#dict-input"), 13);
+	(function initWordbookManager(){
+		var catalog=[{id:'school-kr',name:'대한민국 학교 사전',dictionary:'standard'}],storageKey='kkutu-wordbooks-v1',added;
+		if(!$('#wordbook-catalog-results').length)return;
+		try{added=JSON.parse(localStorage.getItem(storageKey)||'["school-kr"]');}catch(e){added=['school-kr'];}
+		if(!Array.isArray(added))added=['school-kr'];
+		function save(){try{localStorage.setItem(storageKey,JSON.stringify(added));}catch(e){}$('#room-dictionary').val('standard');}
+		function makeRow(book,buttonText,handler,disabled){var row=$('<div class="wordbook-row" role="listitem">').append($('<strong>').text(book.name));$('<button type="button">').text(buttonText).prop('disabled',!!disabled).appendTo(row).on('click',handler);return row;}
+		function matches(book,query){query=String(query||'').trim().toLowerCase();return !query||book.name.toLowerCase().indexOf(query)>=0;}
+		function renderCatalog(){var query=$('#wordbook-catalog-query').val(),box=$('#wordbook-catalog-results').empty(),found=catalog.filter(function(book){return matches(book,query);});if(!found.length)return box.append($('<p class="wordbook-empty">').text('검색된 낱말집이 없습니다.'));found.forEach(function(book){var exists=added.indexOf(book.id)>=0;box.append(makeRow(book,exists?'추가됨':'추가',function(){if(added.indexOf(book.id)<0)added.push(book.id);save();renderCatalog();renderAdded();},exists));});}
+		function renderAdded(){var query=$('#wordbook-added-query').val(),box=$('#wordbook-added-list').empty(),found=catalog.filter(function(book){return added.indexOf(book.id)>=0&&matches(book,query);});if(!found.length)return box.append($('<p class="wordbook-empty">').text('추가된 낱말집이 없습니다.'));found.forEach(function(book){box.append(makeRow(book,'삭제',function(){added=added.filter(function(id){return id!==book.id;});save();renderCatalog();renderAdded();}));});}
+		$('#wordbook-catalog-search').on('click',renderCatalog);
+		$('#wordbook-added-search').on('click',renderAdded);
+		$('#wordbook-catalog-query').on('keydown',function(e){if(e.key==='Enter'){e.preventDefault();renderCatalog();}});
+		$('#wordbook-added-query').on('keydown',function(e){if(e.key==='Enter'){e.preventDefault();renderAdded();}});
+		renderCatalog();renderAdded();save();
+	})();
 	$stage.dialog.wordPlusOK.on('click', function(e){
 		var t;
 		if($stage.dialog.wordPlusOK.hasClass("searching")) return;

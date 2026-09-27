@@ -8508,3 +8508,280 @@ html body #FriendLauncher span {
     z-index: 50 !important;
   }
 }
+
+/* Daily quest and ranking controls keep both their icon and readable name. */
+html body[data-game-view] #DailyQuestBtn,
+html body[data-game-view] #LevelRankingBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+html body[data-game-view] #DailyQuestBtn .daily-quest-icon {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  font-size: 24px;
+  line-height: 1;
+}
+
+html body[data-game-view] #DailyQuestBtn .daily-quest-label,
+html body[data-game-view] #LevelRankingBtn .level-ranking-button-label {
+  display: inline-block !important;
+  visibility: visible !important;
+  color: inherit !important;
+  font-size: inherit !important;
+  line-height: 1.1 !important;
+  white-space: nowrap;
+}
+
+html body[data-game-view] #DictionaryBtn .dictionary-menu-label,
+html body[data-game-view] #DictionaryBtn .mobile-menu-label {
+  display: inline-block !important;
+  visibility: visible !important;
+  color: inherit !important;
+  font-size: inherit !important;
+  line-height: 1.1 !important;
+  white-space: nowrap;
+}
+
+@media (max-width: 800px) {
+  html body[data-game-view="for-lobby"] #LevelRankingBtn .level-ranking-button-label {
+    display: inline-block !important;
+    font-size: 21px !important;
+  }
+}
+
+/* Wordbook manager. Gray areas in the reference are translucent black here. */
+html body #DictionaryDiag {
+  width: min(650px,calc(100vw - 24px)) !important;
+  height: min(560px,calc(100dvh - 32px)) !important;
+  border: 2px solid rgba(255,255,255,.88) !important;
+  border-radius: 23px !important;
+  overflow: hidden !important;
+  background: rgba(8,11,16,.90) !important;
+  box-shadow: 0 20px 55px rgba(0,0,0,.48) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  color: #fff !important;
+}
+
+html body #DictionaryDiag .dialog-head {
+  height: 86px !important;
+  border: 0 !important;
+  border-bottom: 4px solid #fff !important;
+  background: transparent !important;
+}
+
+html body #DictionaryDiag .dialog-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 22px !important;
+  width: auto !important;
+  height: 86px !important;
+  padding: 0 72px 0 26px !important;
+  box-sizing: border-box !important;
+  color: #fff !important;
+  font-size: 38px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+html body #DictionaryDiag .dialog-title:before {
+  content: '';
+  display: block;
+  width: 112px;
+  height: 64px;
+  flex: 0 0 112px;
+  border-right: 4px solid #fff;
+  background: url('/img/custom/chat-brand-white.png') left center / 86px auto no-repeat;
+}
+
+html body #DictionaryDiag .closeBtn {
+  right: 18px !important;
+  top: 18px !important;
+  z-index: 4 !important;
+}
+
+html body #DictionaryDiag .dialog-body {
+  height: calc(100% - 90px) !important;
+  padding: 18px 12px 12px !important;
+  box-sizing: border-box !important;
+  background: transparent !important;
+}
+
+.wordbook-manager {
+  display: grid;
+  grid-template-rows: 62px minmax(130px,1fr) 4px 62px minmax(110px,1fr);
+  gap: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.wordbook-search-row {
+  display: grid;
+  grid-template-columns: minmax(190px,1fr) minmax(150px,190px) 112px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+}
+
+.wordbook-search-row strong {
+  overflow: hidden;
+  color: #fff;
+  font-size: 33px;
+  font-weight: 900;
+  line-height: 1.1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+html body #DictionaryDiag .wordbook-search-row input {
+  width: 100% !important;
+  height: 58px !important;
+  margin: 0 !important;
+  padding: 0 18px !important;
+  box-sizing: border-box !important;
+  border: 2px solid #080808 !important;
+  border-radius: 30px !important;
+  background: #fff !important;
+  color: #202020 !important;
+  font-size: 29px !important;
+  font-weight: 900 !important;
+}
+
+html body #DictionaryDiag .wordbook-search-row button,
+html body #DictionaryDiag .wordbook-row button {
+  height: 58px !important;
+  margin: 0 !important;
+  padding: 0 16px !important;
+  border: 2px solid #101010 !important;
+  border-radius: 30px !important;
+  background: #a9e84c !important;
+  color: #fff !important;
+  font-size: 28px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+html body #DictionaryDiag .wordbook-row button:disabled {
+  opacity: .62;
+  cursor: default;
+}
+
+.wordbook-results,
+.wordbook-added-list {
+  min-height: 0;
+  padding: 8px 12px;
+  overflow-y: auto;
+}
+
+.wordbook-section-divider {
+  margin: 0 2px;
+  border-radius: 99px;
+  background: #fff;
+}
+
+.wordbook-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 64px;
+  padding: 3px 0;
+  color: #fff;
+}
+
+.wordbook-row strong {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 31px;
+  font-weight: 900;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+html body #DictionaryDiag .wordbook-row button {
+  flex: 0 0 auto;
+  width: auto !important;
+  height: 44px !important;
+  padding: 0 18px !important;
+  border-color: #fff !important;
+  background: #ff6669 !important;
+  font-size: 21px !important;
+}
+
+html body #DictionaryDiag #wordbook-catalog-results .wordbook-row button {
+  background: #a9e84c !important;
+}
+
+.wordbook-empty {
+  margin: 14px 4px;
+  color: rgba(255,255,255,.68);
+  font-size: 17px;
+}
+
+@media (max-width: 800px) {
+  html body #DictionaryDiag {
+    width: calc(100vw - 12px) !important;
+    height: min(560px,calc(100dvh - 18px)) !important;
+  }
+
+  html body #DictionaryDiag .dialog-head,
+  html body #DictionaryDiag .dialog-title {
+    height: 68px !important;
+  }
+
+  html body #DictionaryDiag .dialog-title {
+    gap: 10px !important;
+    padding-left: 14px !important;
+    font-size: 29px !important;
+  }
+
+  html body #DictionaryDiag .dialog-title:before {
+    width: 83px;
+    height: 50px;
+    flex-basis: 83px;
+    background-size: 68px auto;
+  }
+
+  html body #DictionaryDiag .dialog-body {
+    height: calc(100% - 72px) !important;
+    padding: 10px 7px 8px !important;
+  }
+
+  .wordbook-manager {
+    grid-template-rows: 52px minmax(120px,1fr) 3px 52px minmax(100px,1fr);
+  }
+
+  .wordbook-search-row {
+    grid-template-columns: minmax(105px,1fr) minmax(100px,150px) 76px;
+    gap: 5px;
+    padding: 0 5px;
+  }
+
+  .wordbook-search-row strong {
+    font-size: 22px;
+  }
+
+  html body #DictionaryDiag .wordbook-search-row input {
+    height: 45px !important;
+    padding: 0 12px !important;
+    font-size: 22px !important;
+  }
+
+  html body #DictionaryDiag .wordbook-search-row button {
+    height: 45px !important;
+    padding: 0 8px !important;
+    font-size: 21px !important;
+  }
+
+  .wordbook-row strong {
+    font-size: 23px;
+  }
+}

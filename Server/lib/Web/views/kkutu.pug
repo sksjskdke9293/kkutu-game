@@ -41,14 +41,14 @@ block Subject
 	title= locals.lang === 'en_US' ? 'kkutugameskorea' : '끄투게임즈코리아'
 
 block JS
-	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260927-social-40')
+	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260927-social-42')
 	script(src='/js/game-language.js?v=20260920-kp-full', defer)
 	script(src='https://www.google.com/recaptcha/api.js')
 
 block CSS
 	link(rel='stylesheet', href='/css/in_game_kkutu_shop.css?v=20260914-inventory-layout-5')
 	link(rel='stylesheet', href='/css/play-shell.css?v=20260906-ui-audit-4')
-	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260927-social-40')
+	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260927-social-42')
 	link(rel='stylesheet', href='/css/settings-ui.css?v=20260910-lobby-music-1')
 	link(rel='stylesheet', href='/css/autumn-theme.css?v=20260927-intro-1')
 	
@@ -94,9 +94,13 @@ block Middle
 		button#NewRoomBtn.for-lobby(style='display: none; background-color: #8EC0F3;')= L('newRoom')
 		button#QuickRoomBtn.for-lobby(style='display: none; background-color: #B0D2F3;')= L('quickRoom')
 		button#TutorialBtn.for-lobby(type='button', style='display: none; background-color: #F5D875;')= IS_EN ? 'Tutorial' : '튜토리얼'
-		button#DailyQuestBtn.for-lobby(type='button', style='display: none;')= IS_EN ? 'Daily Quests' : '일일 퀘스트'
+		button#DailyQuestBtn.for-lobby(type='button', style='display: none;', aria-label=IS_EN ? 'Daily Quests' : '일일 퀘스트')
+			span.daily-quest-icon(aria-hidden='true') 🎁
+			span.daily-quest-label= IS_EN ? 'Daily Quests' : '일일 퀘스트'
 		button#ShopBtn.for-lobby(style='display: none; background-color: #B3E7B7;')= L('shop')
-		button#DictionaryBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #73D07A;')= L('dict')
+		button#DictionaryBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #73D07A;', aria-label=IS_EN ? 'Wordbooks' : '낱말집')
+			+FA('book')
+			span.dictionary-menu-label= IS_EN ? 'Wordbooks' : '낱말집'
 		// button#WordPlusBtn.for-lobby.for-master.for-normal.for-gaming(style='display: none; background-color: #73D07A;')= L('wordPlus')
 		button#InviteBtn.for-master(style='display: none; background-color: #9FE669;')= L('invite')
 		button#ReadyBtn.for-normal(style='display: none; background-color: #FFC67F;')= L('ready')
@@ -308,9 +312,7 @@ block Middle
 		div.dialog-bar#room-dictionary-panel
 			h4= L('dictionaryPreset')
 			select#room-dictionary
-				option(value='basic')= L('dictionaryBasic')
-				option(value='standard', selected)= L('dictionaryStandard')
-				option(value='complex')= L('dictionaryComplex')
+				option(value='standard', selected) 대한민국 학교 사전
 		if ADMIN
 			div.dialog-bar.admin-practice-bot
 				h4 운영자 도구
@@ -395,19 +397,19 @@ block Middle
 			div.expl.result-me-expl
 		div.dialog-bar.tail-button
 			button#result-ok= L('OK')
-	+Dialog('DictionaryDiag', 400, 300, L('dict'))
-		div.dialog-bar
-			h4= L('wpHere')
-			input#dict-input(style='width: 283px;', placeholder=L('wpInput'), maxlength=200)
-		div.dialog-bar#dict-output(style='height: 195px; overflow-y: scroll; color: #BBBBBB; background-color: #111111;')
-		div.dialog-bar.tail-button
-			select#dict-theme
-				option(value="")= L('pickInjeong')
-				- locals.KO_INJEONG.forEach(function(item){
-					option(value=item)= L('theme_' + item)
-				- });
-			button#dict-search= L('SEARCH')
-			button#dict-injeong= L('injeongReq')
+	+Dialog('DictionaryDiag', 650, 560, IS_EN ? 'Wordbooks' : '낱말집')
+		section.wordbook-manager
+			div.wordbook-search-row
+				strong 낱말집
+				input#wordbook-catalog-query(type='search', placeholder='입력', autocomplete='off')
+				button#wordbook-catalog-search(type='button') 검색
+			div#wordbook-catalog-results.wordbook-results(role='list')
+			div.wordbook-section-divider
+			div.wordbook-search-row.wordbook-added-head
+				strong 추가된 낱말집
+				input#wordbook-added-query(type='search', placeholder='입력', autocomplete='off')
+				button#wordbook-added-search(type='button') 검색
+			div#wordbook-added-list.wordbook-added-list(role='list')
 	+Dialog('InviteDiag', 300, 420, L('invite'))
 		div.invite-board(style='height: 355px; overflow-y: scroll;')
 		div.dialog-bar.tail-button
