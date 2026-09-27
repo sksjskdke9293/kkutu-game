@@ -8027,3 +8027,199 @@ html body #FriendLauncher span {
     height: 27px !important;
   }
 }
+
+/* Mobile lobby social drawer: visitor list and main chat share one sliding panel. */
+#MobileSocialToggle {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  html body[data-game-view="for-lobby"] #LobbySocialDock {
+    --mobile-drawer-top: 96px;
+    position: fixed !important;
+    left: auto !important;
+    right: 4px !important;
+    top: var(--mobile-drawer-top) !important;
+    bottom: calc(6px + env(safe-area-inset-bottom,0px)) !important;
+    width: min(var(--social-width,196px),calc(100vw - 20px)) !important;
+    max-width: calc(100vw - 20px) !important;
+    height: auto !important;
+    padding: 5px !important;
+    transform: translateX(calc(100% + 8px)) !important;
+    transition: transform .22s ease-out !important;
+    overflow: visible !important;
+    border: 2px solid rgba(255,255,255,.82) !important;
+    border-radius: 19px !important;
+    background: rgba(8,11,16,.88) !important;
+    box-shadow: 0 12px 34px rgba(0,0,0,.42) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    z-index: 2147482900 !important;
+  }
+
+  html body[data-game-view="for-lobby"].mobile-social-open #LobbySocialDock,
+  html body[data-game-view="for-lobby"].mobile-social-resizing #LobbySocialDock {
+    transform: translateX(0) !important;
+  }
+
+  html body.mobile-social-resizing #LobbySocialDock {
+    transition: none !important;
+  }
+
+  html body[data-game-view="for-lobby"] #MobileSocialToggle {
+    position: absolute !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    left: -47px !important;
+    top: 35% !important;
+    width: 47px !important;
+    height: 112px !important;
+    padding: 0 !important;
+    color: #fff !important;
+    font: 900 68px/1 sans-serif !important;
+    border: 2px solid rgba(255,255,255,.88) !important;
+    border-right: 0 !important;
+    border-radius: 24px 0 0 24px !important;
+    background: rgba(35,21,13,.82) !important;
+    box-shadow: -7px 8px 20px rgba(0,0,0,.28) !important;
+    cursor: pointer !important;
+    z-index: 6 !important;
+    touch-action: manipulation !important;
+  }
+
+  html body[data-game-view="for-lobby"] #MobileSocialToggle span {
+    display: block;
+    transform: translateY(-3px);
+  }
+
+  html body[data-game-view="for-lobby"] #LobbySocialDock > .social-dock-edge {
+    display: block !important;
+    left: -9px !important;
+    top: 8px !important;
+    bottom: 8px !important;
+    width: 18px !important;
+    cursor: ew-resize !important;
+    touch-action: none !important;
+    z-index: 8 !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbySocialDock > .social-mobile-height-edge {
+    display: none !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbySocialDock .UserListBox {
+    display: flex !important;
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: 0 !important;
+    min-height: 150px !important;
+    flex: 1 1 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 14px 14px 8px 8px !important;
+    background: transparent !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbySocialDock .UserListBox > .product-title {
+    height: 46px !important;
+    min-height: 46px !important;
+    padding: 3px 6px !important;
+    gap: 5px !important;
+    font-size: 16px !important;
+    border-bottom: 2px solid rgba(255,255,255,.9) !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbySocialDock .visitor-brand {
+    font-size: 24px !important;
+    letter-spacing: -4px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbySocialDock .UserListBox small {
+    display: none !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbySocialDock .UserListBox > .product-body {
+    padding: 6px 2px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbySocialDock .users-item {
+    grid-template-columns: 45px minmax(0,1fr) !important;
+    grid-template-rows: 24px 18px !important;
+    column-gap: 7px !important;
+    min-height: 63px !important;
+    padding: 8px !important;
+    margin-bottom: 6px !important;
+    border-radius: 17px !important;
+    background: rgba(255,255,255,.10) !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbySocialDock .users-image {
+    width: 43px !important;
+    height: 43px !important;
+    line-height: 41px !important;
+    font-size: 25px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbySocialDock .users-name {
+    color: #fff !important;
+    line-height: 24px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbySocialDock .visitor-level {
+    font-size: 12px !important;
+    line-height: 18px !important;
+  }
+
+  html body[data-game-view="for-lobby"][data-game-view] #LobbySocialDock #ChatPanel.ChatBox {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: clamp(220px,32vh,290px) !important;
+    min-height: 190px !important;
+    max-height: 290px !important;
+    flex: 0 1 clamp(220px,32vh,290px) !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 12px !important;
+    background: rgba(36,20,12,.72) !important;
+    transform: none !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbySocialDock #ChatPanel > .product-body {
+    grid-template-columns: minmax(0,1fr) 45px !important;
+    grid-template-rows: 35px minmax(0,1fr) 32px !important;
+    gap: 4px !important;
+    padding: 3px 5px 5px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbySocialDock #ChatTabs {
+    height: 35px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbySocialDock #ChatTabs button {
+    min-height: 29px !important;
+    padding: 2px 4px !important;
+    font-size: 13px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbySocialDock #Talk,
+  html body[data-game-view="for-lobby"] #LobbySocialDock #ChatBtn {
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    font-size: 13px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbySocialDock #ChatBtn {
+    padding: 0 5px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #GuestLoginLauncher {
+    position: fixed !important;
+    right: 10px !important;
+    top: 70px;
+    z-index: 2147483050 !important;
+  }
+}
