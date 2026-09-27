@@ -50,7 +50,7 @@ block CSS
 	link(rel='stylesheet', href='/css/play-shell.css?v=20260906-ui-audit-4')
 	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260927-social-37')
 	link(rel='stylesheet', href='/css/settings-ui.css?v=20260910-lobby-music-1')
-	link(rel='stylesheet', href='/css/autumn-theme.css?v=20260927-social-34')
+	link(rel='stylesheet', href='/css/autumn-theme.css?v=20260927-intro-1')
 	
 block Jungle
 	span#PUBLIC= PUBLIC ? "true" : undefined
@@ -80,7 +80,7 @@ block Middle
 	- var VERSION = L('version');
 	- var nick = SESSION.profile ? (SESSION.profile.title || SESSION.profile.name) : null;
 	div#Intro
-		img#intro(src='/img/custom/autumn-welcome-v2.png')
+		img#intro(src='/img/custom/autumn-intro-pc.png?v=20260927-1')
 		// img#intro-start(src='/img/kkutu/intro_start.gif')
 		div#version= VERSION
 		div#intro-text= L('LOADING')

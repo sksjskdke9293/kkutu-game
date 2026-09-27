@@ -708,7 +708,7 @@ body.guest-name-locked #GuestNameInput::placeholder {
 /* Autumn welcome art is shown without the former white connection card. */
 html:not([data-site-theme="chuseok"]) body[data-game-view] #Intro,
 html:not([data-site-theme="chuseok"]) body[data-game-view] #Loading.game-data-loading {
-  background: #38291f url('/img/custom/autumn-welcome-v2.png') center / contain no-repeat !important;
+  background: #38291f url('/img/custom/autumn-intro-pc.png?v=20260927-1') center / cover no-repeat !important;
   backdrop-filter: none !important;
   color: #fff !important;
   padding: 0 !important;
@@ -717,10 +717,17 @@ html:not([data-site-theme="chuseok"]) body[data-game-view] #Loading.game-data-lo
 html:not([data-site-theme="chuseok"]) body[data-game-view] #Intro #intro {
   width: 100% !important;
   height: 100% !important;
-  object-fit: contain !important;
+  object-fit: cover !important;
   object-position: center !important;
   filter: none !important;
   transform: none !important;
+}
+
+@media (max-width: 800px) {
+  html:not([data-site-theme="chuseok"]) body[data-game-view] #Intro,
+  html:not([data-site-theme="chuseok"]) body[data-game-view] #Loading.game-data-loading {
+    background-image: url('/img/custom/autumn-intro-mobile.png?v=20260927-1') !important;
+  }
 }
 
 html:not([data-site-theme="chuseok"]) body[data-game-view] #Intro::before,
