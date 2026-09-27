@@ -268,8 +268,8 @@ $(document).ready(function(){
  };
  mobileSocialToggle.on('click',function(){var open=!$('body').hasClass('mobile-social-open');$('body').toggleClass('mobile-social-open',open);mobileSocialToggle.attr({'aria-expanded':String(open),'aria-label':open?'방문자 목록과 채팅 닫기':'방문자 목록과 채팅 열기'}).find('span').text(open?'›':'‹');if(open)setTimeout(window.fitVisitorNames,220);});
  $(window).on('resize.mobileSocial',function(){var mobile=innerWidth<=800,lobby=getOnly()==='for-lobby';mobileSocialToggle.toggle(mobile&&lobby);if(!mobile)$('body').removeClass('mobile-social-open');});
- try{var dockWidth=Number(localStorage.getItem(innerWidth<=800?'kkutu-mobile-social-width':'kkutu-social-width'));if(dockWidth>=(innerWidth<=800?190:290))socialDock.get(0).style.setProperty('--social-width',Math.min(dockWidth,innerWidth>800?innerWidth-460:innerWidth-20)+'px');}catch(e){}
- socialDock.find('.social-dock-edge').on('pointerdown',function(ev){var e=ev.originalEvent||ev;e.preventDefault();var x=e.clientX,w=socialDock.get(0).getBoundingClientRect().width,min=innerWidth>800?290:190,max=innerWidth>800?innerWidth-460:innerWidth-20;this.setPointerCapture(e.pointerId);$('body').addClass('mobile-social-resizing');$(window).on('pointermove.socialDock',function(ev){var m=ev.originalEvent||ev;socialDock.get(0).style.setProperty('--social-width',Math.max(min,Math.min(max,w+x-m.clientX))+'px');window.fitVisitorNames();}).one('pointerup.socialDock pointercancel.socialDock',function(){$(window).off('.socialDock');$('body').removeClass('mobile-social-resizing');try{localStorage.setItem(innerWidth<=800?'kkutu-mobile-social-width':'kkutu-social-width',socialDock.get(0).getBoundingClientRect().width);}catch(e){}});});
+ try{var dockWidth=Number(localStorage.getItem(innerWidth<=800?'kkutu-mobile-social-width-v2':'kkutu-social-width'));if(dockWidth>=(innerWidth<=800?190:290))socialDock.get(0).style.setProperty('--social-width',Math.min(dockWidth,innerWidth>800?innerWidth-460:innerWidth-20)+'px');}catch(e){}
+ socialDock.find('.social-dock-edge').on('pointerdown',function(ev){var e=ev.originalEvent||ev;e.preventDefault();var x=e.clientX,w=socialDock.get(0).getBoundingClientRect().width,min=innerWidth>800?290:190,max=innerWidth>800?innerWidth-460:innerWidth-20;this.setPointerCapture(e.pointerId);$('body').addClass('mobile-social-resizing');$(window).on('pointermove.socialDock',function(ev){var m=ev.originalEvent||ev;socialDock.get(0).style.setProperty('--social-width',Math.max(min,Math.min(max,w+x-m.clientX))+'px');window.fitVisitorNames();}).one('pointerup.socialDock pointercancel.socialDock',function(){$(window).off('.socialDock');$('body').removeClass('mobile-social-resizing');try{localStorage.setItem(innerWidth<=800?'kkutu-mobile-social-width-v2':'kkutu-social-width',socialDock.get(0).getBoundingClientRect().width);}catch(e){}});});
  $('<span class="social-mobile-height-edge" title="위아래로 드래그해 채팅창 높이 조절" aria-hidden="true"></span>').appendTo(socialDock).on('pointerdown',function(ev){
   var e=ev.originalEvent||ev;if(innerWidth>800)return;e.preventDefault();var y=e.clientY,h=socialDock.get(0).getBoundingClientRect().height;this.setPointerCapture(e.pointerId);
   $(window).on('pointermove.socialHeight',function(ev){var m=ev.originalEvent||ev;socialDock.get(0).style.setProperty('--mobile-chat-height',Math.max(180,Math.min(innerHeight-90,h+y-m.clientY))+'px');}).one('pointerup.socialHeight pointercancel.socialHeight',function(){$(window).off('.socialHeight');try{localStorage.setItem('kkutu-mobile-chat-height',socialDock.get(0).getBoundingClientRect().height);}catch(e){}});
@@ -278,6 +278,18 @@ $(document).ready(function(){
  var mobileChatEdge=$('<span class="mobile-chat-height-edge" title="위아래로 드래그해 채팅창 높이 조절"></span>').appendTo($stage.box.chat);
  try{var savedHeight=Number(localStorage.getItem('kkutu-mobile-room-chat-height'));if(savedHeight>=150)document.documentElement.style.setProperty('--mobile-room-chat-height',savedHeight+'px');}catch(e){}
  mobileChatEdge.on('pointerdown',function(ev){var e=ev.originalEvent||ev;if(innerWidth>800)return;e.preventDefault();var y=e.clientY,h=$stage.box.chat[0].getBoundingClientRect().height;this.setPointerCapture(e.pointerId);$(window).on('pointermove.mobileChatHeight',function(ev){var m=ev.originalEvent||ev;document.documentElement.style.setProperty('--mobile-room-chat-height',Math.max(150,Math.min(innerHeight-200,h+y-m.clientY))+'px');}).one('pointerup.mobileChatHeight pointercancel.mobileChatHeight',function(){$(window).off('.mobileChatHeight');try{localStorage.setItem('kkutu-mobile-room-chat-height',$stage.box.chat[0].getBoundingClientRect().height);}catch(e){}});});
+ var mobileViewportHeight=innerHeight;
+ function syncMobileGameKeyboard(){
+  var vv=window.visualViewport,focused=document.activeElement&&document.activeElement.id==='game-input';
+  if(innerWidth>800||!vv){$('body').removeClass('mobile-game-keyboard');return;}
+  if(!focused)mobileViewportHeight=Math.max(mobileViewportHeight,innerHeight,vv.height);
+  var opened=focused&&vv.height<mobileViewportHeight-100;
+  document.documentElement.style.setProperty('--mobile-visual-height',Math.round(vv.height)+'px');
+  document.documentElement.style.setProperty('--mobile-visual-top',Math.round(vv.offsetTop)+'px');
+  $('body').toggleClass('mobile-game-keyboard',opened);
+ }
+ if(window.visualViewport)visualViewport.addEventListener('resize',syncMobileGameKeyboard);
+ $('#game-input').on('focus.mobileKeyboard blur.mobileKeyboard',function(){setTimeout(syncMobileGameKeyboard,80);});
  function initChatResize(){
   var node=$stage.box.chat.get(0),start=null;
   if(!node)return;

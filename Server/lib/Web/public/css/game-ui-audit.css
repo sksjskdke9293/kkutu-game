@@ -8223,3 +8223,288 @@ html body #FriendLauncher span {
     z-index: 2147483050 !important;
   }
 }
+
+/* Full mobile lobby composition based on the compact portrait layout. */
+@media (max-width: 800px) {
+  html body[data-game-view="for-lobby"] .MeBox {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 15px !important;
+    width: 100vw !important;
+    height: 78px !important;
+    border-radius: 0 20px 20px 0 !important;
+    z-index: 45 !important;
+  }
+
+  html body[data-game-view="for-lobby"] .game-ad-slot {
+    left: 26px !important;
+    right: 18px !important;
+    top: 106px !important;
+    width: auto !important;
+    height: 56px !important;
+    transform: none !important;
+    z-index: 44 !important;
+  }
+
+  html body[data-game-view="for-lobby"] #FriendLauncher {
+    position: fixed !important;
+    display: flex;
+    left: 32px !important;
+    right: auto !important;
+    top: 232px !important;
+    width: 126px !important;
+    height: 51px !important;
+    padding: 4px 12px !important;
+    border-radius: 19px !important;
+    font-size: 24px !important;
+    z-index: 41 !important;
+  }
+
+  html body[data-game-view="for-lobby"] #FriendLauncher img {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #FriendLauncher span {
+    font-size: 23px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #SettingBtn {
+    position: fixed !important;
+    left: 181px !important;
+    right: auto !important;
+    top: 232px !important;
+    width: 52px !important;
+    height: 52px !important;
+    border-radius: 50% !important;
+    z-index: 41 !important;
+  }
+
+  html body[data-game-view="for-lobby"] :is(
+    #TutorialBtn,
+    #DailyQuestBtn,
+    #ShopBtn,
+    #DictionaryBtn,
+    #LevelRankingBtn,
+    #NewRoomBtn,
+    #LeaderboardBtn,
+    #QuickRoomBtn
+  ) {
+    position: fixed !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    color: #fff !important;
+    border: 1px solid rgba(255,255,255,.25) !important;
+    background: rgba(23,12,7,.72) !important;
+    box-shadow: 0 7px 17px rgba(0,0,0,.22) !important;
+    z-index: 38 !important;
+  }
+
+  html body[data-game-view="for-lobby"] :is(
+    #TutorialBtn,
+    #DailyQuestBtn,
+    #ShopBtn,
+    #DictionaryBtn,
+    #LevelRankingBtn
+  ) {
+    left: 32px !important;
+    right: auto !important;
+    width: 199px !important;
+    height: 52px !important;
+    border-radius: 26px !important;
+    font-size: 22px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #TutorialBtn {
+    top: 304px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #DailyQuestBtn {
+    top: 370px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #ShopBtn {
+    top: 436px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #DictionaryBtn {
+    top: 502px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LevelRankingBtn {
+    top: 568px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LevelRankingBtn img {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LevelRankingBtn .level-ranking-button-label {
+    display: none !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbyHero {
+    position: fixed !important;
+    left: 249px !important;
+    right: auto !important;
+    top: 346px !important;
+    width: 185px !important;
+    min-height: 198px !important;
+    height: 198px !important;
+    padding: 11px 9px 8px !important;
+    transform: none !important;
+    z-index: 37 !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbyHeroImage {
+    width: 132px !important;
+    height: 132px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbyHeroName {
+    max-width: 164px !important;
+    margin-top: 1px !important;
+    padding: 4px 8px !important;
+    font-size: 13px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbyHeroSub {
+    margin-top: 3px !important;
+    font-size: 9px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #NewRoomBtn,
+  html body[data-game-view="for-lobby"] #LeaderboardBtn {
+    top: auto !important;
+    bottom: 141px !important;
+    width: 151px !important;
+    height: 52px !important;
+    border-radius: 25px !important;
+    font-size: 21px !important;
+    transform: none !important;
+  }
+
+  html body[data-game-view="for-lobby"] #NewRoomBtn {
+    left: calc(50% - 157px) !important;
+    right: auto !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LeaderboardBtn {
+    left: calc(50% + 6px) !important;
+    right: auto !important;
+  }
+
+  html body[data-game-view="for-lobby"] #QuickRoomBtn,
+  html body[data-game-view="for-lobby"] #QuickRoomBtn:hover,
+  html body[data-game-view="for-lobby"] #QuickRoomBtn:active {
+    left: calc(50% - 157px) !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: 35px !important;
+    width: 314px !important;
+    height: 88px !important;
+    border-radius: 0 !important;
+    font-size: 24px !important;
+    transform: none !important;
+  }
+
+  html body[data-game-view="for-lobby"] #GuestLoginLauncher {
+    top: 170px;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbySocialDock {
+    --social-width: calc(100vw - 98px);
+  }
+}
+
+@media (max-width: 400px) {
+  html body[data-game-view="for-lobby"] :is(
+    #TutorialBtn,
+    #DailyQuestBtn,
+    #ShopBtn,
+    #DictionaryBtn,
+    #LevelRankingBtn
+  ) {
+    left: 18px !important;
+    width: 174px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #LobbyHero {
+    left: auto !important;
+    right: 10px !important;
+    width: 170px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #FriendLauncher {
+    left: 18px !important;
+  }
+
+  html body[data-game-view="for-lobby"] #SettingBtn {
+    left: 154px !important;
+  }
+}
+
+/* Keep the active word and entry field inside the visible area above mobile keyboards. */
+@media (max-width: 800px) {
+  html body.mobile-game-keyboard[data-game-view="for-gaming"] .GameBox {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: var(--mobile-visual-top,0px) !important;
+    bottom: auto !important;
+    width: 100vw !important;
+    height: var(--mobile-visual-height,55vh) !important;
+    overflow: hidden !important;
+    z-index: 2147482500 !important;
+    background: rgba(5,8,13,.90) !important;
+  }
+
+  html body.mobile-game-keyboard[data-game-view="for-gaming"] .GameBox > .product-title {
+    height: 42px !important;
+    min-height: 42px !important;
+  }
+
+  html body.mobile-game-keyboard[data-game-view="for-gaming"] .GameBox .product-body {
+    width: 100vw !important;
+    height: calc(var(--mobile-visual-height,55vh) - 42px) !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  html body.mobile-game-keyboard[data-game-view="for-gaming"] .GameBox .game-head {
+    height: 138px !important;
+    min-height: 138px !important;
+  }
+
+  html body.mobile-game-keyboard[data-game-view="for-gaming"] .GameBox .jjoriping {
+    top: 9px !important;
+    width: calc(100% - 28px) !important;
+  }
+
+  html body.mobile-game-keyboard[data-game-view="for-gaming"] .GameBox .history-holder {
+    top: 91px !important;
+  }
+
+  html body.mobile-game-keyboard[data-game-view="for-gaming"] .GameBox .hints,
+  html body.mobile-game-keyboard[data-game-view="for-gaming"] .GameBox .game-body,
+  html body.mobile-game-keyboard[data-game-view="for-gaming"] #ChatPanel.ChatBox {
+    display: none !important;
+  }
+
+  html body.mobile-game-keyboard[data-game-view="for-gaming"] .GameBox .game-input {
+    position: absolute !important;
+    left: 8px !important;
+    right: 8px !important;
+    top: auto !important;
+    bottom: 8px !important;
+    width: calc(100% - 16px) !important;
+    height: 52px !important;
+    margin: 0 !important;
+    z-index: 50 !important;
+  }
+}
