@@ -1060,6 +1060,11 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 	});
 	$stage.dialog.resultOK.on('click', function(e){
         restoreResultAd();
+		if($data._replay){
+			$stage.dialog.result.hide();
+			replayStop();
+			return;
+		}
 		if(!$('#ResultDiag').hasClass('match-result-screen') && $data._resultPage == 1 && $data._resultRank){
 			drawRanking($data._resultRank[$data.id]);
 			return;
@@ -1086,8 +1091,11 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 		updateUI();
 	});
 	$stage.dialog.resultSave.on('click', function(e){
+		if(!$rec || !$rec.events || !$rec.events.length){
+			return alert('저장할 리플레이가 없습니다.');
+		}
 		var date = new Date($rec.time);
-		var blob = new Blob([ JSON.stringify($rec) ], { type: "text/plain" });
+		var blob = new Blob([ JSON.stringify($rec) ], { type: "application/json;charset=utf-8" });
 		var url = URL.createObjectURL(blob);
 		var fileName = "KKuTu" + (
 			date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " "
@@ -1097,7 +1105,7 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 			'download': fileName,
 			'href': url
 		}).on('click', function(e){
-			$a.remove();
+			setTimeout(function(){ URL.revokeObjectURL(url); $a.remove(); }, 0);
 		});
 		$("#Jungle").append($a);
 		$a[0].click();
@@ -1344,46 +1352,62 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 	}
 // 리플레이
 	function initReplayDialog(){
-		$stage.dialog.replayView.attr('disabled', true);
+		$stage.dialog.replayView.prop('disabled', true);
+		$("#replay-status").removeClass('is-error is-ready').text('선택한 리플레이가 없습니다.');
 	}
 	$("#replay-file").on('change', function(e){
 		var file = e.target.files[0];
 		var reader = new FileReader();
-		var $date = $("#replay-date").html("-");
-		var $version = $("#replay-version").html("-");
-		var $players = $("#replay-players").html("-");
+		var $date = $("#replay-date").text("-");
+		var $version = $("#replay-version").text("-");
+		var $players = $("#replay-players").text("-");
+		var $status = $("#replay-status").removeClass('is-error is-ready');
 	
 		$rec = false;
-		$stage.dialog.replayView.attr('disabled', true);
-		if(!file) return;
+		$stage.dialog.replayView.prop('disabled', true);
+		if(!file) return $status.text('선택한 리플레이가 없습니다.');
+		if(file.size > 10 * 1024 * 1024){
+			return $status.addClass('is-error').text('10MB 이하의 리플레이 파일을 선택해 주세요.');
+		}
+		$status.text('리플레이를 확인하는 중…');
 		reader.readAsText(file);
 		reader.onload = function(e){
 			var i, data;
 			
 			try{
 				data = JSON.parse(e.target.result);
-				$date.html((new Date(data.time)).toLocaleString());
-				$version.html(data.version);
+				if(!data || !Array.isArray(data.players) || !Array.isArray(data.events) || !data.game || !Array.isArray(data.game.seq)) throw new Error('Invalid replay structure');
+				if(data.players.length > 16 || !data.players.length || data.events.length > 100000 || !data.events.length) throw new Error('Invalid replay length');
+				if(!isFinite(Number(data.time)) || !isFinite(Number(data.mode))) throw new Error('Invalid replay metadata');
+				var replayTypes = /^(starting|roundReady|turnStart|draftChecked|playerHints|turnError|turnHint|turnEnd|yutWin|yutChoice|yutThrow|yutForceRoll|roundEnd|chat)$/;
+				for(i=0; i<data.events.length; i++){
+					if(!data.events[i] || !data.events[i].data || !replayTypes.test(data.events[i].data.type) || !isFinite(Number(data.events[i].time))) throw new Error('Invalid replay event');
+				}
+				$date.text((new Date(Number(data.time))).toLocaleString());
+				$version.text(data.version || data.formatVersion || '-');
 				$players.empty();
 				for(i in data.players){
 					var u = data.players[i];
 					var $p;
 					
 					$players.append($p = $("<div>").addClass("replay-player-bar ellipse")
-						.html(u.title)
-						.prepend(getLevelImage(u.data.score).addClass("users-level"))
+						.text(u.title || ('#' + u.id))
+						.prepend(getLevelImage(Number(u.data && u.data.score) || 0).addClass("users-level"))
 					);
 					if(u.id == data.me) $p.css('font-weight', "bold");
 				}
 				$rec = data;
-				$stage.dialog.replayView.attr('disabled', false);
+				$status.addClass('is-ready').text(file.name + ' · 이벤트 ' + data.events.length + '개');
+				$stage.dialog.replayView.prop('disabled', false);
 			}catch(ex){
 				console.warn(ex);
-				return alert(L['replayError']);
+				$status.addClass('is-error').text('올바른 끄투 리플레이 파일이 아닙니다.');
 			}
 		};
+		reader.onerror = function(){ $status.addClass('is-error').text('파일을 읽지 못했습니다.'); };
 	});
 	$stage.dialog.replayView.on('click', function(e){
+		if(!$rec) return;
 		replayReady();
 	});
 	
@@ -3085,6 +3109,8 @@ function onMessage(data){
 			route("yutForceRoll", data);
 			break;
 		case 'roundEnd':
+			// roundEnd() stops the recorder, so preserve the final result first.
+			if($data._record) recordEvent(data);
 			for(i in data.users){
 				$data.setUser(i, data.users[i]);
 			}
@@ -4631,7 +4657,7 @@ function replayPrevInit(){
 			u = $rec.users[id] = {};
 		}
 		$data.room.players.push(po);
-		u.id = po;
+		u.id = id;
 		u.profile = $rec.players[i];
 		u.data = u.profile.data;
 		u.equip = u.profile.equip;
@@ -4645,6 +4671,7 @@ function replayReady(){
 	replayStop();
 	$data._replay = true;
 	$data.room = {
+		id: $rec.id || 'REPLAY',
 		title: $rec.title,
 		players: [],
 		events: [],
@@ -4665,8 +4692,10 @@ function replayReady(){
 	$stage.box.game.show();
 	$stage.dialog.replay.hide();
 	gameReady();
+	$stage.dialog.resultSave.hide();
 	updateRoom(true);
-	$data.$gp = $(".GameBox .product-title").empty()
+	$(".GameBox").addClass("is-replay").find(".replay-playback-bar").remove();
+	$data.$gp = $("<div>").addClass("replay-playback-bar").appendTo(".GameBox")
 		.append($data.$gpt = $("<div>").addClass("game-replay-title"))
 		.append($data.$gpc = $("<div>").addClass("game-replay-controller")
 			.append($("<button>").html(L['replayNext']).on('click', replayNext))
@@ -4772,9 +4801,10 @@ function replayTick(stay){
 	if($data.room.events.length > $data._rf) $data._rt = addTimeout(replayTick,
 		$data.room.events[$data._rf].time - event.time
 	);
-	else replayStop();
+	else if(args.type != 'roundEnd') replayStop();
 }
 function replayStop(){
+	$(".GameBox").removeClass("is-replay").find(".replay-playback-bar").remove();
 	delete $data.room;
 	$data._replay = false;
 	$stage.box.room.height(360);
@@ -4782,11 +4812,18 @@ function replayStop(){
 	updateUI();
 	playBGM('lobby');
 }
-function startRecord(title){ return; /* replay recording disabled */
+function replayClone(value){
+	try{ return JSON.parse(JSON.stringify(value)); }
+	catch(ex){ return value; }
+}
+function startRecord(title){
 	var i, u;
 	
 	$rec = {
+		format: "kkutu-replay",
+		formatVersion: 2,
 		version: $data.version,
+		id: $data.room.id || 'REPLAY',
 		me: $data.id,
 		players: [],
 		events: [],
@@ -4795,15 +4832,16 @@ function startRecord(title){ return; /* replay recording disabled */
 		round: $data.room.round,
 		mode: $data.room.mode,
 		limit: $data.room.limit,
-		game: $data.room.game,
-		opts: $data.room.opts,
-		readies: $data.room.readies,
+		game: replayClone($data.room.game),
+		opts: replayClone($data.room.opts || {}),
+		readies: replayClone($data.room.readies || {}),
 		time: (new Date()).getTime()
 	};
 	for(i in $data.room.players){
 		var o;
 		
-		u = $data.users[$data.room.players[i]] || $data.room.players[i];
+		u = $data.users[$data.room.players[i]] || $data.robots[$data.room.players[i].id] || $data.room.players[i];
+		if(!u) continue;
 		o = { id: u.id, score: 0 };
 		if(u.robot){
 			o.id = u.id;
@@ -4811,11 +4849,11 @@ function startRecord(title){ return; /* replay recording disabled */
 			o.data = { score: 0 };
 			u = { profile: getAIProfile(u.level) };
 		}else{
-			o.data = u.data;
-			o.equip = u.equip;
+			o.data = replayClone(u.data || { score: 0 });
+			o.equip = replayClone(u.equip || {});
 		}
-		o.title = "#" + u.id; // u.profile.title;
-		// o.image = u.profile.image;
+		o.title = (u.profile && (u.profile.title || u.profile.name)) || u.title || (u.robot ? "끄투 봇" : "#" + u.id);
+		o.image = u.profile && u.profile.image;
 		$rec.players.push(o);
 	}
 	$data._record = true;
@@ -4826,15 +4864,13 @@ function stopRecord(){
 function recordEvent(data){
 	if($data._replay) return;
 	if(!$rec) return;
-	var i, _data = data;
+	var allowed = /^(starting|roundReady|turnStart|draftChecked|playerHints|turnError|turnHint|turnEnd|yutWin|yutChoice|yutThrow|yutForceRoll|roundEnd|chat)$/;
 
 	if(!data.hasOwnProperty('type')) return;
-	if(data.type == "room") return;
-	if(data.type == "obtain") return;
-	data = {};
-	for(i in _data) data[i] = _data[i];
-	if(data.profile) data.profile = { id: data.profile.id, title: "#" + data.profile.id };
-	if(data.user) data.user = { id: data.user.profile.id, profile: { id: data.user.profile.id, title: "#" + data.user.profile.id }, data: { score: 0 }, equip: {} };
+	if(!allowed.test(data.type)) return;
+	data = replayClone(data);
+	if(data.profile) data.profile = { id: data.profile.id, title: data.profile.title || data.profile.name || ("#" + data.profile.id) };
+	if(data.user && data.user.profile) data.user = { id: data.user.id || data.user.profile.id, profile: { id: data.user.profile.id, title: data.user.profile.title || data.user.profile.name || ("#" + data.user.profile.id) }, data: { score: 0 }, equip: replayClone(data.user.equip || {}) };
 	
 	$rec.events.push({
 		data: data,

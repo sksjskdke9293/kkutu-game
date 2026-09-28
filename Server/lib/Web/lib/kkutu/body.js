@@ -607,6 +607,8 @@ function onMessage(data){
 			route("yutForceRoll", data);
 			break;
 		case 'roundEnd':
+			// roundEnd() stops the recorder, so preserve the final result first.
+			if($data._record) recordEvent(data);
 			for(i in data.users){
 				$data.setUser(i, data.users[i]);
 			}
@@ -2153,7 +2155,7 @@ function replayPrevInit(){
 			u = $rec.users[id] = {};
 		}
 		$data.room.players.push(po);
-		u.id = po;
+		u.id = id;
 		u.profile = $rec.players[i];
 		u.data = u.profile.data;
 		u.equip = u.profile.equip;
@@ -2167,6 +2169,7 @@ function replayReady(){
 	replayStop();
 	$data._replay = true;
 	$data.room = {
+		id: $rec.id || 'REPLAY',
 		title: $rec.title,
 		players: [],
 		events: [],
@@ -2187,8 +2190,10 @@ function replayReady(){
 	$stage.box.game.show();
 	$stage.dialog.replay.hide();
 	gameReady();
+	$stage.dialog.resultSave.hide();
 	updateRoom(true);
-	$data.$gp = $(".GameBox .product-title").empty()
+	$(".GameBox").addClass("is-replay").find(".replay-playback-bar").remove();
+	$data.$gp = $("<div>").addClass("replay-playback-bar").appendTo(".GameBox")
 		.append($data.$gpt = $("<div>").addClass("game-replay-title"))
 		.append($data.$gpc = $("<div>").addClass("game-replay-controller")
 			.append($("<button>").html(L['replayNext']).on('click', replayNext))
@@ -2294,9 +2299,10 @@ function replayTick(stay){
 	if($data.room.events.length > $data._rf) $data._rt = addTimeout(replayTick,
 		$data.room.events[$data._rf].time - event.time
 	);
-	else replayStop();
+	else if(args.type != 'roundEnd') replayStop();
 }
 function replayStop(){
+	$(".GameBox").removeClass("is-replay").find(".replay-playback-bar").remove();
 	delete $data.room;
 	$data._replay = false;
 	$stage.box.room.height(360);
@@ -2304,11 +2310,18 @@ function replayStop(){
 	updateUI();
 	playBGM('lobby');
 }
-function startRecord(title){ return; /* replay recording disabled */
+function replayClone(value){
+	try{ return JSON.parse(JSON.stringify(value)); }
+	catch(ex){ return value; }
+}
+function startRecord(title){
 	var i, u;
 	
 	$rec = {
+		format: "kkutu-replay",
+		formatVersion: 2,
 		version: $data.version,
+		id: $data.room.id || 'REPLAY',
 		me: $data.id,
 		players: [],
 		events: [],
@@ -2317,15 +2330,16 @@ function startRecord(title){ return; /* replay recording disabled */
 		round: $data.room.round,
 		mode: $data.room.mode,
 		limit: $data.room.limit,
-		game: $data.room.game,
-		opts: $data.room.opts,
-		readies: $data.room.readies,
+		game: replayClone($data.room.game),
+		opts: replayClone($data.room.opts || {}),
+		readies: replayClone($data.room.readies || {}),
 		time: (new Date()).getTime()
 	};
 	for(i in $data.room.players){
 		var o;
 		
-		u = $data.users[$data.room.players[i]] || $data.room.players[i];
+		u = $data.users[$data.room.players[i]] || $data.robots[$data.room.players[i].id] || $data.room.players[i];
+		if(!u) continue;
 		o = { id: u.id, score: 0 };
 		if(u.robot){
 			o.id = u.id;
@@ -2333,11 +2347,11 @@ function startRecord(title){ return; /* replay recording disabled */
 			o.data = { score: 0 };
 			u = { profile: getAIProfile(u.level) };
 		}else{
-			o.data = u.data;
-			o.equip = u.equip;
+			o.data = replayClone(u.data || { score: 0 });
+			o.equip = replayClone(u.equip || {});
 		}
-		o.title = "#" + u.id; // u.profile.title;
-		// o.image = u.profile.image;
+		o.title = (u.profile && (u.profile.title || u.profile.name)) || u.title || (u.robot ? "끄투 봇" : "#" + u.id);
+		o.image = u.profile && u.profile.image;
 		$rec.players.push(o);
 	}
 	$data._record = true;
@@ -2348,15 +2362,13 @@ function stopRecord(){
 function recordEvent(data){
 	if($data._replay) return;
 	if(!$rec) return;
-	var i, _data = data;
+	var allowed = /^(starting|roundReady|turnStart|draftChecked|playerHints|turnError|turnHint|turnEnd|yutWin|yutChoice|yutThrow|yutForceRoll|roundEnd|chat)$/;
 
 	if(!data.hasOwnProperty('type')) return;
-	if(data.type == "room") return;
-	if(data.type == "obtain") return;
-	data = {};
-	for(i in _data) data[i] = _data[i];
-	if(data.profile) data.profile = { id: data.profile.id, title: "#" + data.profile.id };
-	if(data.user) data.user = { id: data.user.profile.id, profile: { id: data.user.profile.id, title: "#" + data.user.profile.id }, data: { score: 0 }, equip: {} };
+	if(!allowed.test(data.type)) return;
+	data = replayClone(data);
+	if(data.profile) data.profile = { id: data.profile.id, title: data.profile.title || data.profile.name || ("#" + data.profile.id) };
+	if(data.user && data.user.profile) data.user = { id: data.user.id || data.user.profile.id, profile: { id: data.user.profile.id, title: data.user.profile.title || data.user.profile.name || ("#" + data.user.profile.id) }, data: { score: 0 }, equip: replayClone(data.user.equip || {}) };
 	
 	$rec.events.push({
 		data: data,

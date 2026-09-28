@@ -982,6 +982,11 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 	});
 	$stage.dialog.resultOK.on('click', function(e){
         restoreResultAd();
+		if($data._replay){
+			$stage.dialog.result.hide();
+			replayStop();
+			return;
+		}
 		if(!$('#ResultDiag').hasClass('match-result-screen') && $data._resultPage == 1 && $data._resultRank){
 			drawRanking($data._resultRank[$data.id]);
 			return;
@@ -1008,8 +1013,11 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 		updateUI();
 	});
 	$stage.dialog.resultSave.on('click', function(e){
+		if(!$rec || !$rec.events || !$rec.events.length){
+			return alert('저장할 리플레이가 없습니다.');
+		}
 		var date = new Date($rec.time);
-		var blob = new Blob([ JSON.stringify($rec) ], { type: "text/plain" });
+		var blob = new Blob([ JSON.stringify($rec) ], { type: "application/json;charset=utf-8" });
 		var url = URL.createObjectURL(blob);
 		var fileName = "KKuTu" + (
 			date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " "
@@ -1019,7 +1027,7 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 			'download': fileName,
 			'href': url
 		}).on('click', function(e){
-			$a.remove();
+			setTimeout(function(){ URL.revokeObjectURL(url); $a.remove(); }, 0);
 		});
 		$("#Jungle").append($a);
 		$a[0].click();
@@ -1266,46 +1274,62 @@ $stage.game.hereText.removeAttr('maxlength').prop('readOnly', false).attr({
 	}
 // 리플레이
 	function initReplayDialog(){
-		$stage.dialog.replayView.attr('disabled', true);
+		$stage.dialog.replayView.prop('disabled', true);
+		$("#replay-status").removeClass('is-error is-ready').text('선택한 리플레이가 없습니다.');
 	}
 	$("#replay-file").on('change', function(e){
 		var file = e.target.files[0];
 		var reader = new FileReader();
-		var $date = $("#replay-date").html("-");
-		var $version = $("#replay-version").html("-");
-		var $players = $("#replay-players").html("-");
+		var $date = $("#replay-date").text("-");
+		var $version = $("#replay-version").text("-");
+		var $players = $("#replay-players").text("-");
+		var $status = $("#replay-status").removeClass('is-error is-ready');
 	
 		$rec = false;
-		$stage.dialog.replayView.attr('disabled', true);
-		if(!file) return;
+		$stage.dialog.replayView.prop('disabled', true);
+		if(!file) return $status.text('선택한 리플레이가 없습니다.');
+		if(file.size > 10 * 1024 * 1024){
+			return $status.addClass('is-error').text('10MB 이하의 리플레이 파일을 선택해 주세요.');
+		}
+		$status.text('리플레이를 확인하는 중…');
 		reader.readAsText(file);
 		reader.onload = function(e){
 			var i, data;
 			
 			try{
 				data = JSON.parse(e.target.result);
-				$date.html((new Date(data.time)).toLocaleString());
-				$version.html(data.version);
+				if(!data || !Array.isArray(data.players) || !Array.isArray(data.events) || !data.game || !Array.isArray(data.game.seq)) throw new Error('Invalid replay structure');
+				if(data.players.length > 16 || !data.players.length || data.events.length > 100000 || !data.events.length) throw new Error('Invalid replay length');
+				if(!isFinite(Number(data.time)) || !isFinite(Number(data.mode))) throw new Error('Invalid replay metadata');
+				var replayTypes = /^(starting|roundReady|turnStart|draftChecked|playerHints|turnError|turnHint|turnEnd|yutWin|yutChoice|yutThrow|yutForceRoll|roundEnd|chat)$/;
+				for(i=0; i<data.events.length; i++){
+					if(!data.events[i] || !data.events[i].data || !replayTypes.test(data.events[i].data.type) || !isFinite(Number(data.events[i].time))) throw new Error('Invalid replay event');
+				}
+				$date.text((new Date(Number(data.time))).toLocaleString());
+				$version.text(data.version || data.formatVersion || '-');
 				$players.empty();
 				for(i in data.players){
 					var u = data.players[i];
 					var $p;
 					
 					$players.append($p = $("<div>").addClass("replay-player-bar ellipse")
-						.html(u.title)
-						.prepend(getLevelImage(u.data.score).addClass("users-level"))
+						.text(u.title || ('#' + u.id))
+						.prepend(getLevelImage(Number(u.data && u.data.score) || 0).addClass("users-level"))
 					);
 					if(u.id == data.me) $p.css('font-weight', "bold");
 				}
 				$rec = data;
-				$stage.dialog.replayView.attr('disabled', false);
+				$status.addClass('is-ready').text(file.name + ' · 이벤트 ' + data.events.length + '개');
+				$stage.dialog.replayView.prop('disabled', false);
 			}catch(ex){
 				console.warn(ex);
-				return alert(L['replayError']);
+				$status.addClass('is-error').text('올바른 끄투 리플레이 파일이 아닙니다.');
 			}
 		};
+		reader.onerror = function(){ $status.addClass('is-error').text('파일을 읽지 못했습니다.'); };
 	});
 	$stage.dialog.replayView.on('click', function(e){
+		if(!$rec) return;
 		replayReady();
 	});
 	

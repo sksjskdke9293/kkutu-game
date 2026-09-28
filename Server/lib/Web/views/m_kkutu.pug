@@ -41,14 +41,14 @@ block Subject
 	title= locals.lang === 'en_US' ? 'kkutugameskorea' : '끄투게임즈코리아'
 	
 block JS
-	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260927-social-57')
+	script(type='text/javascript', src='/js/in_game_kkutu.min.js?v=20260928-social-60')
 	script(src='/js/game-language.js?v=20260920-kp-full', defer)
 	script(src='https://www.google.com/recaptcha/api.js')
 	
 block CSS
 	link(rel='stylesheet', href='/css/in_game_kkutu_shop.css?v=20260914-inventory-layout-5')
 	link(rel='stylesheet', href='/css/play-shell.css?v=20260906-ui-audit-4')
-	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260927-social-57')
+	link(rel='stylesheet', href='/css/game-ui-audit.css?v=20260928-social-60')
 	link(rel='stylesheet', href='/css/settings-ui.css?v=20260910-lobby-music-1')
 	link(rel='stylesheet', href='/css/autumn-theme.css?v=20260927-intro-1')
 	
@@ -99,9 +99,6 @@ block Middle
 		button#QuickRoomBtn.for-lobby(style='display: none; background-color: #B0D2F3;', aria-label='빠른 시작')
 			+FA('bolt')
 			span.mobile-menu-label= IS_EN ? 'Quick Join' : '빠른 시작'
-		button#TutorialBtn.for-lobby(type='button', style='display: none; background-color: #F5D875;', aria-label='튜토리얼')
-			+FA('map')
-			span.mobile-menu-label= IS_EN ? 'Tutorial' : '튜토리얼'
 		button#DailyQuestBtn.for-lobby(type='button', style='display: none;', aria-label='일일 퀘스트')
 			span.daily-quest-icon(aria-hidden='true') 🎁
 			span.mobile-menu-label= IS_EN ? 'Daily Quests' : '일일 퀘스트'
@@ -395,8 +392,8 @@ block Middle
 			div.result-me-score-text
 			div.expl.result-me-expl
 		div.dialog-bar.tail-button
+			button#result-save(type='button')= IS_EN ? 'Save replay' : '리플레이 저장'
 			button#result-ok= L('OK')
-			button#result-save 방금 게임 리플레이 저장
 	+Dialog('DictionaryDiag', 650, 560, IS_EN ? 'Wordbooks' : '낱말집')
 		section.wordbook-manager
 			div.wordbook-search-row
@@ -473,16 +470,31 @@ block Middle
 		div.dialog-bar.tail-button
 			button#purchase-no= L('NO')
 			button#purchase-ok= L('OK')
-	+Dialog('ReplayDiag', 300, 300, L('replay'))
-		input#replay-file(type='file', style='width: 288px;', accept=".kkt")
-		div.dialog-bar
-			h4= L('replayDate')
-			h4.dialog-bar-value#replay-date -
-		div.dialog-bar
-			h4= L('replayPlayers')
-			h4.dialog-bar-value#replay-players -
-		div.dialog-bar.tail-button
-			button#replay-view= L('replayView')
+	+Dialog('ReplayDiag', 560, 520, L('replay'))
+		section.replay-library
+			header.replay-library-intro
+				i.fa.fa-video-camera(aria-hidden='true')
+				div
+					h3= IS_EN ? 'Replay player' : '리플레이 재생'
+					p= IS_EN ? 'Open a .kkt file saved after a match.' : '게임 종료 후 저장한 .kkt 파일을 불러오세요.'
+			label.replay-file-picker(for='replay-file')
+				i.fa.fa-folder-open(aria-hidden='true')
+				strong= IS_EN ? 'Choose replay file' : '리플레이 파일 선택'
+				span= IS_EN ? '.kkt files up to 10 MB' : '10MB 이하 .kkt 파일'
+			input#replay-file(type='file', accept='.kkt,application/json')
+			p#replay-status.replay-status= IS_EN ? 'No replay selected.' : '선택한 리플레이가 없습니다.'
+			div.replay-meta
+				div
+					small= L('replayDate')
+					strong#replay-date -
+				div
+					small= L('VERSION')
+					strong#replay-version -
+			div.replay-player-section
+				h4= L('replayPlayers')
+				div#replay-players -
+			footer.replay-actions
+				button#replay-view(type='button')= IS_EN ? 'Play replay' : '리플레이 실행'
 	+Dialog('ChatLogDiag', 300, 500, L('chatLog'))
 		div#chat-log-board(style='height: 475px; font-size: 11px; overflow-y: scroll;')
 	+Dialog('ObtainDiag', 300, 200, L('notice'), true)
